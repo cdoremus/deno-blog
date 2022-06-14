@@ -1,0 +1,123 @@
+backend:
+  name: git-gateway
+  branch: master
+media_folder: img
+collections:
+  - label: Posts
+    name: posts
+    folder: posts
+    description: Here you can create or edit your posts
+    editor:
+      preview: false
+    create: true
+    view_filters:
+      - label: Draft
+        field: draft
+        pattern: true
+    fields:
+      - label: Title
+        name: title
+        widget: string
+        required: false
+      - label: Description
+        name: description
+        widget: string
+        required: false
+      - label: Date
+        name: date
+        widget: datetime
+        required: false
+      - label: Tags
+        name: tags
+        widget: list
+        required: false
+      - label: Draft
+        name: draft
+        widget: boolean
+        required: false
+      - label: Body
+        name: body
+        widget: markdown
+        required: false
+  - label: Pages
+    name: pages
+    description: Here you can edit your individual pages
+    editor:
+      preview: false
+    files:
+      - label: About
+        name: about
+        file: about.md
+        fields:
+          - label: Title
+            name: title
+            widget: string
+            required: false
+          - label: Url
+            name: url
+            widget: string
+            required: false
+          - label: Body
+            name: body
+            widget: markdown
+            required: false
+          - label: Menu
+            name: menu
+            widget: object
+            required: false
+            fields:
+              - label: Visible
+                name: visible
+                widget: boolean
+                required: false
+              - label: Order
+                name: order
+                widget: number
+                required: false
+          - label: templateClass
+            name: templateclass
+            widget: hidden
+            required: false
+          - label: layout
+            name: layout
+            widget: hidden
+            required: false
+      - label: '404'
+        name: '404'
+        file: 404.md
+        fields:
+          - label: Title
+            name: title
+            widget: string
+            required: false
+          - label: Url
+            name: url
+            widget: string
+            required: false
+          - label: Body
+            name: body
+            widget: markdown
+            required: false
+          - label: Menu
+            name: menu
+            widget: object
+            required: false
+            fields:
+              - label: Visible
+                name: visible
+                widget: boolean
+                required: false
+              - label: Order
+                name: order
+                widget: number
+                required: false
+          - label: templateClass
+            name: templateclass
+            widget: hidden
+            required: false
+          - label: layout
+            name: layout
+            widget: hidden
+            required: false
+site_url: 'https://lumeland.github.io/base-blog/'
+local_backend: false

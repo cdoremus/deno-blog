@@ -1,0 +1,1 @@
+import e from"./vendor/searcher/searcher.js";customElements.define("oom-search",e),document.querySelectorAll("oom-search").forEach((e=>{e.addEventListener("selected",(e=>{const{value:o}=e.detail;window.location.href=o}))}));
