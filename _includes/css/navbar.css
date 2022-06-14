@@ -1,0 +1,33 @@
+.navbar {
+  border-bottom: 1px dashed var(--lightgray);
+  display: flex;
+  flex-wrap: wrap;
+
+  & a {
+    padding: 1em;
+    display: block;
+
+    &:not(:hover) {
+      text-decoration: none;
+    }
+  }
+}
+
+.navbar-links {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+
+  & [aria-current="page"] {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+}
+.navbar-search {
+  padding: 0 1em;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}

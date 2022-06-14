@@ -1,0 +1,45 @@
+.post-header {
+  padding: 5vh 0;
+}
+.post-title {
+  font-size: 4rem;
+  font-size: clamp(2rem, 10vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25em;
+}
+.post-tags {
+  display: inline;
+}
+.post-body {
+  font-size: 1.2em;
+  line-height: 1.4;
+
+  & p,
+  & ul,
+  & ol {
+    max-width: 45em;
+  }
+
+  & h2,
+  & h3,
+  & h4,
+  & h5,
+  & h6 {
+    max-width: 20em;
+    margin-bottom: 0;
+  }
+}
+.post-navigation {
+  & ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  & li {
+    padding: 1em;
+  }
+}

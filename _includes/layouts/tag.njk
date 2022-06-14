@@ -1,0 +1,12 @@
+---
+layout: layouts/base.njk
+bodyClass: body-tag
+---
+<h1>Tagged “{{ tag }}”</h1>
+
+{% set postslist = search.pages("'" + tag + "'") %}
+{% include "templates/postslist.njk" %}
+
+<hr>
+
+<p>See <a href="/tags/">all tags</a>.</p>
