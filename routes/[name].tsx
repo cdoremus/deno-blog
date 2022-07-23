@@ -15,6 +15,7 @@ export const handler: Handlers = {
     const path = `./posts/${name}.md`;
     const contents = await Deno.readTextFile(path);
     const modDate = (await Deno.stat(path)).mtime;
+    console.log("MOD DATE", modDate);
     const baseUrl = Deno.env.get("IS_PROD") ? "https://deno-blog.deno.dev" : "https://localhost:8000";
     const blog = render(contents, {baseUrl});
     return ctx.render({blog, blogName, modDate});
@@ -26,7 +27,7 @@ export default function Greet({data}: PageProps) {
     return (
       <Fragment>
         <h1>{blogName}</h1>
-        <div class={tw`text-l`}>{format(modDate, "yyyy-MM-dd")}</div>
+        <div class={tw`text-l`}>{modDate?.toString()}</div>
         <hr class={tw`mb-5`}/>
         <div dangerouslySetInnerHTML={{__html: blog}}>
           {blog}
