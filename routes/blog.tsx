@@ -8,7 +8,7 @@ export const handler: Handlers = {
   async GET(_: Request, ctx: HandlerContext) {
     console.log("import.meta.url", import.meta.url);
     const contents = await Deno.readTextFile(`./posts/first_post.md`)
-    const baseUrl = Deno.env.get("IS_PROD") ? "https://cdoremus-blog.deno.dev" : "https://localhost:8000";
+    const baseUrl = Deno.env.get("IS_PROD") ? "https://cdoremus.deno.dev" : "https://localhost:8000";
     const blog = render(contents, {baseUrl});
     return ctx.render({blog});
   }
