@@ -7,6 +7,7 @@
     "@twind": "./utils/twind.ts",
     "twind": "https://esm.sh/twind@0.16.17",
     "twind/": "https://esm.sh/twind@0.16.17/",
-    "gfm": "https://deno.land/x/gfm/mod.ts"
+    "gfm": "https://deno.land/x/gfm/mod.ts",
+    "datetime": "https://deno.land/std/datetime/mod.ts"
   }
 }
