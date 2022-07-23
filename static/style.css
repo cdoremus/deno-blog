@@ -1,0 +1,17 @@
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+h2 {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+p {
+  margin: 6px 0;
+  font-size: 1.2rem;
+}
