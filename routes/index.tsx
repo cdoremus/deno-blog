@@ -10,10 +10,11 @@ export const handler: Handlers = {
     for await (const dirEntry of Deno.readDir("./posts")) {
       if (dirEntry.isFile) {
         const file = dirEntry.name;
-        files.push(file.split(".")[0]);
+        files.push(file);
       }
     }
     console.log("Files", files)
+    // files.sort(postDateSorter);
     return await ctx.render({files});
   }
 }

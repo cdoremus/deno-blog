@@ -15,3 +15,9 @@ p {
   margin: 6px 0;
   font-size: 1.2rem;
 }
+
+pre {
+  margin: 0 10px;
+  border: 1px solid black;
+  padding: 10px;
+}
