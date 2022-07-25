@@ -1,8 +1,8 @@
 /** @jsx h */
-import { Fragment, h } from "preact";
+import { h } from "preact";
 import { tw } from "twind";
 import { Handlers, HandlerContext, PageProps } from "$fresh/server.ts";
-import { CSS, render } from "gfm"
+import { CSS, render } from "gfm";
 import "https://esm.sh/prismjs@1.27.0/components/prism-typescript?no-check";
 
 type GreetProps = {
