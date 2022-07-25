@@ -3,6 +3,7 @@ import { h } from "preact";
 import { tw } from "@twind";
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import PostList from "../components/PostList.tsx";
+import { postDateSorter } from "../utils/utils.ts";
 
 export const handler: Handlers = {
   async GET(_: Request, ctx: HandlerContext) {
@@ -13,8 +14,7 @@ export const handler: Handlers = {
         files.push(file);
       }
     }
-    console.log("Files", files)
-    // files.sort(postDateSorter);
+    const sortedFiles = files.sort(postDateSorter).reverse();
     return await ctx.render({files});
   }
 }
