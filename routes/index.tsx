@@ -23,6 +23,8 @@ export default function Home({data}: PageProps) {
   const {files} = data;
   return (
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
+      <p class={tw`text-xl text-center font-extralight`}>A blog about Deno</p>
+      <hr/>
       <h1>Posts</h1>
       <div>
         <PostList files={files} />
