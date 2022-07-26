@@ -12,7 +12,7 @@ export default function App({ Component }: AppProps) {
         <link rel="stylesheet" href={asset("style.css")} />
         <link rel="icon" href="/favicon.ico" sizes="32x32"/>
       </Head>
-      <body class={tw`m-x-50 m-y-0 p-4 mx-auto max-w-screen-md bg-blue-50`}>
+      <body class={tw`m-x-50 m-y-0 p-4 mx-auto max-w-screen-lg bg-blue-50`}>
         <header class={tw`flex flex-row border border-black p-2 justify-between bg-green-50`}>
           <div class={tw`flex flex-row ml-10`}>
             <div><img class={tw`h-8 w-8 mt-2`} src="/deno_logo.svg"/></div>
