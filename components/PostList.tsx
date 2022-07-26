@@ -9,7 +9,7 @@ type PostListProps = {
 export default function PostList(props: PostListProps) {
   const {files} = props;
   return (
-    <ul class={tw`list-disc`}>
+    <ul class={tw`list-disc ml-5 mr-5`}>
     {
       files.map((file:string ) => {
         const postFile = file.split(".");

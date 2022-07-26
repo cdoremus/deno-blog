@@ -1,11 +1,10 @@
 
-export function parseImportMetaUrlPath(importMetaUrl: string) {
-  return importMetaUrl?.split(".")[0]?.split("/").pop();
+export function parseImportMetaUrlPath(importMetaUrl: string): string | undefined {
+  return importMetaUrl.split(".")[0].split("/").pop();
 }
 
 /**
- * Sorting function for date strings in chronological order where
- * most recent date is first.
+ * Sorting function for date strings in chronological order.
  *
  * @param {string} date1: date string in yyyy-MM-dd format
  * @param {string} date2: date string in yyyy-MM-dd format
