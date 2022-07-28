@@ -11,7 +11,7 @@ This is section 2 of my first blog post.
 ### *Some Code I wrote:*
 
 ```ts
-function sayHello(name: string) {
+function sayHello(name: string): void {
   console.log(`Hello ${name}`)
 }
 sayHello("Craig")

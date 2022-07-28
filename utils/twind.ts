@@ -4,5 +4,11 @@ export * from "twind";
 export const config: Configuration = {
   darkMode: "class",
   mode: "silent",
+  // theme: {
+  //   colors: {
+  //     "blue": "#eff6ff",
+  //     "green": "#14532d",
+  //   }
+  // },
 };
 if (IS_BROWSER) setup(config);

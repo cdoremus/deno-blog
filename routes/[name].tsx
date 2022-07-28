@@ -1,5 +1,5 @@
 /** @jsx h */
-import { h } from "preact";
+import { h, Fragment } from "preact";
 import { tw } from "twind";
 import { Handlers, HandlerContext, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
@@ -15,8 +15,6 @@ export const handler: Handlers = {
     const fileName = `${name}.md`;
     const path = `./posts/${fileName}`;
     const contents = await Deno.readTextFile(path);
-    // const fileStats = await Deno.stat(path);
-    // console.log(`FILE STATS for ${fileName}`, JSON.stringify(fileStats));
     const baseUrl = Deno.env.get("IS_PROD") ? "https://deno-blog.deno.dev" : "https://localhost:8000";
     const blog = render(contents, {baseUrl});
     return ctx.render({blog});
@@ -26,10 +24,13 @@ export const handler: Handlers = {
 export default function Greet({data}: PageProps) {
     const { blog } = data;
     return (
-      <div>
-        <style>{CSS}</style>
+      <div class={tw`p-4`}>
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
         <hr class={tw`mb-5`}/>
-        <div data-color-mode="light" data-light-theme="light" data-dark-theme="dark" class="markdown-body" dangerouslySetInnerHTML={{__html: blog}}>
+        <div class={tw`bg-white p-5` + " markdown-body"}
+          data-color-mode="light"
+          data-light-theme="light" data-dark-theme="dark"
+            dangerouslySetInnerHTML={{__html: blog}}>
           {blog}
         </div>
       </div>
