@@ -16,13 +16,13 @@ export default function App({ Component }: AppProps) {
         <header class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between bg-green-50`}>
           <div class={tw`flex flex-row ml-10`}>
             <div><img class={tw`h-8 w-8 mt-2`} src="/img/deno_logo.svg"/></div>
-            <h1 class={tw`text-center text-xl font-bold ml-1`}>Craig's Deno Ditties</h1>
+            <h1 class={tw`text-center text-xl font-bold ml-1`}>Craig's Deno Diary</h1>
           </div>
           <nav class={tw`mt-3`}>
             <div><a href="/">Home</a></div>
           </nav>
         </header>
-        <main class={tw`ml-5 mr-5 mt-5`}>
+        <main class={tw`ml-5 mr-5 mt-2`}>
           <Component />
         </main>
         <footer class={tw`m-3 p-2 border bg-green-50`}>
