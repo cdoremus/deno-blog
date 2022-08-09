@@ -3,7 +3,6 @@ import { h, Fragment } from "preact";
 import { tw } from "twind";
 import { Handlers, HandlerContext, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
-import "https://esm.sh/prismjs@1.27.0/components/prism-typescript?no-check";
 
 type GreetProps = {
   name: string;
@@ -16,7 +15,7 @@ export const handler: Handlers = {
     const path = `./posts/${fileName}`;
     // console.log("FILE: ", path)
     const contents = await Deno.readTextFile(path);
-    const baseUrl = Deno.env.get("IS_PROD") ? "https://deno-blog.deno.dev" : "https://localhost:8000";
+    const baseUrl = Deno.env.get("IS_PROD") ? "https://deno-blog.deno.dev" : "http://localhost:8000";
     const blog = render(contents, {baseUrl});
     return ctx.render({blog});
   }
