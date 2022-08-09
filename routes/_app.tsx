@@ -28,7 +28,7 @@ export default function App({ Component }: AppProps) {
         <footer class={tw`m-3 p-2 border bg-green-50`}>
           <div class={tw`text-center`}>Copyright &copy; {new Date().getFullYear()} Craig Doremus</div>
           <div class={tw`flex flex-row justify-between`}>
-            <div class={tw`text-sm text-left`}><a href="https://github.com/cdoremus/fresh-blog">Source</a></div>
+            <div class={tw`text-sm text-left`}><a href="https://github.com/cdoremus/deno-blog">Source</a></div>
             <div>
               <a href="https://twitter.com/cdoremus">
                 <img class={tw`w-7 h7`} src="/img/twitter_logo.svg"/>
