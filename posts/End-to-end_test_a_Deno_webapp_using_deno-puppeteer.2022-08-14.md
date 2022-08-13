@@ -2,9 +2,10 @@
 
 # End-to-end test a Deno webapp using deno-puppeteer
 
-The `deno-puppeteer` library is a Deno-compatible port of the
-[puppeteer](https://pptr.dev/) Node-compatible library. The library has a number
-of uses including generating app screenshots and automating form submissions. We
+The [`deno-puppeteer` library](https://github.com/lucacasonato/deno-puppeteer)
+-- created by Deno team member Luca Casonato -- is a Deno-compatible port of the
+[puppeteer](https://pptr.dev/) Node (npm) library. The library has a number of
+uses including generating app screenshots and automating form submissions. We
 are using it here to do end-to-end (e2e) testing of a Deno webapp. The code for
 this blog post can be found
 [here](https://github.com/cdoremus/deno-blog-code/tree/main/using_deno-puppeteer).
@@ -48,11 +49,13 @@ does the library's work.
 
 We are going to use the `bdd` library in the deno_std testing module to run our
 puppeteer e2e tests. That library includes the familiar functions `describe`,
-`beforeEach`, `afterEach` and `it` imported like this:
+`beforeAll`, `afterAll`, `beforeEach`, `afterEach` and `it` imported like this:
 
 ```typescript
 import {
+  afterAll,
   afterEach,
+  beforeAll,
   beforeEach,
   describe,
   it,
@@ -81,10 +84,12 @@ import { readLines } from "https://deno.land/std@0.151.0/io/mod.ts";
 
 Behavior-driven development test libraries (like the popular
 [Jest](https://jestjs.io/) lib) include a `describe` function to wrap a test
-suite and `it` for test functions. Also included are `beforeEach` and
-`afterEach` functions used to initialize and cleanup resources used in each
-test. Our puppeteer tests have app server (`server`), `Browser` and `Page`
-objects that need to be declared:
+suite and `it` for test functions. Also included are `beforeAll`/`beforeEach`
+and `beforeAll`/`afterEach` functions used to initialize and cleanup test
+resources. The `*All` functions run before and after any tests are run while the
+`*Each` functions run before and after each test function is run. Our puppeteer
+tests have app server (`server`), `Browser` and `Page` objects that need to be
+declared:
 
 ```typescript
 describe("e2e tests using puppeteer: ", () => {
@@ -92,8 +97,15 @@ describe("e2e tests using puppeteer: ", () => {
   let browser: Browser;
   let page: Page;
 
+  beforeAll(async () => {
+    server = await startAppServer();
+  });
+
+  afterAll(async () => {
+    await server?.close();
+  });
+
   beforeEach(async () => {
-    server = startAppServer();
     browser = await startBrowser();
     page = await browser.newPage();
   });
@@ -101,15 +113,17 @@ describe("e2e tests using puppeteer: ", () => {
   afterEach(async () => {
     await page?.close();
     await browser?.close();
-    await server?.close();
   });
   // test functions next. . .
 });
 ```
 
-Use of the `beforeEach` and `afterEach` functions assure that each test begins
-with a freshly-served webapp and puppeteer browser. The `close` calls done in
-`afterEach` prevents the occurrence of `leaking resources' errors.
+The app server is used in all tests, so the server instance is initialized and
+closed in the `*All` functions. Use of the `beforeEach` and `afterEach`
+functions assure that each test begins with a freshly-created puppeteer browser
+and page. The `close` calls done in `afterEach` prevents the occurrence of
+'leaking resources' errors. Make sure that the page object is always closed
+before the browser object.
 
 Note that the `server`, `browser` and `page` variables need type annotations to
 avoid TypeScript 'implicit any' errors.
@@ -259,6 +273,30 @@ defined by the CSS selector. Once the button is clicked, the DOM node containing
 the counter's value is found and verified to have been incremented or
 decremented (note that the Fresh app sets the counter's start value to 3).
 
+### Test output
+
+The command line to run all tests (`deno test --no-check-A`) has been
+encapsulated in the `deno.json` file as task 'test'. You run that with
+`deno task test`. When that is done, the following output should appear:
+
+```shell
+$> deno task test
+Warning deno task is unstable and may drastically change in the future
+Task test deno test --no-check -A
+running 1 test from ./puppeteer.test.ts
+Puppeteer e2e testing...  ...
+------- output -------
+Waiting for server to start...
+Listening on http://localhost:8000/
+----- output end -----
+  should display welcome message ... ok (1s)
+  should decrement counter ... ok (1s)
+  should increment counter ... ok (1s)
+Puppeteer e2e testing...  ... ok (4s)
+
+ok | 1 passed (3 steps) | 0 failed (5s)
+```
+
 ### Puppeteer API
 
 There are a number of functions found in the
@@ -280,9 +318,11 @@ Please note that the current versions of the libraries used in this example will
 change with time.
 
 While I used Fresh for this work, I learned how to use deno-puppeteer when I
-created e2e tests for the [Ultra](https://ultrajs.dev) full-stack Deno
+created e2e tests for the [Ultra] (https://ultrajs.dev) full-stack Deno
 framework. I want to thank Omar Mashaal and James Edmonds for their assistance
 in this effort.
+
+I'd also like to thank Kyle June for reviewing a previous version of this post.
 
 The deno-puppeteer library can now be combined with Deno's build-in testing
 modules to allow the full

@@ -4,7 +4,7 @@ import { tw } from "twind";
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
 import "https://esm.sh/prismjs@1.27.0/components/prism-typescript?no-check";
-
+import "https://esm.sh/prismjs@1.27.0/components/prism-shell-session.js?no-check";
 type GreetProps = {
   name: string;
 };
