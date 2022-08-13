@@ -7,7 +7,7 @@ import { postDateSorter } from "../utils/stringFcns.ts";
 
 export const handler: Handlers = {
   async GET(_: Request, ctx: HandlerContext) {
-    const files: string[] = []
+    const files: string[] = [];
     for await (const dirEntry of Deno.readDir("./posts")) {
       if (dirEntry.isFile) {
         const file = dirEntry.name;
@@ -15,16 +15,18 @@ export const handler: Handlers = {
       }
     }
     const sortedFiles = files.sort(postDateSorter).reverse();
-    return await ctx.render({files});
-  }
-}
+    return await ctx.render({ files });
+  },
+};
 
-export default function Home({data}: PageProps) {
-  const {files} = data;
+export default function Home({ data }: PageProps) {
+  const { files } = data;
   return (
     <div class={tw`pb-4 pl-4 pr-4 mr-5 ml-5mx-auto max-w-screen-lg`}>
-      <p class={tw`text-xl text-center font-extralight mt-0`}>A blog about Deno</p>
-      <hr/>
+      <p class={tw`text-xl text-center font-extralight mt-0`}>
+        A blog about Deno
+      </p>
+      <hr />
       <h1 class={tw`ml-3 mr-3`}>Blog Posts</h1>
       <div>
         <PostList files={files} />

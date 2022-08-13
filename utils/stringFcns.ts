@@ -1,5 +1,6 @@
-
-export function parseImportMetaUrlPath(importMetaUrl: string): string | undefined {
+export function parseImportMetaUrlPath(
+  importMetaUrl: string,
+): string | undefined {
   return importMetaUrl.split(".")[0].split("/").pop();
 }
 
@@ -12,7 +13,7 @@ export function parseImportMetaUrlPath(importMetaUrl: string): string | undefine
  * integer if date1 is before date2; positive integer if date1 is
  * after date2.
  */
-export function postDateSorter(post1: string, post2: string):number {
+export function postDateSorter(post1: string, post2: string): number {
   const date1 = post1.split(".")[1];
   const date2 = post2.split(".")[1];
   const dateArr1 = date1.split("-");
@@ -27,5 +28,3 @@ export function postDateSorter(post1: string, post2: string):number {
     return 0;
   }
 }
-
-
