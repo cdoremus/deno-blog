@@ -12,9 +12,9 @@ export default function App({ Component }: AppProps) {
         <link rel="stylesheet" href={asset("style.css")} />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
       </Head>
-      <body class={tw`m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-50`}>
+      <body class={tw`m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100`}>
         <header
-          class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between bg-green-50`}
+          class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between bg-green-100`}
         >
           <div class={tw`flex flex-row ml-10`}>
             <div>
@@ -33,7 +33,7 @@ export default function App({ Component }: AppProps) {
         <main class={tw`ml-5 mr-5 mt-2`}>
           <Component />
         </main>
-        <footer class={tw`m-3 p-2 border bg-green-50`}>
+        <footer class={tw`m-3 p-2 border bg-green-100`}>
           <div class={tw`text-center`}>
             Copyright &copy; {new Date().getFullYear()} Craig Doremus
           </div>
