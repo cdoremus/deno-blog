@@ -54,9 +54,7 @@ puppeteer e2e tests. That library includes the familiar functions `describe`,
 ```typescript
 import {
   afterAll,
-  afterEach,
   beforeAll,
-  beforeEach,
   describe,
   it,
 } from "https://deno.land/std@0.151.0/testing/bdd.ts";
@@ -84,12 +82,15 @@ import { readLines } from "https://deno.land/std@0.151.0/io/mod.ts";
 
 Behavior-driven development test libraries (like the popular
 [Jest](https://jestjs.io/) lib) include a `describe` function to wrap a test
-suite and `it` for test functions. Also included are `beforeAll`/`beforeEach`
-and `beforeAll`/`afterEach` functions used to initialize and cleanup test
-resources. The `*All` functions run before and after any tests are run while the
-`*Each` functions run before and after each test function is run. Our puppeteer
-tests have app server (`server`), `Browser` and `Page` objects that need to be
-declared:
+suite and `it` for test functions. Also included are `beforeAll` and `afterAll`
+functions used to initialize and cleanup test resources. These functions run
+before and after all tests are run. There are also `beforeEach` and `afterEach`
+functions to allow code to be run before and after each test runs (not used
+here).
+
+Our puppeteer tests have app server (`server`), `Browser` and `Page` objects
+that need to be declared at the top of the `describe` block since they are used
+in the `before' and 'after' functions.
 
 ```typescript
 describe("e2e tests using puppeteer: ", () => {
@@ -99,31 +100,25 @@ describe("e2e tests using puppeteer: ", () => {
 
   beforeAll(async () => {
     server = await startAppServer();
+    browser = await startBrowser();
+    page = await browser.newPage();
+    await page.setViewport({ width: 400, height: 200 });
   });
 
   afterAll(async () => {
+    await page?.close();
+    await browser?.close();
     await server?.close();
   });
 
-  beforeEach(async () => {
-    browser = await startBrowser();
-    page = await browser.newPage();
-  });
-
-  afterEach(async () => {
-    await page?.close();
-    await browser?.close();
-  });
   // test functions next. . .
 });
 ```
 
-The app server is used in all tests, so the server instance is initialized and
-closed in the `*All` functions. Use of the `beforeEach` and `afterEach`
-functions assure that each test begins with a freshly-created puppeteer browser
-and page. The `close` calls done in `afterEach` prevents the occurrence of
-'leaking resources' errors. Make sure that the page object is always closed
-before the browser object.
+The app server, browser and page objects are used in all tests, so they are
+initialized in the `beforeAll` function and closed in the `afterAll` function.
+The `close` calls prevents the occurrence of 'leaking resources' errors. Make
+sure that the page object is always closed before the browser object.
 
 Note that the `server`, `browser` and `page` variables need type annotations to
 avoid TypeScript 'implicit any' errors.
@@ -188,7 +183,6 @@ Individual tests are found in `it` functions:
 it({
   name: "should display welcome message",
   fn: async () => {
-    await page.setViewport({ width: 400, height: 200 });
     await page.goto("http://localhost:8000/", {
       waitUntil: "networkidle2",
     });
@@ -206,11 +200,12 @@ it({
 });
 ```
 
-Once the `page.goto` function runs and navigates to the page to be tested, the
-`page.waitForSelector` is called with a CSS selector pointing to the DOM node on
-the page to be verified. In this case, we are verifying that a message that
-starts with 'Welcome' exists at that spot. We use the `page.evaluate` to obtain
-the text content (i.e. the message) from the HTMLElement.
+Once the `page.goto` function runs and navigates to the page to be tested. All
+tests in this file work on the same page. The `page.waitForSelector` is called
+with a CSS selector pointing to the DOM node on the page to be verified. In this
+case, we are verifying that a message that starts with 'Welcome' exists at that
+spot. We use the `page.evaluate` to obtain the text content (i.e. the message)
+from the HTMLElement.
 
 The function of the counter component is tested in the next two test functions.
 We want to know that the increment (+1) and decrement (-1) buttons work
@@ -220,7 +215,6 @@ properly.
 it({
   name: "should decrement counter",
   fn: async () => {
-    await page.setViewport({ width: 400, height: 200 });
     await page.goto("http://localhost:8000/", {
       waitUntil: "networkidle2",
     });
@@ -245,7 +239,6 @@ it({
 it({
   name: "should increment counter",
   fn: async () => {
-    await page.setViewport({ width: 400, height: 200 });
     await page.goto("http://localhost:8000/", {
       waitUntil: "networkidle2",
     });
@@ -322,7 +315,7 @@ created e2e tests for the [Ultra] (https://ultrajs.dev) full-stack Deno
 framework. I want to thank Omar Mashaal and James Edmonds for their assistance
 in this effort.
 
-I'd also like to thank Kyle June for reviewing a previous version of this post.
+I'd also like to thank Kyle June for reviewing previous versions of this post.
 
 The deno-puppeteer library can now be combined with Deno's build-in testing
 modules to allow the full
