@@ -48,10 +48,11 @@ export default function App({ Component }: AppProps) {
           <div class={tw`flex flex-row justify-between`}>
             <div class={tw`text-sm text-left`}>
               <a href="https://github.com/cdoremus/deno-blog">Source</a>
+              {' '}|{' '}<a href="/credits">Credits</a>
             </div>
             <div>
               <a href="https://twitter.com/deno_diary">
-                <img class={tw`w-7 h7`} src="/img/twitter_logo.svg" />
+                <img class={tw`w-7 h-7`} src="/img/twitter_logo.svg" />
               </a>
             </div>
             <div class={tw`flex flex-row text-sm text-right`}>
