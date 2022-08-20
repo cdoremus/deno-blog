@@ -1,7 +1,7 @@
 # Credits
 
 The logo and favicon images are a derivative of the
-**Deno 1.0** image published on the [Deno Artwork](https://deno.land/artwork) page and created by [@hashedrock](https://twitter.com/hashedrock).
+**Deno 1.0** image published on the [Deno Artwork](https://deno.land/artwork) page and created by [@hashrock](https://twitter.com/hashedrock).
 
 That image was published under the MIT license which is
 reproduced below.
