@@ -24,11 +24,11 @@ export default function App({ Component }: AppProps) {
         <header
           class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between bg-green-100`}
         >
-          <div class={tw`h-21 flex flex-row justify-center content-center ml-10 pb-2`}>
+          <div class={tw`h-21 flex flex-row justify-center content-center md:ml-10 sm:ml-1 pb-2`}>
             <div>
               <img id="logo" src="/img/deno-diary-logo_smallcircle.png" />
             </div>
-            <h1 class={tw`text-4xl font-bold ml-3 pt-4`}>
+            <h1 class={tw`md:text-4xl sm:text-lg font-bold ml-3 sm:ml-1 pt-4`}>
               Craig's Deno Diary
             </h1>
           </div>
