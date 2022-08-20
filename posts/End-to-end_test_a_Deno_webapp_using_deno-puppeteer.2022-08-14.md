@@ -311,7 +311,7 @@ Please note that the current versions of the libraries used in this example will
 change with time.
 
 While I used Fresh for this work, I learned how to use deno-puppeteer when I
-created e2e tests for the [Ultra] (https://ultrajs.dev) full-stack Deno
+created e2e tests for the [Ultra](https://ultrajs.dev) full-stack Deno
 framework. I want to thank Omar Mashaal and James Edmonds for their assistance
 in this effort.
 
