@@ -40,7 +40,7 @@ export default function App({ Component }: AppProps) {
             </h1>
           </div>
           <div
-            class={tw`flex flex-col justify-left mt-3 pt-2 text-xl text-white font-bold border-0`}
+            class={tw`flex flex-col justify-left mt-3 pt-2 md:text-xl sm:text-med text-white font-bold border-0`}
             style="color:beige;text-shadow:2px 2px darkcyan;"
           >
             <div>

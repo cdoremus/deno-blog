@@ -23,7 +23,7 @@ export default function Home({ data }: PageProps) {
   const { files } = data;
   return (
     <div class={tw`pb-4 pl-4 pr-4 mr-5 ml-5mx-auto max-w-screen-lg`}>
-      <p class={tw`text-xl text-center font-extralight mt-0`}>
+      <p class={tw`md:text-2xl sm:text-md text-center font-extralight mt-0`}>
         A blog about Deno
       </p>
       <hr />
