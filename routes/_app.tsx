@@ -56,9 +56,9 @@ export default function App({ Component }: AppProps) {
         </main>
         <footer
           class={tw`m-3 p-2 border bg-green-100 text-white`}
-          style="background-color:#006699;"
+          style="background-color:#006666;"
         >
-          <div class={tw`text-center`}>
+          <div class={tw`text-center sm:text-md md:text-xl`}>
             Copyright &copy; {new Date().getFullYear()} Craig Doremus
           </div>
           <div class={tw`flex flex-row justify-between`}>
