@@ -22,21 +22,34 @@ export default function App({ Component }: AppProps) {
       </Head>
       <body class={tw`m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100`}>
         <header
-          class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between bg-green-100`}
+          class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between`}
+          style="background-image:url('/img/DenoBannerWater.png');background-repeat:no-repeat"
         >
-          <div class={tw`h-21 flex flex-row justify-center content-center md:ml-10 sm:ml-1 pb-2`}>
+          <div
+            class={tw`h-21 flex flex-row justify-center content-center md:ml-10 sm:ml-1 pb-2`}>
             <div>
-              <img id="logo" src="/img/deno-diary-logo_smallcircle.png" />
+              <img
+                style="width:100px;height:100px;"
+                src="/img/deno-diary-logo_smallcircle.png" />
             </div>
-            <h1 class={tw`md:text-4xl sm:text-lg font-bold ml-3 sm:ml-1 pt-4`}>
+            <h1
+              class={tw`md:text-5xl sm:text-3xl font-bold md:ml-3 sm:ml-1 pt-4`}
+              style="color:beige;text-shadow:4px 4px darkcyan;"
+              >
               Craig's Deno Diary
             </h1>
           </div>
-          <nav class={tw`mt-3 pt-4`}>
+          <div
+            class={tw`flex flex-col justify-left mt-3 pt-2 text-xl text-white font-bold border-0`}
+            style="color:beige;text-shadow:2px 2px darkcyan;"
+          >
             <div>
               <a href="/">Home</a>
             </div>
-          </nav>
+            <div>
+              <a href="/about">About</a>
+            </div>
+          </div>
         </header>
         <main class={tw`ml-5 mr-5 mt-2`}>
           <Component />
