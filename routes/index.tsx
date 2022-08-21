@@ -23,11 +23,10 @@ export default function Home({ data }: PageProps) {
   const { files } = data;
   return (
     <div class={tw`pb-4 pl-4 pr-4 mr-5 ml-5mx-auto max-w-screen-lg`}>
-      <p class={tw`md:text-2xl sm:text-md text-center font-extralight mt-0`}>
+      <div class={tw`md:text-2xl sm:text-md text-center font-extralight mt-0`}>
         A blog about Deno
-      </p>
-      <hr />
-      <h1 class={tw`ml-3 mr-3`}>Blog Posts</h1>
+      </div>
+      <div class={tw`text-2xl font-bold ml-3 mr-3 mb-3`}>Blog Posts</div>
       <div>
         <PostList files={files} />
       </div>

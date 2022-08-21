@@ -54,7 +54,10 @@ export default function App({ Component }: AppProps) {
         <main class={tw`ml-5 mr-5 mt-2`}>
           <Component />
         </main>
-        <footer class={tw`m-3 p-2 border bg-green-100`}>
+        <footer
+          class={tw`m-3 p-2 border bg-green-100 text-white`}
+          style="background-color:#006699;"
+        >
           <div class={tw`text-center`}>
             Copyright &copy; {new Date().getFullYear()} Craig Doremus
           </div>
