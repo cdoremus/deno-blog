@@ -3,6 +3,7 @@ import { h } from "preact";
 import { asset, Head } from "$fresh/runtime.ts";
 import { AppProps } from "$fresh/src/server/types.ts";
 import { tw } from "twind";
+import MenuLink from "../islands/MenuLink.tsx";
 
 export default function App({ Component }: AppProps) {
   const urlPath = import.meta.url?.split(".")[0]?.split("/").pop();
@@ -40,15 +41,10 @@ export default function App({ Component }: AppProps) {
             </h1>
           </div>
           <div
-            class={tw`flex flex-col justify-left mt-3 pt-2 md:text-xl sm:text-med text-white font-bold border-0`}
+            class={tw`flex flex-col justify-left mt-4 pt-4 md:text-xl sm:text-med text-white font-bold border-0`}
             style="color:beige;text-shadow:2px 2px darkcyan;"
           >
-            <div>
-              <a href="/">Home</a>
-            </div>
-            <div>
-              <a href="/about">About</a>
-            </div>
+            <MenuLink />
           </div>
         </header>
         <main class={tw`ml-5 mr-5 mt-2`}>
