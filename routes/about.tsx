@@ -22,6 +22,7 @@ export default function AboutPage({ data }: PageProps) {
   const { blog } = data;
   return (
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
       <div
         class={tw`bg-white p-5` + " markdown-body"}
         data-color-mode="light"
