@@ -24,14 +24,14 @@ export default function App({ Component }: AppProps) {
       <body class={tw`m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100`}>
         <header
           class={tw`flex flex-row border border-black pt-2 pr-2 ml-2 justify-between`}
-          style="background-image:url('/img/DenoBannerWater.png');background-repeat:no-repeat"
+          style="background-image:url('/img/DenoBannerWater.webp');background-repeat:no-repeat"
         >
           <div
             class={tw`h-21 flex flex-row justify-center content-center md:ml-10 sm:ml-1 pb-2`}>
             <div>
               <img
                 style="width:100px;height:100px;"
-                src="/img/deno-diary-logo_smallcircle.png" />
+                src="/img/deno-diary-logo_smallcircle.webp" />
             </div>
             <h1
               class={tw`md:text-5xl sm:text-3xl font-bold md:ml-3 sm:ml-1 pt-4`}
@@ -68,7 +68,7 @@ export default function App({ Component }: AppProps) {
               </a>
             </div>
             <div class={tw`flex flex-row text-sm text-right`}>
-              Coded in{" "}
+              Built with{" "}
               <a class={tw`ml-1`} href="https://fresh.deno.dev">FRESH</a>
               <img class={tw`w-6 h-6`} src="/img/fresh_logo.svg" />
             </div>
