@@ -39,3 +39,7 @@ date is used to sort the post list in chronological order.
 
 This app is deployed to the url
 [https://deno-blog.deno.dev](https://deno-blog.deno.dev)
+-----
+[![Made with Fresh](https://fresh.deno.dev/fresh-badge.svg)](https://fresh.deno.dev)
+
+
