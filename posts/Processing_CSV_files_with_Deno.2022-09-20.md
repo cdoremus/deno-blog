@@ -32,7 +32,7 @@ The `encoding/csv.ts` module's `stringify` function has an optional third argume
 
 Finally, the delimited items are written to a file using the `Deno.writeTextFile` function.
 
-See `populate_data.ts` in the blog source code repo for more details.
+See [populate_data.ts](https://github.com/cdoremus/deno-blog-code/blob/main/processing_csv/populate_data.ts) in the blog source code repo for more details.
 
 ### Reading CSV from a file
 Reading CSV from a small file is done using `Deno.readTextFile`. In addition, the `encoding/csv.ts` module contains a `parse` function that facilitates the transformation of CSV data into an array of objects.
@@ -48,7 +48,7 @@ The second argument of `parse` contains an options argument which is an object w
 
 The `columns` values will be used as the keys for the objects being created from the CSV data. Otherwise, you will just get an array of string arrays containing the CSV data, so if you want the original object recreated, then `columns` needs to be used in your `parse` call.
 
-See `read_data.ts` in the blog source code repo for more details.
+See [read_data.ts](https://github.com/cdoremus/deno-blog-code/blob/main/processing_csv/read_data.ts) in the blog source code repo for more details.
 
 ## Working with large data sets
 
@@ -92,7 +92,7 @@ export async function writeCsvHeader() {
   await Deno.writeTextFile(POSTS_FILE, `${header}\n`);
 }
 ```
-There's one more thing that needs to be done to the post data. The `body` field has a number of newline characters in it. These will interfere with the `parse` function in the `cvs.ts` module that uses newlines to separate object records. In this case, I assume that the newlines have some significance, so I replace each newline in the post `body` field with a pipe character (|). When the data is used, then the pipe can be converted back to a newline or into something else (an HTML break tag, for instance).
+There's one more thing that needs to be done to the post data. The `body` field has a number of newline characters in it. These will interfere with the `parse` function in the `encoding/csv.ts` module that uses newlines to separate object records. In this case, I assume that the newlines have some significance, so I replace each newline in the post `body` field with a pipe character (|). When the data is used, then the pipe can be converted back to a newline or into something else (an HTML break tag, for instance).
 ```ts
 async function main() {
   // Delete previously written file, if exists
@@ -115,7 +115,7 @@ async function main() {
   }
 }
 ```
-See `populate_large_data.ts` in the blog source code repo for more details.
+See [populate_large_data.ts](https://github.com/cdoremus/deno-blog-code/blob/main/processing_csv/populate_large_data.ts) in the blog source code repo for more details.
 
 ### Reading data from a large CSV file
 
@@ -145,7 +145,7 @@ async function readLargeCsv() {
 ```
 I am just printing the objects to the console here for illustration, but there are a lot of other things that can be done with it such as displaying the objects in a UI.
 
-See `read_large_data.ts` in the blog source code repo for more details.
+See [read_large_data.ts](https://github.com/cdoremus/deno-blog-code/blob/main/processing_csv/read_large_data.ts) in the blog source code repo for more details.
 
 ## Conclusion
-This article demonstrates how to use the Deno `encoding/csv` module to convert data from an object representation (like JSON) to CSV and back again. I have used snippets here from the [source code for this article](https://github.com/cdoremus/deno-blog-code/tree/main/processing_csv), so check out the source to see how everything fits together.
+This article demonstrates how to use the Deno `encoding/csv` module to convert data from an object representation (like JSON) to CSV and back again. I have used snippets here from the [source code for this article](https://github.com/cdoremus/deno-blog-code/tree/main/processing_csv), so check out the source to see how everything fits together. A comment at the top of each source code file will tell you how to run each example.
