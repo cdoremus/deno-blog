@@ -1,6 +1,6 @@
 # About Craig's Deno Diary
 
-Welcome to my blog! I'll be blogging about the JavaScript and TypeScript runtime [Deno](https://deno.land).
+Welcome to my blog! I'll be blogging about the JavaScript and TypeScript runtime [Deno](https://deno.land). I intend on publishing new blog posts once a month.
 
 I'm hoping to evolve the blog with new features and
 improved code quality as time goes on. Source code
