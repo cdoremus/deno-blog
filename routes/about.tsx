@@ -1,8 +1,5 @@
-/** @jsx h */
-import { h } from "preact";
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
-import { tw } from "@twind";
 import { IS_BROWSER } from "https://deno.land/x/fresh@1.0.1/runtime.ts";
 
 const markdownFile = "About.md";
@@ -21,10 +18,10 @@ export const handler: Handlers = {
 export default function AboutPage({ data }: PageProps) {
   const { blog } = data;
   return (
-    <div class={tw`p-4 mx-auto max-w-screen-md`}>
+    <div class="p-4 mx-auto max-w-screen-md">
       <style dangerouslySetInnerHTML={{ __html: CSS }}/>
       <div
-        class={tw`bg-white p-5` + " markdown-body"}
+        class="bg-white p-5 markdown-body"
         data-color-mode="light"
         data-light-theme="light"
         data-dark-theme="dark"
