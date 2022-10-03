@@ -1,6 +1,7 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Craig's Deno Diary",
+    "short_name": "Deno Diary",
+    "start_url": "/",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
