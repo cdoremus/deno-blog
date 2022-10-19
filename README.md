@@ -37,6 +37,8 @@ There are three sections to the name separated by a period:
 The post title is used in the display of a post in a list of posts while the
 date is used to sort the post list in chronological order.
 
+Any post file whose name is prefixed with 'DRAFT' is ignored in production (Deno Deploy), but will be visible when the app is run on a local server.
+
 This app is deployed to the url
 [https://deno-blog.deno.dev](https://deno-blog.deno.dev)
 
