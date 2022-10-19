@@ -11,7 +11,10 @@ export default function PostList(props: PostListProps) {
         const linkText = postFile[0].replaceAll("_", " ");
         return (
           <li>
-            <a class="text-xl hover:underline" href={`/${postFile[0]}.${postFile[1]}`}>
+            <a
+              class="text-xl hover:underline"
+              href={`/${postFile[0]}.${postFile[1]}`}
+            >
               {linkText} - {postFile[1]}
             </a>
           </li>
