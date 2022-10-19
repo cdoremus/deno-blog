@@ -8,7 +8,12 @@ export const handler: Handlers = {
     for await (const dirEntry of Deno.readDir("./posts")) {
       if (dirEntry.isFile) {
         const file = dirEntry.name;
-        files.push(file);
+        // Exclude drafts in production
+        if (Deno.env.get("IS_PROD") && !file.startsWith("DRAFT")) {
+          files.push(file);
+        } else if (!Deno.env.get("IS_PROD")) {
+          files.push(file);
+        }
       }
     }
     const sortedFiles = files.sort(postDateSorter).reverse();
