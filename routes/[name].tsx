@@ -8,7 +8,13 @@ export const handler: Handlers = {
     const name = ctx.params.name;
     const fileName = `${name}.md`;
     const path = `./posts/${fileName}`;
-    const contents = await Deno.readTextFile(path);
+    let contents = "";
+    try {
+      contents = await Deno.readTextFile(path);
+    } catch(e) {
+      console.error(`File ${path} not found: `, e);
+      contents = `# File Not Found: ${path}`;
+    }
     const baseUrl = Deno.env.get("IS_PROD")
       ? "https://deno-blog.deno.dev"
       : "http://localhost:8000";
