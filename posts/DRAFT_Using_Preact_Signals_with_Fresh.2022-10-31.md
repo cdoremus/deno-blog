@@ -4,7 +4,7 @@
 
 [Fresh](https://fresh.deno.dev) is the Deno full-stack framework created by [Luca Casonato](https://github.com/lucacasonato) of the Deno core team and now [hosted in the Deno github repository](https://github.com/denoland/fresh).
 
-Fresh makes it easy to create web sites that have mostly static content like this blog (built with Fresh). By default the Fresh server does not ship any JavaScript to the front end. But you can use client-side JavaScript by putting components in an `islands` folder.
+Fresh makes it easy to create web sites that have mostly static content like this blog (built with Fresh). This blog post assume you have some familiarity with Fresh. If not, see the [Fresh documentation](https://fresh.deno.dev/docs/introduction) to get up to speed.
 
 Fresh uses [Preact](https://preactjs.com) under the covers. Preact is a lightweight version of [React](https://reactjs.org) that uses components and other React functionality (like context and hooks), so it is easy for a React developer to migrate to Preact.
 
@@ -12,21 +12,24 @@ Recently the Preact team has released a new library called [Signals](https://pre
 
 ## Using Signals for State Management
 
-Preact Signals are used for state management. It can be used for both global or local state management, but each is done differently.
-
+Preact Signals are used for both global and local state management.
 
 I created a basic Fresh Todo app to illustrate the use of Preact Signals. The source code can be found [in this Github repo](https://github.com/cdoremus/fresh-todo-signals).
 
 ## Global State Management
 
-## Setup
+### Setup
 
 As of Fresh version 1.1, when you [create a new fresh project](https://fresh.deno.dev/docs/getting-started/create-a-project) the signals libraries are automatically added to the import map file.
-If you are updating a Fresh project to use Signals, then add the following lines to the `import` section in your import map:
+If you are updating a Fresh project to use Signals, then add the following lines to the `imports` section in your import map:
 ```json
+{
+  "imports": {
+    # other imports here
     "@preact/signals": "https://esm.sh/*@preact/signals@1.0.3",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.0.1"
-
+  }
+}
 ```
 
 ## Creating global state
@@ -44,7 +47,7 @@ export default createAppState();
 ```
 In this case, the current todo (`currentTodo`) and a todos array (`todos`) are held in global state returned by `createAppState`. Each call to the `signal` function takes an object or primitive argument that represents the initial value of that signal.
 
-Functions that update the state are also contained in `createAppState` and made available to other modules in the return value of that function.
+Functions that update the state are also contained in `createAppState` (`addTodo` and `removeTodo`) and made available to other modules in the return value of that function (also note the TypeScript type `AppStateType` defined in [state.ts](https://github.com/cdoremus/fresh-todo-signals/blob/main/state.ts)).
 ```ts
 function createAppState(): AppStateType {
   // ... todos, current todos signals created here  as is todoCount ...
@@ -66,11 +69,12 @@ export default createAppState();
 ```
 
 We will be using the `createAppState` function to pass signals and functions to the app's components. Ths done through the Preact
-Context (similar to React Context). Application state -- including the signals previously created -- is added to the context in the root component `App` (`App.tsx`) using a context provider:
+Context (similar to React Context). Application state -- including the signals previously created -- is added to the context in the root component `App` (see [`App.tsx`](https://github.com/cdoremus/fresh-todo-signals/blob/main/islands/App.tsx)) using a context provider:
 ```ts
 import { createContext } from "preact";
 import state, { type AppStateType } from "../state.ts";
 
+// create the AppState context
 export const AppState = createContext<AppStateType>({} as AppStateType);
 
 export default function App() {
@@ -105,7 +109,7 @@ export default function TodoList() {
   );
 }
 ```
-## A Signal's value
+### A Signal's value
 The object returned from a call to `signal` in `createAppState` contains a `value` field which is the current value of the signal. In the Todo app there are signals for all todos (`todos`, an array of strings) and the current todo (`currentTodo`, a string). The value of `todos` is obtained from this expression: `todos.value`.
 
 The `value` property can also be used to set the value of a signal. There is no built-in setter like there is in local state obtained from a call to the `useState` hook. This signal value mutation is done in the `addTodo` and `removeTodo` functions. The same thing can be done outside the app state object. This is what is done in the input's `onChange` handler in `AddTodo.tsx`:
@@ -119,14 +123,14 @@ The `value` property can also be used to set the value of a signal. There is no 
 Note that the type coercion of the event target is needed because of a [bug](https://github.com/preactjs/preact/issues/1930) in the current Preact TypeScript typings.
 
 
-## Using the computed function
-The function `computed` is included in the Preact Signals module. Signals that are used within `computed` are subscribed to the signal and notified when the signal's value changes. That allows `computed` to derive values based on the value of one or more signals. When `computed` is notified of a signal value change, it automatically re-runs the function argument.eE An example is found in the `createAppState` function in `state.ts`:
+### Using the computed function
+The function `computed` is included in the Preact Signals module. Signals that are used within `computed` are subscribed to the signal and notified when the signal's value changes. That allows `computed` to derive values based on the value of one or more signals. When `computed` is notified of a signal value change, it automatically re-runs the function sent in as an argument. An example is found in the `createAppState` function in `state.ts`:
 ```ts
   const todoCount = computed(() => todos.value.length);
 ```
 When `todos.value` changes, the callback function gets re-run and the `todoCount` gets updated with the new count.
 
-## The effect function
+### The effect function
 Another function in the Signals module is `effect`. Like `useEffect`, this function is used for side effects. Like `computed`, `effect` is subscribed to any enclosing signals and notified of any change in a signals value, and when that happens, the callback function is re-run. The Todo app contains a trivial implementation:
 ```ts
   const dispose: () => void = effect(() => {
@@ -148,7 +152,7 @@ useEffect(() => {
   }, []);
   ```
 
-# Local state with Signals
+## Local state with Signals
 
 The use of local signals is illustrated with the ['Counter.tsx]() component.
 The `Counter` component counts button clicks and stores the counts in local storage so the current count can be recovered when the page is reloaded. Preact Signals is used to hold local state in this component.
@@ -178,8 +182,8 @@ The `useComputed` function is used for computing new values based on one or more
 ```
 
 
-## The effect function
-The `effect` function in the `preact/signals` module is used to handle side effects like `useEffect`. However, `effect` does not have a dependency array like `useEffect`. When a signal's value changes, the `effect` function is notified of that change. In `Counter`, the effect is used to update the count in local storage.
+### The effect function
+The `effect` function in the `signals` module is used to handle side effects like `useEffect`. However, `effect` does not have a dependency array like `useEffect`. When a signal's value changes, the `effect` function is notified of that change. In `Counter`, the effect is used to update the count in local storage.
 ```ts
   const dispose = effect(() => {
       localStorage.setItem(COUNT_KEY, count.value.toString());
@@ -209,9 +213,9 @@ effect(() => {
 ```
 The `effect` function can be used to work with both global and local state.
 
-# Other functions in the Signals module
+## Other functions in the Signals module
 
-## The batch function
+### The batch function
 The `batch` function is used to update multiple signals at a time for performance optimization. For instance, the todo array and current todo could be updated in this manner:
 ```ts
 batch(() => {
@@ -219,6 +223,9 @@ batch(() => {
   todos.value = todos.value.push(currentTodo.value)});
 ```
 
-## The peek function
+### The peek function
 The `peek` function is attached to a signal's value. It is used to get the value of a signal without subscribing to the signal.
 
+
+## Conclusion
+This post shows how to use the Preact signals module with Deno Fresh. Snippets from the post's [source code](https://github.com/cdoremus/fresh-todo-signals) have been used here, so make sure you check it out to get a complete picture of how everything fits together.
