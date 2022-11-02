@@ -207,4 +207,5 @@ const countNow = count.value.peek();
 In this case, `countNow` will not be updated if `count.value` changes after the call to `count.value.peak`.
 
 ## Conclusion
-This post shows how to use the Preact signals module with Deno Fresh. Snippets from the post's [source code Github repo](https://github.com/cdoremus/fresh-todo-signals) have been used here, so make sure you check it out to get a complete picture of how everything fits together. You should also see the [Preact Signals documentation](https://preactjs.com/guide/v10/signals) for more details on the Signals API and its use.
+This post shows how to use the Preact signals module with Deno Fresh. Snippets from the post's [source code Github repo](https://github.com/cdoremus/fresh-todo-signals) have been used here, so make sure you check it out to get a complete picture of how everything fits together. Also see how my humble Todo example app works when deployed here: [https://fresh-todo-signals.deno.dev](https://fresh-todo-signals.deno.dev).
+Finally, you should see the [Preact Signals documentation](https://preactjs.com/guide/v10/signals) for more details on the Signals API and its use.
