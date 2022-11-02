@@ -122,7 +122,7 @@ The function `computed` is included in the Preact Signals module. Signals that a
 ```ts
   const todoCount = computed(() => todos.value.length);
 ```
-When `todos.value` changes, the callback function gets re-run and the `todoCount` gets updated with the new count.
+When `todos.value` changes, the callback function gets re-run and `todoCount` gets updated with the new count.
 
 ## Local state with Signals
 
@@ -169,7 +169,7 @@ The `effect` function in the `signals` module is used to handle side effects lik
     };
   }, []);
 ```
-The `effect` function returns a function (called `dispose` in this case) that can be used to invalidate the effect and free up memory that it uses. In this case we call `dispose` in the function returned by `useEffect` which gets called when the component is unloaded.
+The `effect` function returns a function (called `dispose` in this case) that can be used to invalidate the effect and free up memory that it uses. In this case we call `dispose` in the function returned by `useEffect` which gets called when the component is unmounted.
 
 An `effect` can be nested inside another `effect`. Then you can make sure the signal only runs once like this:
 ```ts
@@ -184,6 +184,8 @@ effect(() => {
   });
 });
 ```
+In this code, the first time the outer `effect` callback is invoked, the `dispose` function is not run because it has not been assigned a value, but after the inner `effect` callback is invoked, then the outer `effect` disposes it.
+
 The `effect` function can be used to work with both global and local state.
 
 ## Other functions in the Signals module
