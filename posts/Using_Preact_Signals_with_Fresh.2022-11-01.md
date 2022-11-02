@@ -1,4 +1,4 @@
-#### 2022-10-31
+#### 2022-11-01
 
 # Using Preact Signals with Fresh
 
@@ -13,7 +13,7 @@ This post will demonstrate how to use Signals with Fresh. I created a basic Fres
 ### Setup
 
 As of Fresh version 1.1, when you [create a new fresh project](https://fresh.deno.dev/docs/getting-started/create-a-project) the signals libraries are automatically added to the import map file.
-If you are updating a Fresh project to use Signals, then add the following lines to the `imports` section in your import map:
+If you are updating a Fresh project to use Signals, add the following lines to the `imports` section in your import map:
 ```json
 {
   "imports": {
@@ -26,7 +26,7 @@ If you are updating a Fresh project to use Signals, then add the following lines
 All the Signals functions we will be using are located in the `@preact/signals` module.
 ## Creating global state
 
-The todo app encapsulates global state management inside a function called `createAppState` (in [`state.ts`](https://github.com/cdoremus/fresh-todo-signals/blob/main/state.ts)). The `signal` function is used to add a field to global state:
+The Todo app encapsulates global state management inside a function called `createAppState` (in [`state.ts`](https://github.com/cdoremus/fresh-todo-signals/blob/main/state.ts)). The `signal` function is used to add a field to global state:
 ```ts
 function createAppState(): AppStateType {
   // create signals for todo array and current todo
@@ -38,9 +38,9 @@ function createAppState(): AppStateType {
 // function return value is the default export
 export default createAppState();
 ```
-In this case, the current todo (`currentTodo`) and a todos array (`todos`) are held in global state returned by `createAppState`. Each call to the `signal` function takes an object or primitive argument that represents the initial value of that signal.
+In this case, the current todo (`currentTodo`) and a todos array (`todos`) are held in an object returned by `createAppState`. Each call to the `signal` function takes an object or primitive argument that represents the initial value of that signal.
 
-Functions that update the state are also contained in `createAppState` (`addTodo` and `removeTodo`) and made available to other modules in the return value of that function (also note the TypeScript type `AppStateType` defined in [state.ts](https://github.com/cdoremus/fresh-todo-signals/blob/main/state.ts)).
+Functions that update the signals are also contained in `createAppState` (`addTodo` and `removeTodo`) and made available to other modules in the return value of that function (also note the TypeScript type `AppStateType` defined in [state.ts](https://github.com/cdoremus/fresh-todo-signals/blob/main/state.ts)).
 ```ts
 function createAppState(): AppStateType {
   // ... todos, current todos signals created here  as is todoCount ...
@@ -103,12 +103,13 @@ export default function TodoList() {
 }
 ```
 ### A Signal's value
-The object returned from a call to `signal` in `createAppState` contains a `value` field which is the current value of the signal. In the Todo app there are signals for all todos (`todos`, an array of strings) and the current todo (`currentTodo`, a string). The value of `todos` is obtained from this expression: `todos.value`.
+The object returned from a call to `signal` always contains a `value` field which is the current value of the signal. In the Todo app there are signals for all todos (`todos`, an array of strings) and the current todo (`currentTodo`, a string). The value of `todos` is obtained from this expression: `todos.value`.
 
-The `value` property can also be used to set the value of a signal. There is no built-in setter like there is in local state obtained from a call to the `useState` hook. This signal value mutation is done in the `addTodo` and `removeTodo` functions. The same thing can be done outside the app state object. This is what is done in the input's `onChange` handler in `AddTodo.tsx`:
+The `value` property can also be used to set the value of a signal. There is no built-in setter like there is in the `useState` hook. Signal value mutation is done in the `addTodo` and `removeTodo` functions. The same thing can be done outside the app state object returned from `createAppState`. This is what is done in the input's `onChange` handler in `AddTodo.tsx`:
 ```ts
   <input
-    { /* other stuff missing here... */}
+    { /* other attrs missing here... */}
+    value={currentTodo.value}
     onChange={(e) =>
       currentTodo.value = (e.target as HTMLInputElement).value}
   />
