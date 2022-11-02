@@ -126,7 +126,7 @@ When `todos.value` changes, the callback function gets re-run and `todoCount` ge
 
 ## Local state with Signals
 
-The use of local signals is illustrated with the [Counter.tsx](https://github.com/cdoremus/fresh-todo-signals/blob/main/islands/Counter.ts) component that I've piggy-backed on to the Todo app for illustrative purposes.
+The use of local signals is illustrated with the [Counter.tsx](https://github.com/cdoremus/fresh-todo-signals/blob/main/islands/Counter.tsx) component that I've piggy-backed on to the Todo app for illustrative purposes.
 
 The `Counter` component counts button clicks and stores the counts in local storage so the current count can be recovered when the page is reloaded. Preact Signals is used to hold local state in this component.
 
