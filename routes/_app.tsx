@@ -41,9 +41,9 @@ export default function App({ Component }: AppProps) {
           content="Deno, blog, JavaScript, TypeScript"
         />
       </Head>
-      <body class="m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
+      <body class="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
         <header
-          class="flex flex-row border border-black pt-2 pr-2 ml-2 justify-between"
+          class="flex flex-row border border-black pt-2 pr-2 pl-2 justify-between"
           style="background-image:url('/img/DenoBannerWater.webp');background-repeat:no-repeat"
         >
           <div class="h-21 flex flex-row justify-center content-center md:ml-10 sm:ml-1 pb-2">
@@ -68,7 +68,7 @@ export default function App({ Component }: AppProps) {
             <MenuLink />
           </div>
         </header>
-        <main class="ml-5 mr-5 mt-2">
+        <main class="ml-0 mr-0 sm:ml-5 sm:mr-5 mt-0 sm:mt-2">
           <Component />
         </main>
         <footer

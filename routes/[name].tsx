@@ -26,11 +26,11 @@ export const handler: Handlers = {
 export default function BlogPostPage({ data }: PageProps) {
   const { blog } = data;
   return (
-    <div class="p-4">
+    <div class="pt-0 pr-3 pl-3 sm:p-4">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <hr class="mb-5" />
       <div
-        class="bg-white p-5 markdown-body"
+        class="bg-white p-1 sm:p-5 markdown-body"
         data-color-mode="light"
         data-light-theme="light"
         data-dark-theme="dark"
