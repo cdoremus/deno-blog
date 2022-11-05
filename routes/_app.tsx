@@ -86,9 +86,15 @@ export default function App({ Component }: AppProps) {
             <div>
               <a href="https://twitter.com/deno_diary">
                 <img
-                  class="w-7 h-7"
+                  class="w-7 h-7 pr-2 inline"
                   alt="Twitter logo"
                   src="/img/twitter_logo.svg"
+                />
+              </a>
+              <a href="https://fosstodon.org/@cdoremus">
+                <img class="w-7 h-7 pl-2 inline"
+                  alt="Mastodon logo"
+                  src="/img/mastodon_logo.svg"
                 />
               </a>
             </div>
