@@ -41,7 +41,7 @@ export default function App({ Component }: AppProps) {
           content="Deno, blog, JavaScript, TypeScript"
         />
       </Head>
-      <body class="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
+      <body className="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
         <header
           class="flex flex-row border border-black pt-2 pr-2 pl-2 justify-between"
           style="background-image:url('/img/DenoBannerWater.webp');background-repeat:no-repeat"
@@ -91,7 +91,7 @@ export default function App({ Component }: AppProps) {
                   src="/img/twitter_logo.svg"
                 />
               </a>
-              <a href="https://fosstodon.org/@cdoremus">
+              <a href="https://hachyderm.io/@cdoremus">
                 <img class="w-7 h-7 pl-2 inline"
                   alt="Mastodon logo"
                   src="/img/mastodon_logo.svg"

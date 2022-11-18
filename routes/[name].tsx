@@ -1,5 +1,6 @@
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
+import SyntaxHighlighter from "https://esm.sh/react-syntax-highlighter@15.5.0";
 import "https://esm.sh/prismjs@1.27.0/components/prism-typescript?no-check";
 import "https://esm.sh/prismjs@1.27.0/components/prism-shell-session.js?no-check";
 
