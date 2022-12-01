@@ -211,8 +211,3 @@ To build and dry-run the app before production deployment, invoke the `build` ta
 **Ultra** evolved dramatically between version 1 and 2 and its development continues to accelerate. When this post was published **Ultra's** current version was v2.1.3, so be aware that there might be some changes if you look at this code at a future date.
 
 At any rate, **Ultra** is a good option for creating React apps because it eliminates the build step with it's headache-inducing configurations therefore allowing you to focus on application development.
-- build options (lib/build/types.ts)
-- deployment
-  - Deno Deploy
-    - inlineServerDynamicImports build option
-  - fly.io
