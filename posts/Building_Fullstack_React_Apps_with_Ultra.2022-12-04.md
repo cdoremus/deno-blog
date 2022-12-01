@@ -7,7 +7,7 @@ using [React](https://reactjs.org). **Ultra** recently released version 2.0 that
 
 Ultra works by streaming React-generated HTML markup from the server. Version 2 of the app is designed to run under React 18+ which supports React Suspense. Suspense allows asynchronous loading of components that need to do some time-intensive work on the server such as data fetching before they are rendered. The `React.Suspense` component provides a `fallback` prop to render a loading indicator component before the suspended child component is rendered.
 
-This article will demonstrate how to use Ultra to create and deploy a React app. Source code can be found [in this Github repo](https://github.com/cdoremus/main/ultra2-demo) and the application is [deployed on Deno Deploy here](https://ultra2-demo.deno.dev).
+This article will demonstrate how to use Ultra to create and deploy a React app. Source code can be found [in this Github repo](https://github.com/cdoremus/ultra2-demo) and the application is [deployed on Deno Deploy here](https://ultra2-demo.deno.dev).
 
 ## Creating an Ultra App
 
@@ -24,7 +24,7 @@ The script will then request what libraries you would like to use with your Ultr
 
 - Styling: Tailwind (twind), Stitches or no CSS library. Static CSS is still an option as the script will create a `style.css` file.
 - Routing: React Router, Wouter or no routing are the options.
-- HTML head management: To use React Helmet or nothing. Using static wrapper HTML including a Head element is an alternative. The app will wrap the JSX returned by the `app.tsx` component with HTML including a Head element.
+- HTML head management: To use React Helmet or nothing. If nothing is chosen, HTML is added to the return value of the `App` component inside `app.tsx` with HEAD and BODY elements.
 - Data access: React Query or no data access library.
 
 Other React libraries still can be used in a an Ultra app, These libraries and other options are demonstrated in the [`examples` folder of the Ultra repo](https://github.com/exhibitionist-digital/ultra/tree/main/examples).
@@ -42,7 +42,7 @@ They include:
 
 - `client.ts`: This is the client's entry point that hydrates the app when it is rendered in the browser. The `ClientApp` function returns the home page with components and should be wrapped in context providers that are needed for the app to function.
 
-- `build.ts`: Used to build the app. Add any files you do not want to be deployed to the `builder.ignore` call in that file. Also put additional code into this file that needs to be compiled or transformed before deployment. For instance, an MDX compilation step is done in the `with-mdx` example.
+- `build.ts`: Used to build the app. Add any files you do not want to be deployed to the `builder.ignore` call in that file. Also put additional code into this file that needs to be compiled or transformed before deployment. For instance, an MDX compilation step is done in the `with-mdx` example. Also note build options detailed in the `lib/build/types.ts` file in the **Ultra** repo.
 
 - `src/app.tsx`: The app's entry point. The `create.ts` script will generate an `App` component in this file that returns example content wrapped in an HTML tag that includes HEAD and BODY elements.
 
@@ -50,11 +50,11 @@ They include:
 
 I created an app that used Tailwind, React Router and React Query. I used the create script to scaffold out the app which adds context providers for the three libraries to `server.ts` and/or `client.ts`.
 
-My app uses the [jsonplaceholder API](https://jsonplaceholder.typicode.com/) to display fake users and blog posts. You can see it in action [here](https://ultra2-demo.deno.dev).
+My app uses the [jsonplaceholder API](https://jsonplaceholder.typicode.com/) to display fake users and blog posts. You can see it in action [here](https://ultra2-demo.deno.dev). To run the app locally invoke ```deno task dev``` from the command line.
 
 ### React Router
 
-The [`React Router`](https://reactrouter.com/en/main) (v6) provider was setup in both `server.ts` and `client.ts`. Note that the `StaticRouter` is used for server-side rendering while the client file uses `BrowserRouter`.
+The [`React Router`](https://reactrouter.com/en/main) (v6) context provider was setup in both `server.ts` and `client.ts`. Note that the `StaticRouter` is used for server-side rendering while the client file uses `BrowserRouter`.
 
 The routes for both server and client are configured in `app.tsx`. Here's what that looks like:
 ```ts
@@ -100,11 +100,11 @@ See the [React Router docs](https://reactrouter.com/en/main) for more details on
 
 [`ReactQuery`](https://tanstack.com/query/v4/docs/adapters/react-query) is a data management API that is used in the app to make API calls for user data. It provides intelligent caching, prefetching, pagination features among others. Version 4 also supports React suspense for asynchronous data fetching.
 
-React Query setup in **Ultra** is somewhat complicated, so it is advised that you bring it in when running the `create.ts` project-creation script. You'll noticed that a `src/react-query` folder has been created. The `query-client.ts` file initializes a `QueryClient` class containing a `suspense: true` option for React suspense support.
+React Query setup in **Ultra** is somewhat complicated, so it is advised that you bring it in when running the `create.ts` project-creation script. You'll noticed that a `src/react-query` folder has been created. The `query-client.ts` file inside the `react-query` folder initializes a `QueryClient` class containing a `suspense: true` option for React suspense support.
 
 The `useDehydrateReactQuery.tsx` file in the `react-query` folder uses the helper hook `useServerInsertedHTML` included in the **Ultra** distribution. The `useDehydrateReactQuery` function serializes the query client's fetched data on the server side. The data is stored in a `window` property called `__REACT_QUERY_DEHYDRATED_STATE` that can be retrieved on the client. This is all done when `server.tsx` is invoked at app startup.
 
-Query data rehydration is done in `client.tsx` using the `Hydrate` component from react-query.
+Query data rehydration is done in `client.tsx` using the `Hydrate` component from React Query.
 
 ```ts
 import { Hydrate } from "@tanstack/react-query";
@@ -139,8 +139,8 @@ The `tw` tagged template is imported from the `twind` alias defined in the impor
 
 Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the `Tailwind` helper classes. Note that **Ultra** currently supports `Twind` version 0.16.17 which is compatible with `Tailwind` version 2. `Twind` 1.0 support which is compatible with `Tailwind` 3 is in the process of being upgraded in the **Ultra** repo (see issues [211](https://github.com/exhibitionist-digital/ultra/issues/211) and [216](https://github.com/exhibitionist-digital/ultra/issues/216)).
 
-### Using Suspense
-Ultra version 2 works with React v18. A big feature of this new React version is the suspense feature. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
+## Using Suspense
+**Ultra** version 2 works with React v18. A big feature of this new React version is the suspense feature. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
 
 Setting up suspense involves wrapping a component with the `Suspense` component. This is what that looks like:
 ```ts
@@ -153,14 +153,14 @@ import { Suspense } from "react";
     <UserList />
   </Suspense>
 ```
-In this case the `UserList` component is being suspended. Note the `fallback` prop that is used to define a component that will be displayed while the suspended component is being rendered. Once that is done, the suspended component will replace the fallback component.
+In this case the `UserList` component is being suspended. Note the `fallback` prop that is used to define a component that will be displayed while the suspended component is still being rendered. Once that is completed, the suspended component will replace the fallback component.
 
-A suspense component is used in an application page. When that is done, the page needs to be lazy loaded with a dynamic import:
+When a `Suspense` component is used in an application page, the page needs to be lazy loaded with a dynamic import:
 ```ts
 // app.tsx
 const HomePage = lazy(() => import("./pages/Home.tsx"));
 ```
-### Hono
+## Hono
 As noted above **Ultra** uses the [Hono](https://honojs.dev) Deno server under the covers. Hono's Deno server is based on the http server in the Deno standard library. But Hono adds value that can be used in an **Ultra app**. A big one is middleware.
 
 The `createServer` call in `server.tsx` returns a Hono server object in a variable called `server`. Middleware is added with a call to `server.get`. The first argument is a string representing an http path. The second argument is a handler function with a [`Context`](https://honojs.dev/docs/api/context/) first argument and `next` function as the second argument.
@@ -175,19 +175,19 @@ You can create an API route using Hono too. See the [with-api-routes Ultra examp
 
 Note that the Hono API supports Node and Cloudfare Workers in addition to Deno. See the [Hono Deno docs](https://honojs.dev/docs/getting-started/deno/) for more details on the Hono Deno server.
 
-### Other Libraries
+## Other Libraries
 
-There are 20+ examples in the Ultra repo in the [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with Ultra. They include (besides libs detailed above):
+There are over 20 examples in the Ultra repo's [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with Ultra. They include (besides libs detailed above):
 - [Material UI](https://mui.com/): A collection of React components.
 - [tRCP](https://trpc.io/): a library for creating type-safe APIs.
-- [mdx](https://mdxjs.com): a markdown flavor.
-- [emotion](https://emotion.sh/): A CSS-in-JS library.
+- [mdx](https://mdxjs.com): converts markdown into JSX content.
+- [emotion](https://emotion.sh/): a CSS-in-JS library.
 - [react-helmet](https://github.com/nfl/react-helmet#readme): a component to add an HTML Head element to a JSX page.
 - [with-preact](https://preactjs.com/): Preact is a lightweight React port. Note that not all React libraries work with Preact.
-- [static HTML creation](https://github.com/exhibitionist-digital/ultra/tree/main/examples/bogus-marketing-or-blog): Found in the `examples/bogus-marketing-or-blog folder`. Note the `generateStaticHTML` and `disableHydration` properties added to the `server.render` function call in `server.tsx`
+- [static HTML](https://github.com/exhibitionist-digital/ultra/tree/main/examples/bogus-marketing-or-blog): See the `examples/bogus-marketing-or-blog` folder. Note the `generateStaticHTML` and `disableHydration` properties added to the `server.render` function call in `server.tsx`
 - [island architecture](https://www.patterns.dev/posts/islands-architecture/) - this structures the app where islands of JavaScript-related reactivity are surrounded by static content (as HTML). It is how Deno Fresh works.
 
-When adapting one of these examples to your application, pay particular attention to the changes in `server.tsx`, `client.tsx` and sometimes `build.ts` that allows the example to work with **Ultra**.
+When adapting one of these examples to your application, pay particular attention to changes in `server.tsx`, `client.tsx` and sometimes `build.ts` that allows the example to work with **Ultra**.
 
 ## Deployment
 
@@ -195,44 +195,22 @@ There are two main options for deployment an **Ultra** app, using Docker to depl
 
 When using Deno Deploy, you need to set `inlineServerDynamicImports: true` as a `createBuilder` option in `build.ts` since Deploy does not support dynamic imports.
 
+You also need to make sure that all the images and other assets are wrapped in a `useAsset` hook from **Ultra** like this:
+```ts
+import useAsset from "ultra/hooks/use-asset.js";
+// other code here
+  <link rel="shortcut icon" href={useAsset("/favicon.ico")} />
+```
+The `useAsset` hook is used to version the asset during a production build.
+
 To build and dry-run the app before production deployment, invoke the `build` task locally and then run the `start` task inside the `.ultra` folder.
 
 ## Conclusion
-**Ultra** is the third most popular web framework Next to Fresh and Aleph which are both supported by the Deno team. It is the only one of the three that focusses on React.
+**Ultra** is the third most popular web framework Next to Fresh and Aleph which are both supported by the Deno team. It is the only one of the three that focusses on React and does a good job at supporting React libraries and modern practices.
 
 **Ultra** evolved dramatically between version 1 and 2 and its development continues to accelerate. When this post was published **Ultra's** current version was v2.1.3, so be aware that there might be some changes if you look at this code at a future date.
 
----
-
-# Outline
-
-## Demo App
-
-- create script
-- Using
-  - React Router
-  - React Query
-  - Tailwind (Twind)
-
-
-
-## ReactQuery use on server & client
-
-## React Helmet
-
-# Other Capabilities
-
-- middleware from Hono
-
-- examples
-  - Note changes to basic server.ts, client.ts and build.ts in each
-- api routes
-- island architecture
-- static rendering
-  - flag Omar added (see discord)
-
-## Build and Deployment
-
+At any rate, **Ultra** is a good option for creating React apps because it eliminates the build step with it's headache-inducing configurations therefore allowing you to focus on application development.
 - build options (lib/build/types.ts)
 - deployment
   - Deno Deploy
