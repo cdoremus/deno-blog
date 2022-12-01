@@ -167,6 +167,15 @@ The `createServer` call in `server.tsx` returns a Hono server object in a variab
 
 The handler function can either return a `Response` object or invoke the `next` function using an `await` since `next` returns a `Promise`. The `next` function passes the request flow onto the next `server.get` located in `server.tsx`.
 
+Here is an example of middleware that adds a header to the response called "Server" with a value of "Ultra Hono":
+
+```ts
+server.use('*', async (c, next) => {
+  c.res.headers.set("Server", "Ultra Hono");
+  await next();
+});
+```
+
 Hono provides a bunch of [built-in middleware functions](https://honojs.dev/docs/builtin-middleware/) including ones for authentication, CORS support and serving static files.
 
 Hono can also be used for server-side routing. If authentication middleware is used, then server-side routing is required.
