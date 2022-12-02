@@ -7,11 +7,11 @@ using [React](https://reactjs.org). **Ultra** recently released version 2.0 that
 
 Ultra works by streaming React-generated HTML markup from the server. Version 2 of the app is designed to run under React 18+ which supports React Suspense. Suspense allows asynchronous loading of components that need to do some time-intensive work on the server such as data fetching before they are rendered. The `React.Suspense` component provides a `fallback` prop to render a loading indicator component before the suspended child component is rendered.
 
-This article will demonstrate how to use Ultra to create and deploy a React app. Source code can be found [in this Github repo](https://github.com/cdoremus/ultra2-demo) and the application is [deployed on Deno Deploy here](https://ultra2-demo.deno.dev).
+This article will demonstrate how to use **Ultra** to create and deploy a React app. Source code can be found [in this Github repo](https://github.com/cdoremus/ultra2-demo) and the application is [deployed on Deno Deploy here](https://ultra2-demo.deno.dev).
 
 ## Creating an Ultra App
 
-The best way to create a Ultra project is to use the create CLI script
+The best way to create a **Ultra** project is to use the create CLI script
 (`create.ts`). You run it by invoking:
 
 ```ts
@@ -20,18 +20,18 @@ deno run -A -r https://deno.land/x/ultra/create.ts
 
 The script will then ask for the project name and whether you want to use TypeScript or JavaScript. The project name will become the folder name where the project exists under the folder where you ran the script, so it's best not to have any spaces in the project name.
 
-The script will then request what libraries you would like to use with your Ultra app. They are:
+The script will then request what libraries you would like to use with your **Ultra** app. They are:
 
 - Styling: Tailwind (twind), Stitches or no CSS library. Static CSS is still an option as the script will create a `style.css` file.
 - Routing: React Router, Wouter or no routing are the options.
 - HTML head management: To use React Helmet or nothing. If nothing is chosen, HTML is added to the return value of the `App` component inside `app.tsx` with HEAD and BODY elements.
 - Data access: React Query or no data access library.
 
-Other React libraries still can be used in a an Ultra app, These libraries and other options are demonstrated in the [`examples` folder of the Ultra repo](https://github.com/exhibitionist-digital/ultra/tree/main/examples).
+Other React libraries still can be used in a an **Ultra** app, These libraries and other options are demonstrated in the [`examples` folder of the Ultra repo](https://github.com/exhibitionist-digital/ultra/tree/main/examples).
 
 ### Key app files
 
-The key files in an Ultra app are found in the root app folder (except `src/app.tsx`). They include code to compile and run the app, and setup code for many libraries so it is important to know what is going on in these files.
+The key files in an **Ultra** app are found in the root app folder (except `src/app.tsx`). They include code to compile and run the app, and setup code for many libraries so it is important to know what is going on in these files.
 
 They include:
 - `importMap.json`: The HTML-standard [import map](https://html.spec.whatwg.org/multipage/webappapis.html#import-maps) that allows an alias to be used in place of a JavaScript/TypeScript url in an ECMAScript import statement.
@@ -48,9 +48,9 @@ They include:
 
 ## Demo app
 
-I created an app that used Tailwind, React Router and React Query. I used the create script to scaffold out the app which adds context providers for the three libraries to `server.ts` and/or `client.ts`.
+I created an app that used Tailwind, React Router and React Query. I employed the create script to scaffold out the app which adds context providers for React Router and React Query to `server.ts` and/or `client.ts`.
 
-My app uses the [jsonplaceholder API](https://jsonplaceholder.typicode.com/) to display fake users and blog posts. You can see it in action [here](https://ultra2-demo.deno.dev). To run the app locally invoke ```deno task dev``` from the command line.
+My app uses the [jsonplaceholder API](https://jsonplaceholder.typicode.com/) with React Query to display fake users and blog posts. You can see it in action [here](https://ultra2-demo.deno.dev). To run the app locally invoke ```deno task dev``` from the command line.
 
 ### React Router
 
@@ -98,7 +98,7 @@ See the [React Router docs](https://reactrouter.com/en/main) for more details on
 
 ### React Query
 
-[`ReactQuery`](https://tanstack.com/query/v4/docs/adapters/react-query) is a data management API that is used in the app to make API calls for user data. It provides intelligent caching, prefetching, pagination features among others. Version 4 also supports React suspense for asynchronous data fetching.
+[`ReactQuery`](https://tanstack.com/query/v4/docs/adapters/react-query) is a data management API used in the app to make API calls for user data. It provides intelligent caching, prefetching, pagination features among others. Version 4 also supports React suspense for asynchronous data fetching.
 
 React Query setup in **Ultra** is somewhat complicated, so it is advised that you bring it in when running the `create.ts` project-creation script. You'll noticed that a `src/react-query` folder has been created. The `query-client.ts` file inside the `react-query` folder initializes a `QueryClient` class containing a `suspense: true` option for React suspense support.
 
@@ -129,15 +129,15 @@ The popular [`Tailwind`](https://tailwindcss.com/) CSS class collection are supp
 
 Configuration of Tailwind involves adding the context provider `TwindProvider` to the app's entry point `App` component in `app.tsx`.
 
-Tailwind classes are expressed using the `tw` function which works as a function or a [tagged template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates). Here is an example how it is used:
+Tailwind classes are expressed using the `tw` function. Here is an example how it is used:
 ```ts
-  <h2 className={tw`text-3xl font-bold`}>
+  <h2 className={tw(`text-3xl font-bold`)}>
     About this Site
   </h2>
 ```
-The `tw` tagged template is imported from the `twind` alias defined in the import map.
+The `tw` function is imported from the `./twind/twind.ts` alias defined in the import map.
 
-Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the `Tailwind` helper classes. Note that **Ultra** currently supports `Twind` version 0.16.17 which is compatible with `Tailwind` version 2. `Twind` 1.0 support which is compatible with `Tailwind` 3 is in the process of being upgraded in the **Ultra** repo (see issues [211](https://github.com/exhibitionist-digital/ultra/issues/211) and [216](https://github.com/exhibitionist-digital/ultra/issues/216)).
+Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the `Tailwind` helper classes. Support for `Twind` 1.0 was recently added to **Ultra** which is compatible with `Tailwind` version 3. There is a [PR](https://github.com/exhibitionist-digital/ultra/pull/220) currently being reviewed to upgrade the create script to `twind` 1.0. If that is not done you should review [this comment](https://github.com/exhibitionist-digital/ultra/issues/216#issuecomment-1329890106) for instructions on how to upgrade `twind` v0.16.17 to v1.0.
 
 ## Using Suspense
 **Ultra** version 2 works with React v18. A big feature of this new React version is the suspense feature. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
@@ -186,7 +186,7 @@ Note that the Hono API supports Node and Cloudfare Workers in addition to Deno. 
 
 ## Other Libraries
 
-There are over 20 examples in the Ultra repo's [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with Ultra. They include (besides libs detailed above):
+There are over 20 examples in the **Ultra** repo's [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with Ultra. They include (besides libs detailed above):
 - [Material UI](https://mui.com/): A collection of React components.
 - [tRCP](https://trpc.io/): a library for creating type-safe APIs.
 - [mdx](https://mdxjs.com): converts markdown into JSX content.
