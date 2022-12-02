@@ -137,7 +137,7 @@ Tailwind classes are expressed using the `tw` function. Here is an example how i
 ```
 The `tw` function is imported from the `./twind/twind.ts` alias defined in the import map.
 
-Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the `Tailwind` helper classes. Support for `Twind` 1.0 was recently added to **Ultra** which is compatible with `Tailwind` version 3. There is a [PR](https://github.com/exhibitionist-digital/ultra/pull/220) currently being reviewed to upgrade the create script to `twind` 1.0. If that is not done you should review [this comment](https://github.com/exhibitionist-digital/ultra/issues/216#issuecomment-1329890106) for instructions on how to upgrade `twind` v0.16.17 to v1.0.
+Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the `Tailwind` classes. Support for `Twind` 1.0 was recently added to **Ultra** which is compatible with `Tailwind` version 3.
 
 ## Using Suspense
 **Ultra** version 2 works with React v18. A big feature of this new React version is the suspense feature. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
