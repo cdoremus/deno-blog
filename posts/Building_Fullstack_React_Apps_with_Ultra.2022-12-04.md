@@ -5,7 +5,7 @@
 [**Ultra**](https://ultrajs.dev) is a full stack framework for building Deno webapps
 using [React](https://reactjs.org). **Ultra** recently released version 2.0 that is more customizable than v1.
 
-Ultra works by streaming React-generated HTML markup from the server. Version 2 of the app is designed to run under React 18+ which supports React Suspense. Suspense allows asynchronous loading of components that need to do some time-intensive work on the server -- such as data fetching -- before they are rendered. The `React.Suspense` component provides a `fallback` prop to display a loading indicator component before the suspended child component is rendered.
+**Ultra** works by streaming React-generated HTML markup from the server. Version 2 of the app is designed to run under React 18+ which supports React Suspense. Suspense allows asynchronous loading of components that need to do some time-intensive work on the server -- such as data fetching -- before they are rendered. The `React.Suspense` component provides a `fallback` prop to display a loading indicator component before the suspended child component is rendered.
 
 This article will demonstrate how to use **Ultra** to create and deploy a React app. Source code can be found [in this Github repo](https://github.com/cdoremus/ultra2-demo) and the application is [deployed on Deno Deploy here](https://ultra2-demo.deno.dev).
 
@@ -73,7 +73,7 @@ The routes for both server and client are configured in `app.tsx`. Here's what t
 ```
 Each of the routes point to a page component that wraps the page's content. The `Layout` component defines a Layout Route which forms a shell around other components containing the app's header and footer. Routes defined inside the Layout Route hold the content (`HomePage`, `AboutPage`, `UserDetailsPage` and `RouteNotFound` page in this case).
 
-The `Layout` component uses an `Outlet` component to defined where the child components go as the `children` prop did previously. This is what that component would return (styling removed):
+The `Layout` component uses an `Outlet` component to defined where the child components go as the `children` prop did previously. This is what that component's return value looks like (styling removed):
 ```ts
   <>
     <header>
@@ -106,7 +106,7 @@ See the [React Router docs](https://reactrouter.com/en/main) for more details on
 
 React Query setup in **Ultra** is somewhat complicated, so it is advised that you bring it in when running the `create.ts` project-creation script. You'll noticed that a `src/react-query` folder has been created. The `query-client.ts` file inside that folder initializes a `QueryClient` class containing a `suspense: true` option for React suspense support.
 
-The `useDehydrateReactQuery.tsx` file in the `react-query` folder uses the helper hook `useServerInsertedHTML` included in the **Ultra** distribution. The `useDehydrateReactQuery` function serializes the query client's fetched data on the server side and storing it in a `window` property called `__REACT_QUERY_DEHYDRATED_STATE`. This is all done when `server.tsx` is invoked at app startup.
+The `useDehydrateReactQuery.tsx` file in the `react-query` folder uses the helper hook `useServerInsertedHTML` included in the **Ultra** distribution. The `useDehydrateReactQuery` function serializes the query client's fetched data on the server side storing it in a `window` property called `__REACT_QUERY_DEHYDRATED_STATE`. This is all done when `server.tsx` is invoked at app startup.
 
 Query data rehydration is done in `client.tsx` using the `Hydrate` component from React Query.
 
@@ -144,7 +144,7 @@ import { tw } from "./twind/twind.ts";
 Check the [Tailwind docs](https://v2.tailwindcss.com/docs) for details on the available `Tailwind` classes. Support for `Twind` 1.0 was recently added to **Ultra** which is compatible with `Tailwind` version 3.
 
 ## Using Suspense
-**Ultra** version 2 works with React v18. A big feature of this new React version is the suspense. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
+**Ultra** version 2 works with React v18. A big feature of this new React version is suspense. React suspense allows a component to be asynchronously rendered. This means that part of the UI can be displayed while suspended components are still being rendered.
 
 Setting up suspense involves wrapping a component with the `Suspense` component. This is what that looks like:
 ```ts
@@ -190,7 +190,7 @@ Note that the Hono API supports Node and Cloudfare Workers in addition to Deno. 
 
 ## Other Libraries
 
-There are over 20 examples in the **Ultra** repo's [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with Ultra. They include (besides libs detailed above):
+There are over 20 examples in the **Ultra** repo's [examples folder](https://github.com/exhibitionist-digital/ultra/tree/main/examples). Most of them show how to use React libraries with **Ultra**. They include (besides libs detailed above):
 - [Material UI](https://mui.com/): A collection of React components.
 - [tRCP](https://trpc.io/): a library for creating type-safe APIs.
 - [mdx](https://mdxjs.com): converts markdown into JSX content.
