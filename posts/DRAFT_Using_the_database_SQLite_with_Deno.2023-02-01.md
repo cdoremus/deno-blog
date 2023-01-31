@@ -1,18 +1,16 @@
 # Using the database SQLite with Deno
 
-[SQLite](https://www.sqlite.org/index.html) is a lightweight database available on most platforms. This post will discuss how to use SQLite with Deno.
+[SQLite](https://www.sqlite.org/index.html) is a lightweight database available on most platforms. They are designed to exist in memory or persist to a local file system. The memory-resident database can also be persisted to a file. This post will discuss how to interact with a SQLite database with Deno.
 
-There are two Deno-native[[1](#1-deno-native)] third-party libraries that are SQLite clients (aka drivers). Both of them work with SQLite version 3, the current version.
+At this point Deno-native[[1](#1-deno-native)] libraries are the only Deno SQLite client options since the [npm sqlite3 client does not work when run in Deno using the `npm:` prefix import URL](https://github.com/denoland/deno/issues/15611) because [postinstall scripts are not supported by Deno yet when importing with the `npm:` prefix](https://github.com/denoland/deno/issues/16164) (it is on the roadmap).
 
-At this point the two Deno-native libraries are the only Deno client options [npm sqlite3 client does not work when run in Deno using the `npm:` prefix import URL](https://github.com/denoland/deno/issues/15611) because [postinstall scripts are not supported by Deno yet when importing with the `npm:` prefix](https://github.com/denoland/deno/issues/16164) (it is on the roadmap, though).
-
-The two Deno-native SQLite client libraries have somewhat different APIs.
+There are two Deno-native third-party libraries that are SQLite clients (aka drivers). Both of them work with SQLite version 3, the current version. They are [`deno-sqlite`](https://deno.land/x/sqlite) and [`sqlite3`](https://deno.land/x/sqlite3). While they both can be used to interact with SQLite, the two Deno-native client libraries have somewhat different APIs.
 
 ## deno-sqlite
 
-The `deno-sqlite` third-party library contains a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine.
+The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine.
 
-The `deno-sqlite` library is registered as `sqlite` in the Deno third-party modules registry. It's import URL is [http://deno.land/x/sqlite](http://deno.land/x/sqlite). While there is a small example in the `README.md`, full documentation is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function documentation. This documentation is generated from the jsdoc source-code comments for each public function and class.
+The `deno-sqlite` library is registered as `sqlite` in the Deno third-party modules registry. It's import URL is [http://deno.land/x/sqlite](http://deno.land/x/sqlite). While there is a small example in the `README.md` file, full documentation is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function documentation. This documentation is generated from the jsdoc source-code comments for each public function and class.
 
 The `deno-sqlite` API revolves around the `DB` class. It provides the API methods to create tables, insert, update and delete data and run queries using `SELECT`. Here is an example:
 
@@ -21,12 +19,12 @@ import { DB } from "https://deno.land/x/sqlite/mod.ts";
 
 // Open a database
 const db = new DB("test.db");
-db.execute(`
+db.execute("
   CREATE TABLE IF NOT EXISTS people (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT
   )
-`);
+");
 
 // Insert data
 for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
@@ -40,6 +38,12 @@ for (const [name] of db.query("SELECT name FROM people")) {
 
 // Close connection
 db.close();
+```
+
+The `query` function is designed for a single use query. Multiple use queries need to use the `prepareQuery` method. Like `query`, `prepareQuery` takes the SQL string as the first argument, but it also provides additional optional arguments that are the parameters of a dynamic query.
+
+```typescript
+
 
 ```
 
