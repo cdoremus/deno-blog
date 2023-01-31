@@ -10,7 +10,7 @@ There are two Deno-native third-party libraries that are SQLite clients (aka dri
 
 The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine.
 
-The `deno-sqlite` library is registered as `sqlite` in the Deno third-party modules registry. It's import URL is [http://deno.land/x/sqlite](http://deno.land/x/sqlite). While there is a small example in the `README.md` file, full documentation is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function documentation. This documentation is generated from the jsdoc source-code comments for each public function and class.
+The `deno-sqlite` library is registered as `sqlite` in the Deno third-party modules registry so its ESM import URL is [http://deno.land/x/sqlite](http://deno.land/x/sqlite). While there is a small example in the `README.md` file, full documentation is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
 
 The `deno-sqlite` API revolves around the `DB` class. It provides the API methods to create tables, insert, update and delete data and run queries using `SELECT`. Here is an example:
 
@@ -43,8 +43,29 @@ db.close();
 The `query` function is designed for a single use query. Multiple use queries need to use the `prepareQuery` method. Like `query`, `prepareQuery` takes the SQL string as the first argument, but it also provides additional optional arguments that are the parameters of a dynamic query.
 
 ```typescript
+import { DB } from "https://deno.land/x/sqlite/mod.ts";
 
+// Open a database
+const db = new DB("test.db");
+db.execute("
+  CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT
+  )
+");
 
+// Insert data
+for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
+  db.query("INSERT INTO people (name) VALUES (?)", [name]);
+}
+
+// TODO; Make this reuseable
+const row = db.prepareQuery("select * from people where name={name}", "Clark Kent"); 
+console.log("Row selected: ", "Clark Kent");
+
+// reuse query
+
+db.close();
 ```
 
 There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but that was closed in December of that year due to lack of consensus by the Deno team.
