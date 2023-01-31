@@ -68,9 +68,20 @@ SQLite was originally designed to be a lightweight local or single-server databa
 
 But that does not work in modern web applications that run on a distributed system like Deno Deploy.
 
+This article is not designed as a tutorial on setting up the SQLite database engine, but I will point out various options for use
 ### Litestream https://litestream.io/ (https://fly.io/blog/all-in-on-sqlite-litestream/)
 
 ???? Do these work with regular SQLite clients like those above ?????
+
+#### LiteFS https://fly.io/blog/introducing-litefs/
+
+- Getting started: https://fly.io/docs/litefs/getting-started/
+
+- Migrate from Postgresql: https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs?ck_subscriber_id=363851230
+
+
+## mvSQLite https://su3.io/posts/mvsqlite
+- see also https://su3.io/posts/mvsqlite
 
 ### RQLite https://github.com/rqlite/rqlite
 - Needs its own proprietary client
@@ -81,7 +92,7 @@ But that does not work in modern web applications that run on a distributed syst
 
 
 ## Conclusion
-
+Check out the [SQLite Tutorial](https://www.sqlitetutorial.net/) to learn more about SQLite.
 ## Notes
 ##### 1. Deno-native
 Deno-native is used here to indicate that the module is a Deno third-party library compatible with Deno and not an npm module requiring the use of the `npm:` prefix in the import URL.
