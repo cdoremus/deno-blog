@@ -12,12 +12,14 @@ The `deno-sqlite` third-party library contains both a SQLite client and a SQLite
 
 The `deno-sqlite` library is registered as `sqlite` in the Deno third-party modules registry so its ESM import URL is [http://deno.land/x/sqlite](http://deno.land/x/sqlite). While there is a small example in the `README.md` file, full documentation is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
 
-The `deno-sqlite` API revolves around the `DB` class. It provides the API methods to create tables, insert, update and delete data and run queries using `SELECT`. Here is an example:
+The `deno-sqlite` API revolves around the `DB` class. It provides the API methods to create tables, insert, update and delete data and run queries. The `DB` class constructor takes an optional argument string that is the path to the file holding the database. If no argument is given, then the database is held in memory which means that the data is lost when the application is shutdown.
+
+Here is basic example how to use `deno-sqlite` to do CRUD operations:
 
 ```javascript
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 
-// Open a database
+// Open a database to be persisted in the test.db file
 const db = new DB("test.db");
 db.execute("
   CREATE TABLE IF NOT EXISTS people (
@@ -26,21 +28,21 @@ db.execute("
   )
 ");
 
-// Insert data
+// Insert data in the database
 for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
   db.query("INSERT INTO people (name) VALUES (?)", [name]);
 }
 
-// Print out the inserted data
+// Retrieve and print out the inserted data
 for (const [name] of db.query("SELECT name FROM people")) {
   console.log(name);
 }
 
-// Close connection
+// Close DB to prevent memory leaks
 db.close();
 ```
 
-The `query` function is designed for a single use query. Multiple use queries need to use the `prepareQuery` method. Like `query`, `prepareQuery` takes the SQL string as the first argument, but it also provides additional optional arguments that are the parameters of a dynamic query.
+The `query` method of the `DB` class is designed for a single use query. The `prepareQuery` method is used for parameterized queries that can be reused with different parameters. Here is an example how it is used:
 
 ```typescript
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
@@ -59,14 +61,35 @@ for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
   db.query("INSERT INTO people (name) VALUES (?)", [name]);
 }
 
-// TODO; Make this reuseable
-const row = db.prepareQuery("select * from people where name={name}", "Clark Kent"); 
-console.log("Row selected: ", "Clark Kent");
+// create prepared query
+const query = db.prepareQuery<[number, string], { id: number, name: string }>("select * from people where id=:id");
 
-// reuse query
+// Set the query parameter
+let row = query.all({"id": 1})
+console.log("Row for id=1: ", row);
+// OUTPUT: Row for id=1: [ [ 1, "Peter Parker" ] ]
+
+// reuse query with different parameter
+row = query.all({"id": 3})
+console.log("Row for id=3: ", row);
+// OUTPUT: Row for id=3: [ [ 3, "Bruce Wayne" ] ]
+
+// Needs to be called when using prepareQuery
+query.finalize();
 
 db.close();
 ```
+
+
+In this example, `preparedQuery` returned the `query` object as a `PreparedQuery` interface type. There are three ways to bind parameters and get results from a Prepared query:
+
+- The `all` method binds the data and returns a result set in an array.
+
+- The `iter` method binds the parameters to the query and returns an iterator over rows. Use this if there multiple rows in a result set because it avoids loading all returned rows into memory at once which allows a large number of rows to be processed.
+
+- The `first` method returns the first item of a result set returned by the query.
+
+Parameterized queries created using `prepareQuery` is also a way to prevent SQL injection which is a possibility when just using the `query` method. Using the generic TypeScript type with `prepareQuery` further guards against SQL injection by being able to define the parameter data types corresponding to the database columns.
 
 There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but that was closed in December of that year due to lack of consensus by the Deno team.
 
