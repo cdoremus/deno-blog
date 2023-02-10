@@ -42,6 +42,8 @@ for (const [name] of db.query("SELECT name FROM people")) {
 db.close();
 ```
 
+the `execute` method can be used to
+
 The `query` method of the `DB` class is designed for a single use query. The `prepareQuery` method is used for parameterized queries that can be reused with different parameters. Here is an example how it is used:
 
 ```typescript
@@ -80,6 +82,11 @@ query.finalize();
 db.close();
 ```
 
+When using `prepareQuery`, you need to call `finalize` on the object returned from that method or the following error will be thrown:
+```sh
+ Uncaught SqliteError: unable to close due to unfinalized statements or unfinished backups
+      throw new SqliteError(this.#wasm);
+```
 
 In this example, `preparedQuery` returned the `query` object as a `PreparedQuery` interface type. There are three ways to bind parameters and get results from a Prepared query:
 
