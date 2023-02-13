@@ -4,9 +4,116 @@
 
 At this point Deno-native[[1](#1-deno-native)] libraries are the only Deno SQLite client options since the [npm sqlite3 client does not work when run in Deno using the `npm:` prefix import URL](https://github.com/denoland/deno/issues/15611) because [postinstall scripts are not supported by Deno yet when importing with the `npm:` prefix](https://github.com/denoland/deno/issues/16164) (it is on the roadmap).
 
-There are two Deno-native third-party libraries that are SQLite clients (aka drivers). Both of them work with SQLite version 3, the current version. They are [`deno-sqlite`](https://deno.land/x/sqlite) and [`sqlite3`](https://deno.land/x/sqlite3). While they both can be used to interact with SQLite, the two Deno-native client libraries have somewhat different APIs.
+There are two Deno-native third-party libraries that are SQLite clients (aka drivers). Both of them work with SQLite version 3, the current version. They are [`deno-sqlite`](https://deno.land/x/sqlite) and [`sqlite3`](https://deno.land/x/sqlite3).
 
-## deno-sqlite
+The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine.
+
+The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) for XXXXXXXXXXXXXXXXXXX.
+
+While they can both be used to interact with SQLite, the two Deno-native client libraries have similar APIs that differ in many ways. This post will explore how to do CRUD operations with each library using code snippets. There is a [corresponding repo folder](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) that contains full working examples.
+
+## Creating a database insert data into a table
+
+#### deno-sqlite
+```javascript
+import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
+
+  // Open a database to be held in memory
+  const db = new DB(); // or new DB(:memory:);
+  // Open a database to be persisted in the test.db file
+  // const db = new DB("test.db");
+
+  // Insert data into the table
+  for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
+    db.query("INSERT INTO people (name) VALUES (?)", [name]);
+  }
+
+  // Todo: CRUD operations here...
+
+  // Close database to clean up resources
+  db.close()
+```
+
+
+#### sqlite3
+```typescript
+import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
+
+  const db = new Database(":memory:"); // or a file name/path
+  db.exec(
+    `
+  CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT
+  )
+`,
+  );
+  // insert data
+  for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
+    db.exec("INSERT INTO people (name) VALUES (?)", [name]);
+  }
+
+  // Todo: CRUD operations...
+
+  db.close();
+```
+## Running queries
+#### deno-sqlite
+The `deno-sqlite` lib has two ways of running a query. The first uses the `DB.query` method.
+```typescript
+// Todo: create a table and fill with data as above.
+  const results = db.query<[number, string]>(
+    "SELECT id, name FROM people",
+  );
+
+  for (const [id, name] of results) {
+    console.log(`${id}: ${name}`);
+  }
+```
+The second way of running a query in `deno-sqlite` is with a prepared statement which uses the `DB.prepareQuery` method which returns an object that conforms to the `PreparedStatement` interface.
+```typescript
+  const query = db.prepareQuery<[number, string]>(
+    "SELECT id, name FROM people",
+  );
+
+  for (const [id, name] of query.iter()) {
+    console.log(`${id}: ${name}`);
+  }
+
+  query.finalize();
+```
+You need to run the `finalize` method on the `PreparedStatement` or you will get an error message:
+```sh
+Uncaught SqliteError: unable to close due to unfinalized statements or unfinished backups
+      throw new SqliteError(this.#wasm);
+```
+While you can dynamically create a SQL string and run a query on the resulting string, that is very dangerous as it can lead to a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries.
+#### sqlite3
+
+The `sqlite3` library only uses prepared statement to do queries. A `Statement` object is returned from the call to `Database.prepare`.
+```typescript
+// Todo: create a table and fill with data as above.
+
+  // Create a prepared statement
+  const stmt = db.prepare("SELECT id, name FROM people where id=:id");
+  // Bind the parameter to the statement
+  const row = stmt.bind({ id: 1 });
+  console.log(`Row for id 1: `, row.get(1));
+  stmt.finalize(); // not required, otherwise finalization is automatic
+```
+The `Statement.bind` method is one of may ways to bind parameters to prepared statements. Other `Statement` methods used to bind data are
+- `all`
+- `values`
+- `run`
+
+These binding functions are [documented here](https://github.com/denodrivers/sqlite3/blob/main/doc.md#binding-parameters).
+## Updating data
+#### deno-sqlite
+#### sqlite3
+
+## Deleting data
+#### deno-sqlite
+#### sqlite3
 
 The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine.
 
@@ -17,10 +124,13 @@ The `deno-sqlite` API revolves around the `DB` class. It provides the API method
 Here is basic example how to use `deno-sqlite` to do CRUD operations:
 
 ```javascript
-import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
 // Open a database to be persisted in the test.db file
 const db = new DB("test.db");
+// Open a database to be held in memory
+const db = new DB("test.db");
+
 db.execute("
   CREATE TABLE IF NOT EXISTS people (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
