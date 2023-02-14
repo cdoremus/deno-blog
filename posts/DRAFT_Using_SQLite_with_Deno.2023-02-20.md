@@ -8,17 +8,17 @@ There are two Deno-native third-party libraries that are SQLite clients (aka dri
 
 The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine. This library is named `sqlite` in the Deno third-party module registry while the Github repository is called `deno-sqlite`
 
-There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but that was closed in December of that year due to lack of consensus by the Deno team.
+There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but it was closed in December of that year due to lack of consensus by the Deno team.
 
 
-The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) to allow access to native file reading and writing functionality rather than going through a JavaScript wrapper around native access used by `deno-sqlite`.
+The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) to allow access to native file reading and writing functionality rather than going through a JavaScript wrapper around native I/O access used by `deno-sqlite`.
 
-While they can both be used to interact with SQLite, the two Deno-native client libraries have similar APIs that differ in many ways. This post will explore how to do CRUD operations with each library using code snippets. There is a [corresponding repo folder](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) that contains full working examples.
+While they can both be used to interact with SQLite, the two Deno-native client libraries have similar APIs that differ in subtile ways. This post will explore how to do CRUD operations with each library using code snippets. There is a [corresponding repo folder](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) that contains full working examples.
 
-## Creating a database insert data into a table
+## Creating a database and insert data into a table
 
 #### deno-sqlite
-Persistence using `deno-sqlite` revolves around the `DB` class. The constructor can be used to point to a file-based database or one held in memory using the default constructor (or the ":memory:" token as a constructor argument).
+Persistence using `deno-sqlite` revolves around the `DB` class. The constructor can be used to point to a file-based database or one held in memory using the default constructor (or the `":memory:"` token as a constructor argument).
 ```javascript
 import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
@@ -64,7 +64,7 @@ import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
   db.close();
 ```
 ## Running queries
-#### deno-sqlite
+#### Querying using deno-sqlite
 The `deno-sqlite` lib has two ways of running a query. The first uses the `DB.query` method.
 ```typescript
 // Todo: create a table and fill with data as above.
@@ -78,6 +78,7 @@ The `deno-sqlite` lib has two ways of running a query. The first uses the `DB.qu
 ```
 The second way of running a query in `deno-sqlite` is with a prepared statement which uses the `DB.prepareQuery` method which returns an object that conforms to the `PreparedStatement` interface.
 ```typescript
+  // Todo: create a table and fill with data as above.
   const query = db.prepareQuery<[number, string]>(
     "SELECT id, name FROM people",
   );
@@ -90,9 +91,9 @@ The second way of running a query in `deno-sqlite` is with a prepared statement 
 ```
 In this example, `preparedQuery` returned the `query` object as a `PreparedQuery` interface type. There are three ways to bind parameters and get results from a Prepared query:
 
-- The `all` method binds the data and returns a result set in an array.
-
 - The `iter` method binds the parameters to the query and returns an iterator over rows. Use this if there multiple rows in a result set because it avoids loading all returned rows into memory at once which allows a large number of rows to be processed.
+
+- The `all` method binds the data and returns a result set in an array.
 
 - The `first` method returns the first item of a result set returned by the query.
 
@@ -103,7 +104,7 @@ Uncaught SqliteError: unable to close due to unfinalized statements or unfinishe
       throw new SqliteError(this.#wasm);
 ```
 While you can dynamically create a SQL string and run a query on the resulting string, that is very dangerous as it can lead to a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries.
-#### sqlite3
+#### Querying using sqlite3
 
 The `sqlite3` library only uses prepared statement to do queries. A `Statement` object is returned from the call to `Database.prepare`.
 ```typescript
@@ -121,11 +122,11 @@ The `Statement.bind` method is one of may ways to bind parameters to prepared st
 - `values` - Run the query and return the resulting rows where rows are array of columns.
 - `run` - Run the query with it returning the number of rows in the result set. To get the resulting rows, you must then call `Statement.get()` with the row number (starting with 1) to get the rows of data.
 
-<!-- These binding functions are [documented here](https://github.com/denodrivers/sqlite3/blob/main/doc.md#binding-parameters). -->
 ## Updating data
 Updating data with both SQLite libraries uses prepared statements as used in querying.
-#### deno-sqlite
+#### Updating using deno-sqlite
 ```typescript
+  // Todo: create a table and fill with data as above.
   const id = 1;
     const newName = "Wade Winston Wilson";
     const query = db.prepareQuery<[number, string], { name: string; id: number }>(
@@ -133,39 +134,44 @@ Updating data with both SQLite libraries uses prepared statements as used in que
     );
     query.all([newName, 1]);
     query.finalize();
+  // Todo: Verify that data has been updated
 ```
 A `PreparedStatement` object needs to be finalized when the update has been completed or a `SqliteError` will be thrown as is done with querying.
-#### sqlite3
+#### Updating using sqlite3
 ```typescript
+  // Todo: create a table and fill with data as above.
   const id = 1;
   const newName = "Wade Winston Wilson";
   const stmt = db.prepare(`UPDATE people set name=? where id=?`);
   stmt.run(newName, id);
+  // Todo: Verify that data has been updated
 ```
 ## Deleting data
 Like updating, data deletion using both SQLite libraries follows the same pattern as querying.
-#### deno-sqlite
+#### Deleting using deno-sqlite
 ```typescript
+  // Todo: create a table and fill with data as above.
   const id = 1;
   const query = db.prepareQuery<[number, string], { name: string; id: number }>(
     `DELETE from people where id=:id`,
   );
   query.all([1]);
   query.finalize();
+  // Todo: Verify that data has been deleted
 ```
-#### sqlite3
+#### Deleting using sqlite3
 ```typescript
+  // Todo: create a table and fill with data as above.
   const id = 1;
   const stmt = db.prepare(`DELETE from people where id=?`);
   stmt.run(id);
   console.log(`Deleted record for id ${id}`);
   stmt.finalize();
+  // Todo: Verify that data has been deleted
 ```
+Note that a query containing no results returns an empty array with `deno-sqlite`  while the `sqlite3` lib returns undefined.
 
-
-
-
-## The SQLite back end
+## A SQLite back end
 
 SQLite was originally designed to be a lightweight local or single-server database with data stored in a single file. As a consequence of that fact many web developers used it to do local development or to run integration and end-to-end tests.
 
