@@ -171,43 +171,39 @@ Like updating, data deletion using both SQLite libraries follows the same patter
 ```
 Note that a query containing no results returns an empty array with `deno-sqlite`  while the `sqlite3` lib returns undefined.
 
-## A SQLite back end
+## Distributed SQLite
 
 SQLite was originally designed to be a lightweight local or single-server database with data stored in a single file. As a consequence of that fact many web developers used it to do local development or to run integration and end-to-end tests.
 
-But that does not work in modern web applications that run on a distributed system like Deno Deploy.
+But that does not work in modern web applications that run on a distributed system like Deno Deploy. There are a few distributed SQLite options that I will point out here.
 
-This article is not designed as a tutorial on setting up the SQLite database engine, but I will point out various options for use
-### Litestream https://litestream.io/ (https://fly.io/blog/all-in-on-sqlite-litestream/)
+### LiteFS
 
-???? Do these work with regular SQLite clients like those above ?????
+[LiteFS](https://fly.io/blog/introducing-litefs/) is a new distributed SQLite service offered by fly.io. Under the covers it uses [Litestream](https://litestream.io/) a replicable SQLite server implementation.
 
-#### LiteFS https://fly.io/blog/introducing-litefs/
-
-- Getting started: https://fly.io/docs/litefs/getting-started/
-
-- Migrate from Postgresql: https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs?ck_subscriber_id=363851230
+A good example showing the power of LiteFS is this [article on database migration from Postgresql to SQLite](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs).
 
 
-## mvSQLite https://su3.io/posts/mvsqlite
-- see also https://su3.io/posts/mvsqlite
+### Other Deployable SQLite Edge Servers
+Besides Litestream, here are some other SQLite implementations designed to be used in a distributed system.
 
-### RQLite https://github.com/rqlite/rqlite
-- Needs its own proprietary client
+#### [RQLite](https://rqlite.io/)
+- Quick start: https://rqlite.io/docs/quick-start/
 
-### Canonical DqLite https://dqlite.io/
+#### [Canonical DqLite](https://dqlite.io/)
+- Documentation: https://dqlite.io/docs
 
-### LiteFS https://fly.io/blog/introducing-litefs/
-
+#### [mvSQLite](https://github.com/losfair/mvsqlite)
+- Documentation: https://github.com/losfair/mvsqlite/wiki/
 
 ## Conclusion
-Check out the [SQLite Tutorial](https://www.sqlitetutorial.net/) to learn more about SQLite.
+If you decide to use SQLite as your database it's a good idea to first check out the [SQLite Tutorial](https://www.sqlitetutorial.net/).
 
-Documentation for `deno-sqlite` is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
+Documentation for the `deno-sqlite` lib is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
 
 Documentation for the `sqlite3` library is more centralized in the repo's [`doc.md`](https://github.com/denodrivers/sqlite3/blob/main/doc.md) file.
 
-Finally, make sure you check out the [companion Github Repository](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) to this article to see working examples of all the CRUD operations for both libraries shown in this post.
+Finally, make sure you check out the [companion Github Repository](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) to this article to see working examples of all the CRUD operations for both libraries discussed here.
 
 ## Notes
 ##### 1. Deno-native
