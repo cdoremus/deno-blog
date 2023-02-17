@@ -1,6 +1,8 @@
+#### 2023-02-24
+
 # Using the database SQLite with Deno
 
-[SQLite](https://www.sqlite.org/index.html) is a lightweight database available on most platforms. They are designed to exist in memory or persist to a local file system. The memory-resident database can also be persisted to a file. This post will discuss how to interact with a SQLite database with Deno.
+[SQLite](https://www.sqlite.org/index.html) is a lightweight database available on most platforms. It is designed to exist in memory or persist to a local file system. This post will discuss how to interact with a SQLite database in Deno.
 
 At this point Deno-native[[1](#1-deno-native)] libraries are the only Deno SQLite client options since the [npm sqlite3 client does not work when run in Deno using the `npm:` prefix import URL](https://github.com/denoland/deno/issues/15611) because [postinstall scripts are not supported by Deno yet when importing with the `npm:` prefix](https://github.com/denoland/deno/issues/16164) (it is on the roadmap).
 
@@ -8,13 +10,11 @@ There are two Deno-native third-party libraries that are SQLite clients (aka dri
 
 The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine. This library is named `sqlite` in the Deno third-party module registry while the Github repository is called `deno-sqlite` which is the name I will use in this post.
 
-There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but it was closed in December of that year due to lack of consensus by the Deno team.
+The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) to allow access to native file reading and writing functionality rather than going through a JavaScript wrapper around native I/O access built into Deno.
 
-The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) to allow access to native file reading and writing functionality rather than going through a JavaScript wrapper around native I/O access used by `deno-sqlite`.
+This post will explore how to do CRUD operations with each library using code snippets. There is a [corresponding repo folder](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) that contains full working examples.
 
-While they can both be used to interact with SQLite, the two Deno-native client libraries have similar APIs that differ in subtile ways. This post will explore how to do CRUD operations with each library using code snippets. There is a [corresponding repo folder](https://github.com/cdoremus/deno-blog-code/tree/main/sqlite) that contains full working examples.
-
-## Creating a database and insert data into a table
+## Creating a database and inserting data
 
 #### Database creation and insertion with deno-sqlite
 Persistence using `deno-sqlite` revolves around the `DB` class. The constructor can be used to point to a file-based database or one held in memory using the default constructor (or the `":memory:"` token as a constructor argument).
@@ -22,9 +22,12 @@ Persistence using `deno-sqlite` revolves around the `DB` class. The constructor 
 import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
 
   // Open a database to be held in memory
-  const db = new DB(); // or new DB(:memory:);
-  // Open a database to be persisted in the test.db file
-  // const db = new DB("test.db");
+  const db = new DB(":memory:"); // or new DB("file.db");
+  db.execute(`
+  CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT
+  )`);
 
   // Insert data within a transaction
   db.transaction(() => {
@@ -33,12 +36,12 @@ import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
     }
   });
 
-  // Todo: CRUD operations here...
+  // Todo: Other CRUD operations here...
 
   // Close database to clean up resources
   db.close()
 ```
-The `DB.transaction` method is used for transactional control. If the function argument throws an error, the transaction is rolled back; otherwise it is committed. This `transaction` method can also be run on updates and deletes.
+The `DB.transaction` method is used for transactional control. If the function argument throws an error, the transaction is rolled back; otherwise it is committed. This `transaction` method can also be used for updates and deletes.
 
 #### Database creation and insertion with sqlite3
 
@@ -47,14 +50,11 @@ The `sqlite3` library uses a `Database` class to initiate persistence. It's cons
 import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
 
   const db = new Database(":memory:"); // or a file name/path
-  db.exec(
-    `
+  db.exec(`
   CREATE TABLE IF NOT EXISTS people (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT
-  )
-`,
-  );
+  )`);
   // insert data in a transaction
   const inserts = db.transaction((data: string[]) => {
     for (const name of data) {
@@ -63,6 +63,9 @@ import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
   });
   inserts(["Peter Parker", "Clark Kent", "Bruce Wayne"]);
 
+  // Todo: Other CRUD operations here...
+
+  // Close database to clean up resources
   db.close();
 ```
 The `Database.transaction` method is used to modify SQLite data in a transactional context. Unlike `deno-sqlite`, the `transaction` method returns a function that needs to be called with the SQL operation's data in order to run the transaction. But like `deno-sqlite`, the `sqlite3` transaction behavior depends on whether an error is thrown in the function (rollback) or it cleanly returns (commit).
@@ -83,6 +86,7 @@ The `deno-sqlite` lib has two ways of running a query. The first uses the `DB.qu
 The second way of running a query in `deno-sqlite` is with a prepared statement which uses the `DB.prepareQuery` method which returns an object that conforms to the `PreparedStatement` interface.
 ```typescript
   // Todo: create a table and fill with data as above.
+
   const query = db.prepareQuery<[number, string]>(
     "SELECT id, name FROM people",
   );
@@ -107,7 +111,7 @@ You also need to run the `finalize` method on the `PreparedQuery` or you will ge
 Uncaught SqliteError: unable to close due to unfinalized statements or unfinished backups
       throw new SqliteError(this.#wasm);
 ```
-While you can dynamically create a SQL string and run a query on the resulting string, that is very dangerous as it can lead to a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries.
+While you can dynamically create a SQL string and run a query on the resulting string using the `DB.query` method, that is very dangerous as it can lead to a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries (i.e the `DB.prepareQuery` method).
 #### Querying using sqlite3
 
 The `sqlite3` library only uses prepared statement to do queries. A `Statement` object is returned from the call to `Database.prepare`.
@@ -138,7 +142,7 @@ Updating the database with both SQLite libraries uses prepared statements like q
     );
     query.all([newName, 1]);
     query.finalize();
-  // Todo: Verify that data has been updated
+  // Todo: Verify that data has been updated and close the database
 ```
 As with querying, a `PreparedStatement` object needs to be finalized when the update has been completed or a `SqliteError` will be thrown.
 #### Updating using sqlite3
@@ -148,7 +152,7 @@ As with querying, a `PreparedStatement` object needs to be finalized when the up
   const newName = "Wade Winston Wilson";
   const stmt = db.prepare(`UPDATE people set name=? where id=?`);
   stmt.run(newName, id);
-  // Todo: Verify that data has been updated
+  // Todo: Verify that data has been updated and close the database
 ```
 ## Deleting data
 Like updating, data deletion using both SQLite libraries follows the same pattern as querying.
@@ -161,7 +165,7 @@ Like updating, data deletion using both SQLite libraries follows the same patter
   );
   query.all([1]);
   query.finalize();
-  // Todo: Verify that data has been deleted
+  // Todo: Verify that data has been deleted and close the database
 ```
 #### Deleting using sqlite3
 ```typescript
@@ -171,9 +175,9 @@ Like updating, data deletion using both SQLite libraries follows the same patter
   stmt.run(id);
   console.log(`Deleted record for id ${id}`);
   stmt.finalize();
-  // Todo: Verify that data has been deleted
+  // Todo: Verify that data has been deleted and close the database
 ```
-Note that a query containing no results returns an empty array with `deno-sqlite`  while the `sqlite3` lib returns undefined.
+When verifying that a record has been deleted you need to note that a query containing no results returns an empty array with `deno-sqlite` while the `sqlite3` lib returns undefined.
 
 ## SQLite Backends
 
