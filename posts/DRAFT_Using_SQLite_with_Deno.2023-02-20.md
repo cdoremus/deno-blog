@@ -17,7 +17,7 @@ While they can both be used to interact with SQLite, the two Deno-native client 
 
 ## Creating a database and insert data into a table
 
-#### deno-sqlite
+#### Database creation and insertion with deno-sqlite
 Persistence using `deno-sqlite` revolves around the `DB` class. The constructor can be used to point to a file-based database or one held in memory using the default constructor (or the `":memory:"` token as a constructor argument).
 ```javascript
 import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
@@ -27,21 +27,23 @@ import { DB } from "https://deno.land/x/sqlite@v3.7.0/mod.ts";
   // Open a database to be persisted in the test.db file
   // const db = new DB("test.db");
 
-  // Insert data into the table
-  for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
-    db.query("INSERT INTO people (name) VALUES (?)", [name]);
-  }
+  // Insert data within a transaction
+  db.transaction(() => {
+    for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
+      db.query("INSERT INTO people (name) VALUES (?)", [name]);
+    }
+  });
 
   // Todo: CRUD operations here...
 
   // Close database to clean up resources
   db.close()
 ```
+The `DB.transaction` method is used for transactional control. If the function argument throws an error, the transaction is rolled back; otherwise it is committed. This `transaction` method can also be run on updates and deletes.
 
+#### Database creation and insertion with sqlite3
 
-#### sqlite3
-
-The `sqlite3` library uses a `Database` class to initiate persistence. It's constructor takes a file path or `":memory:"` token for an in-memory database.
+The `sqlite3` library uses a `Database` class to initiate persistence. It's constructor takes a file path or `":memory:"` token for an in-memory database. The constructor also takes an options argument with a number of fields that are detailed in the [documentation](https://github.com/denodrivers/sqlite3/blob/main/doc.md).
 ```typescript
 import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
 
@@ -54,15 +56,18 @@ import { Database } from "https://deno.land/x/sqlite3@0.8.0/mod.ts";
   )
 `,
   );
-  // insert data
-  for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
-    db.exec("INSERT INTO people (name) VALUES (?)", [name]);
-  }
-
-  // Todo: CRUD operations...
+  // insert data in a transaction
+  const inserts = db.transaction((data: string[]) => {
+    for (const name of data) {
+      db.exec("INSERT INTO people (name) VALUES (?)", [name]);
+    }
+  });
+  inserts(["Peter Parker", "Clark Kent", "Bruce Wayne"]);
 
   db.close();
 ```
+The `Database.transaction` method is used to modify SQLite data in a transactional context. Unlike `deno-sqlite`, the `transaction` method returns a function that needs to be called with the SQL operation's data in order to run the transaction. But like `deno-sqlite`, the `sqlite3` transaction behavior depends on whether an error is thrown in the function (rollback) or it cleanly returns (commit).
+
 ## Running queries
 #### Querying using deno-sqlite
 The `deno-sqlite` lib has two ways of running a query. The first uses the `DB.query` method.
@@ -123,7 +128,7 @@ The `Statement.bind` method is one of may ways to bind parameters to prepared st
 - `run` - Run the query with it returning the number of rows in the result set. To get the resulting rows, you must then call `Statement.get()` with the row number (starting with 1) to get the rows of data.
 
 ## Updating data
-Updating data with both SQLite libraries uses prepared statements as used in querying.
+Updating the database with both SQLite libraries uses prepared statements like querying.
 #### Updating using deno-sqlite
 ```typescript
   // Todo: create a table and fill with data as above.
@@ -136,7 +141,7 @@ Updating data with both SQLite libraries uses prepared statements as used in que
     query.finalize();
   // Todo: Verify that data has been updated
 ```
-A `PreparedStatement` object needs to be finalized when the update has been completed or a `SqliteError` will be thrown as is done with querying.
+As with querying, a `PreparedStatement` object needs to be finalized when the update has been completed or a `SqliteError` will be thrown.
 #### Updating using sqlite3
 ```typescript
   // Todo: create a table and fill with data as above.
@@ -175,13 +180,25 @@ Note that a query containing no results returns an empty array with `deno-sqlite
 
 SQLite was originally designed to be a lightweight local or single-server database with data stored in a single file. As a consequence of that fact many web developers used it to do local development or to run integration and end-to-end tests.
 
-But that does not work in modern web applications that run on a distributed system like Deno Deploy. There are a few distributed SQLite options that I will point out here.
+But that does not work in modern web applications that run on a distributed system like Deno Deploy. However, there are a few distributed SQLite options available.
 
-### LiteFS
 
-[LiteFS](https://fly.io/blog/introducing-litefs/) is a new distributed SQLite service offered by fly.io. Under the covers it uses [Litestream](https://litestream.io/) a replicable SQLite server implementation.
+## SQLite In The Cloud
+
+### [Amazon Web Services](https://aws.amazon.com/marketplace/pp/prodview-fci5iqpwrzxvo)
+
+### [Azure](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cloud-infrastructure-services.sqlite-ubuntu)
+### [Google Cloud Platform](https://console.cloud.google.com/marketplace/product/cloud-infrastructure-services/sqlite-ubuntu)
+
+
+### [LiteFS on fly.io](https://fly.io/docs/litefs/)
+
+[LiteFS](https://fly.io/docs/litefs/) is a new distributed SQLite service offered by fly.io. Under the covers it uses [Litestream](https://litestream.io/) a replicable SQLite server implementation.
 
 A good example showing the power of LiteFS is this [article on database migration from Postgresql to SQLite](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs).
+
+It should be noted that LiteFS is still in beta and not recommended for production deployment.
+
 
 
 ### Other Deployable SQLite Edge Servers
@@ -196,8 +213,11 @@ Besides Litestream, here are some other SQLite implementations designed to be us
 #### [mvSQLite](https://github.com/losfair/mvsqlite)
 - Documentation: https://github.com/losfair/mvsqlite/wiki/
 
+### [DBHub](https://dbhub.io/)
+
 ## Conclusion
-If you decide to use SQLite as your database it's a good idea to first check out the [SQLite Tutorial](https://www.sqlitetutorial.net/).
+
+I have tried to provide an objective comparison in this post between the Deno-native libraries `deno-sqlite (sqlite)` and `sqlite3` and not play favorites. It is up to you to try each of them out and decide which one works for you.
 
 Documentation for the `deno-sqlite` lib is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
 
