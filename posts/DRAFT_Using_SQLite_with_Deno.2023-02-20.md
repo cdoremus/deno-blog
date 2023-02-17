@@ -6,10 +6,9 @@ At this point Deno-native[[1](#1-deno-native)] libraries are the only Deno SQLit
 
 There are two Deno-native third-party libraries that are SQLite clients (aka drivers). Both of them work with SQLite version 3, the current version. They are [`deno-sqlite`](https://deno.land/x/sqlite) and [`sqlite3`](https://deno.land/x/sqlite3).
 
-The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine. This library is named `sqlite` in the Deno third-party module registry while the Github repository is called `deno-sqlite`
+The `deno-sqlite` third-party library contains both a SQLite client and a SQLite implementation compiled as a Web Assembly Module (WASM). This allows SQLite to be used in a Deno program without need for an external SQLite engine. This library is named `sqlite` in the Deno third-party module registry while the Github repository is called `deno-sqlite` which is the name I will use in this post.
 
 There was a [PR to add deno-sqlite to the Deno std library](https://github.com/denoland/deno_std/pull/2230) opened in May, 2022, but it was closed in December of that year due to lack of consensus by the Deno team.
-
 
 The `sqlite3` library is just a SQLite client. But it is designed with performance in mind as it uses the Deno Foreign Function Interface (FFI) to allow access to native file reading and writing functionality rather than going through a JavaScript wrapper around native I/O access used by `deno-sqlite`.
 
@@ -176,48 +175,20 @@ Like updating, data deletion using both SQLite libraries follows the same patter
 ```
 Note that a query containing no results returns an empty array with `deno-sqlite`  while the `sqlite3` lib returns undefined.
 
-## Distributed SQLite
+## SQLite Backends
 
-SQLite was originally designed to be a lightweight local or single-server database with data stored in a single file. As a consequence of that fact many web developers used it to do local development or to run integration and end-to-end tests.
+SQLite was originally designed to be a lightweight database with data stored in a single file. As a consequence of that fact many web developers used it to do local development or to run integration and end-to-end tests.
 
-But that does not work in modern web applications that run on a distributed system like Deno Deploy. However, there are a few distributed SQLite options available.
+But that does not work in modern web applications run in the cloud. However, all the major cloud platforms including [Amazon Web Services](https://aws.amazon.com/marketplace/pp/prodview-fci5iqpwrzxvo), [Azure](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cloud-infrastructure-services.sqlite-ubuntu) and [Google Cloud Platform](https://console.cloud.google.com/marketplace/product/cloud-infrastructure-services/sqlite-ubuntu) support SQLite on their platform. Besides the big three, other cloud providers with SQLite support include [fly.io](https://fly.io/docs/litefs/) and [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-sqlite-on-ubuntu-20-04).
 
+The fly.io implementation called [LiteFS](https://fly.io/docs/litefs/) is of particular interest because it implements SQLite on a distributed filesystem. Currently it is in beta, but this [article on migrating from PostgreSQL to SQLite using LiteFS](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs) should be noted.
 
-## SQLite In The Cloud
-
-### [Amazon Web Services](https://aws.amazon.com/marketplace/pp/prodview-fci5iqpwrzxvo)
-
-### [Azure](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cloud-infrastructure-services.sqlite-ubuntu)
-### [Google Cloud Platform](https://console.cloud.google.com/marketplace/product/cloud-infrastructure-services/sqlite-ubuntu)
-
-
-### [LiteFS on fly.io](https://fly.io/docs/litefs/)
-
-[LiteFS](https://fly.io/docs/litefs/) is a new distributed SQLite service offered by fly.io. Under the covers it uses [Litestream](https://litestream.io/) a replicable SQLite server implementation.
-
-A good example showing the power of LiteFS is this [article on database migration from Postgresql to SQLite](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs).
-
-It should be noted that LiteFS is still in beta and not recommended for production deployment.
-
-
-
-### Other Deployable SQLite Edge Servers
-Besides Litestream, here are some other SQLite implementations designed to be used in a distributed system.
-
-#### [RQLite](https://rqlite.io/)
-- Quick start: https://rqlite.io/docs/quick-start/
-
-#### [Canonical DqLite](https://dqlite.io/)
-- Documentation: https://dqlite.io/docs
-
-#### [mvSQLite](https://github.com/losfair/mvsqlite)
-- Documentation: https://github.com/losfair/mvsqlite/wiki/
-
-### [DBHub](https://dbhub.io/)
-
+LiteFS runs on [Litestream](https://litestream.io/), designed for a distributed environment. Other distributed SQLite implementations include [RQLite](https://rqlite.io/), [DqLite by Canonical](https://dqlite.io/), [mvSQLite](https://github.com/losfair/mvsqlite) and [DBHub](https://dbhub.io/).
 ## Conclusion
 
 I have tried to provide an objective comparison in this post between the Deno-native libraries `deno-sqlite (sqlite)` and `sqlite3` and not play favorites. It is up to you to try each of them out and decide which one works for you.
+
+This post covers a subset of the `deno-sqlite` and `sqlite3` APIs, so it is a good idea to check the documentation for more details.
 
 Documentation for the `deno-sqlite` lib is found in the [third-party registry pages for `sqlite`](https://deno.land/x/sqlite@v3.7.0/mod.ts) where you need to drill-down though the hyperlinks for function and TypeScript interface documentation. This documentation is generated from the jsdoc source-code comments for each TS interface and JavaScript public function and class.
 
