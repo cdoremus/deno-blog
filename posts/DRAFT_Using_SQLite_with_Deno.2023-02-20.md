@@ -181,9 +181,10 @@ SQLite was originally designed to be a lightweight database with data stored in 
 
 But that does not work in modern web applications run in the cloud. However, all the major cloud platforms including [Amazon Web Services](https://aws.amazon.com/marketplace/pp/prodview-fci5iqpwrzxvo), [Azure](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cloud-infrastructure-services.sqlite-ubuntu) and [Google Cloud Platform](https://console.cloud.google.com/marketplace/product/cloud-infrastructure-services/sqlite-ubuntu) support SQLite on their platform. Besides the big three, other cloud providers with SQLite support include [fly.io](https://fly.io/docs/litefs/) and [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-sqlite-on-ubuntu-20-04).
 
-The fly.io implementation called [LiteFS](https://fly.io/docs/litefs/) is of particular interest because it implements SQLite on a distributed filesystem. Currently it is in beta, but this [article on migrating from PostgreSQL to SQLite using LiteFS](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs) should be noted.
+Distributed SQLite implementations are also available including [LiteFS](https://fly.io/docs/litefs/) from fly.io [RQLite](https://rqlite.io/), [DqLite by Canonical](https://dqlite.io/), [mvSQLite](https://github.com/losfair/mvsqlite) and [DBHub](https://dbhub.io/).
 
-LiteFS runs on [Litestream](https://litestream.io/), designed for a distributed environment. Other distributed SQLite implementations include [RQLite](https://rqlite.io/), [DqLite by Canonical](https://dqlite.io/), [mvSQLite](https://github.com/losfair/mvsqlite) and [DBHub](https://dbhub.io/).
+An interesting [article on migrating from PostgreSQL to SQLite using LiteFS](https://kentcdodds.com/blog/i-migrated-from-a-postgres-cluster-to-distributed-sqlite-with-litefs) shows what is involved with using a distributed SQLite implementation.
+
 ## Conclusion
 
 I have tried to provide an objective comparison in this post between the Deno-native libraries `deno-sqlite (sqlite)` and `sqlite3` and not play favorites. It is up to you to try each of them out and decide which one works for you.
