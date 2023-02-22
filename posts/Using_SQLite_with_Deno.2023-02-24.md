@@ -99,9 +99,9 @@ The second way of running a query in `deno-sqlite` is with a prepared statement 
 ```
 In this example, `preparedQuery` returned the `query` object as a `PreparedQuery` interface type. There are three ways to bind parameters and get results from a Prepared query:
 
-- The `iter` method binds the parameters to the query and returns an iterator over rows. Use this if there multiple rows in a result set because it avoids loading all returned rows into memory at once which allows a large number of rows to be processed.
+- The `iter` method binds the parameters to the query and returns an iterator over rows. Use this if there are multiple rows in a result set because it avoids loading all returned rows into memory at once allowing a large number of rows to be processed sequentially.
 
-- The `all` method binds the data and returns a result set in an array.
+- The `all` method binds the data and returns a full result set in an array.
 
 - The `first` method returns the first item of a result set returned by the query.
 
@@ -111,7 +111,7 @@ You also need to run the `finalize` method on the `PreparedQuery` or you will ge
 Uncaught SqliteError: unable to close due to unfinalized statements or unfinished backups
       throw new SqliteError(this.#wasm);
 ```
-While you can dynamically create a SQL string and run a query on the resulting string using the `DB.query` method, that is very dangerous as it can lead to a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries (i.e the `DB.prepareQuery` method).
+While you can dynamically create a SQL string and run a query on the resulting string using the `DB.query` method, it can easily cause a [SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) attack on your database. Therefore, you should always use prepared statements with parameterized queries (i.e the `DB.prepareQuery` method).
 #### Querying using sqlite3
 
 The `sqlite3` library only uses prepared statement to do queries. A `Statement` object is returned from the call to `Database.prepare`.
@@ -128,10 +128,10 @@ The `sqlite3` library only uses prepared statement to do queries. A `Statement` 
 The `Statement.bind` method is one of may ways to bind parameters to prepared statements. Other `Statement` methods used to bind data are
 - `all` - Run the query and return the resulting rows in objects with column name mapped to their corresponding values.
 - `values` - Run the query and return the resulting rows where rows are array of columns.
-- `run` - Run the query with it returning the number of rows in the result set. To get the resulting rows, you must then call `Statement.get()` with the row number (starting with 1) to get the rows of data.
+- `run` - Run the query with it returning the number of rows in the result set. To get the resulting rows, you must then call `Statement.get()` with the row number (starting with 1) to get the individual data rows.
 
 ## Updating data
-Updating the database with both SQLite libraries uses prepared statements like querying.
+Updating the database with both SQLite libraries uses prepared statements (i.e. the same methods) like when running a query (`db.prepareQuery` or `Database.prepare`).
 #### Updating using deno-sqlite
 ```typescript
   // Todo: create a table and fill with data as above.
@@ -155,7 +155,7 @@ As with querying, a `PreparedStatement` object needs to be finalized when the up
   // Todo: Verify that data has been updated and close the database
 ```
 ## Deleting data
-Like updating, data deletion using both SQLite libraries follows the same pattern as querying.
+Like updating, data deletion using both SQLite libraries follows the same pattern as querying with the `db.prepareQuery` or `Database.prepare` methods.
 #### Deleting using deno-sqlite
 ```typescript
   // Todo: create a table and fill with data as above.
@@ -191,7 +191,7 @@ An interesting [article on migrating from PostgreSQL to SQLite using LiteFS](htt
 
 ## Conclusion
 
-I have tried to provide an objective comparison in this post between the Deno-native libraries `deno-sqlite (sqlite)` and `sqlite3` and not play favorites. It is up to you to try each of them out and decide which one works for you.
+I have tried to provide an objective comparison in this post between the Deno-native libraries `deno-sqlite (sqlite)` and `sqlite3` and not play favorites. It is up to you to try each of them out and decide which one works for your use case.
 
 This post covers a subset of the `deno-sqlite` and `sqlite3` APIs, so it is a good idea to check the documentation for more details.
 
