@@ -219,7 +219,7 @@ The `useAsset` hook is used to version the asset during a production build.
 To build and dry-run the app before production deployment, invoke the `build` task locally and then run the `start` task inside the `.ultra` folder.
 
 ## Conclusion
-**Ultra** is the third most popular web framework Next to Fresh and Aleph which are both supported by the Deno team. It is the only one of the three that focusses on React and does a good job at supporting React libraries and modern practices.
+**Ultra** is the third most popular Deno web framework next to Fresh and Aleph which are both supported by the Deno team. It is the only one of the three that focusses on React and does a good job at supporting React libraries and modern practices.
 
 **Ultra** evolved dramatically between version 1 and 2 and its development continues to accelerate. When this post was published **Ultra's** current version was v2.1.4, so be aware that there might be some changes at a future date.
 

@@ -7,9 +7,6 @@ I'm hoping to evolve the blog with new features and improved code quality as
 time goes on. Source code can be found in this repo:
 [https://github.com/cdoremus/fresh-blog](https://github.com/cdoremus/fresh-blog).
 
-If you are interested in receiving updates on new blog posts, please follow my
-twitter feed [@deno_diary](https://twitter.com/deno_diary). Also, DM me if you
-have any suggestions and ideas for this blog. I look forward to hearing from
-you.
+If you are interested in receiving updates on new blog posts, please follow my [Mastodon](https://fosstodon.org/@deno_diary) or [Twitter](https://twitter.com/cdoremus) feed. Also, DM me at cdoremus#4874 on Discord if you have any suggestions and ideas for this blog. I look forward to hearing from you.
 
-- **Craig Doremus** ([@cdoremus](https://twitter.com/cdoremus))
+- **Craig Doremus** ([@cdoremus](https://hachyderm.io/@cdoremus))
