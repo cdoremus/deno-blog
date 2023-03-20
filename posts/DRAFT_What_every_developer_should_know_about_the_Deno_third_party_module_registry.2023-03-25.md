@@ -2,7 +2,7 @@
 
 # What every developer should know about the Deno third party module registry
 
-The Deno third-party registry is is a place for Deno developers to publish their Deno-compatible ESM modules. It is in essence the Deno equivalent of npm.
+The Deno third-party registry is is a place for Deno developers to publish their Deno-compatible ESM modules. It is in essence the Deno equivalent of the npm package manager.
 
 The data in the third-party registry is used as content for the [Deno Third Party Modules page](https://deno.land/x) and linked pages. Each module on that page's list links to a page providing module details including documentation, version information and source code.
 
@@ -10,33 +10,33 @@ Both developers who create a Deno libraries and users of those libraries should 
 
 ## How the third-party registry is populated and organized
 
-The third-party registry is a database that module creators use to publish their work. It's center is the URL [https:/deno.land/x/](https:/deno.land/x/).
+The third-party registry is a database of modules published by their authors. A searchable list of registry modules is found at the URL [https:/deno.land/x/](https:/deno.land/x/).
 
-### Important things to keep in mind before registering a module
+Registered modules could be accessed under the `https://deno.land/x/` URL, so, for instance, the Fresh web framework would be accessed using the `https://deno.land/x/fresh` URL. Module authors were urged to published new versions of their module to a sequentially numbered tagged branch. In that case, the version number would be added to the end of the URL (e.g. `https://deno.land/x/fresh@1.1.4`).
 
-- Modules are immutable
+The original module list was ranked by Github stars, but it was discovered that a lot of the highest ranked entries were npm modules that did not work in Deno using an `https://deno.land/x/` import URL. A change to that ranking was first [proposed by then Deno team member Kitson Kelly](https://github.com/denoland/dotland/issues/2133) in May 2022. He suggested a sorting algorithm based on metrics of popularity, quality and maintenance (see the proposal for details).
+
+The first step in implementing the new ranking uses popularity only. The popularity metric was produced by the use of Google Analytics to track the number of requests to different third-party library import URLs. The implementation was deployed in early October 2022. There are currently no immediate plans to change the ranking algorithm.
+
+## Important things to keep in mind before registering a module
+
+- **Modules are immutable**
 
 Once a module is published in the third-party registry, it cannot be changed or deleted. This makes sure that anyone using a module as a dependency can be assured that the module will always be there.
 
-- Module name squatting is not allowed
+- **Module name squatting is not allowed**
 
 There is a warning on the third-party module page that name squatting will not be tolerated. It suggests that if a module has not been under active development, it can be taken over by another developer and invites a proposal to do so.
 
-- Module source code must be contained in a public Github repository
+- **Module source code must be contained in a public Github repository**
 
 The third-party registry does not support private Github repositories or another Git provider at this point.
 
-- The registry uses TSDoc/JSDoc comments to display module classes, functions and TS interfaces
+- **The registry uses TSDoc/JSDoc comments to display module variables, classes, functions, TS interfaces and type aliases**
 
-When a module is published the source code in the module's repository is scanned. Each source code file is checked for TSDoc/JSDoc comments for public functions, classes and TypeScript interfaces. If found, the content of the comment is used to create module documentation.  If not found, only the public functions, classes, and interfaces will be displayed, so it is a good idea to make sure your public module exports are well-documented and includes example code.
+When a module is published the source code in the module's repository is scanned. Each source code file is checked for TSDoc/JSDoc comments for public functions, classes and TypeScript interfaces. If found, the content of the comment is used to create module documentation.  If not found, only the the signatures of public variables, classes, functions, TS interfaces and type aliases will be displayed with no additional documentation, so it is a good idea to make sure your public module exports are well-documented including example code.
 
-- The third-party module list is ordered by a popularity score
-
-The registry uses Google Analytics to generate the popularity score.
-
-- The popularity score plans are to include measures of code quality and developer engagement
-
-### Registering a module
+**Module authors must self-register a module**
 
 Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". when that is done, the "Adding a module" page will be displayed. It looks like this:
 
@@ -46,13 +46,14 @@ NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 
 
+
 ## The Third-party Registry API
 
 In early October of last year (2022), the Deno team quietly upgraded the [Deno Third Party Modules page](https://deno.land/x). Previously the page contained a searchable list of Deno modules [registered with the deno.land/x URL](https://deno.land/add_module). Ideally you could use `https://deno.land/x/<module name>` as an import url, but it often did (and still does) not work with some modules.
 
 The module list was sorted by GitHub (GH) stars, but many of the modules in the registry were npm modules that was not compatible with Deno or were difficult to figure out how to make them compatible. And because these modules were in the npm registry, they had accumulated a lot of GH stars as opposed to Deno modules that were still very young. It meant that the compatible Deno modules were hard to find as they were lower on the module list.
 
-The module list for the third party modules page was pulled from a database via an API. Last October version 2 of the API was introduced. This new API threw away the GH star ranking and introduced a new module ranking algorithm first [proposed by then Deno team member Kitson Kelly](https://github.com/denoland/dotland/issues/2133).
+The module list for the third party modules page was pulled from a database via an API. Last October version 2 of the API was introduced. This new API threw away the GH star ranking and introduced a new
 
 The new ranking was based on a "popularity score" that consists of a combination of four criteria
 XXXXXXX
@@ -74,21 +75,17 @@ Third party API routes that begin with `v2/pages` are used to displayed on Deno 
 
 - `/v2/pages/mod/info/:module/:version` - Provides a structure to render a module info page
 
-
+The [denoland/docland](https://github.com/denoland/docland) Github repository is used to display pages, so it is a good idea to check this repo out if you want to use this part of the API.
 
 ### Modules
-The modules API provides information on third-party modules and
+The modules API provides information on all and specific third-party Deno modules.
 
-- `/v2/modules` - Provide a list of all modules in the registry.
-- `/v2/modules/:module` - Provide information about a specific module.
-- `/v2/modules/:module/:version` - Provide information about a specific module version.
-- `/v2/modules/:module/:version/doc/:path*` - Provide documentation nodes for a specific path of a specific module version.
+- `/v2/modules` - Provide a list of all modules in the registry ([Link](https://apiland.deno.dev/v2/modules)).
+- `/v2/modules/:module` - Provide information about a specific module ([Link for Fresh](https://apiland.deno.dev/v2/modules/fresh)).
+- `/v2/modules/:module/:version` - Provide information about a specific module version ([Link for Fresh version 1.1.4](https://apiland.deno.dev/v2/modules/fresh/1.1.4)).
+- `/v2/modules/:module/:version/doc/:path*` - Provide documentation nodes for a specific path of a specific module version ([Link for Fresh version 1.1.4](https://apiland.deno.dev/v2/modules/fresh/1.1.4/doc)).
 
-
-listing list of all of the third-party modules
-
-
-### Module overview
+Here are some links to try out:
 
 
 ### Module metrics
@@ -115,9 +112,10 @@ listing list of all of the third-party modules
 
 ---------------------------------------------------------------------------------------
 ## Questions for Leo
-- Can npm modules be added to the registry?
+- Can npm modules be added to the 3rd party registry?
 - In Redwood JS talk you said you want to "Implement a 'local' symbol search". What do you mean by 'local'?
 - What happens to the documentation if there are no TSDoc/JSDoc comments in the code of a published third-party module?
+
 ## Reference
 - Leo's talk: https://www.youtube.com/watch?v=q5wWK9blBKQ&t=912s
 
