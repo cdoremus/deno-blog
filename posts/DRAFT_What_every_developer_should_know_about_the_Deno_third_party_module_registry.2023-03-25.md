@@ -12,13 +12,13 @@ Both developers who create a Deno libraries and users of those libraries should 
 
 The third-party registry is a database of modules published by their authors. A searchable list of registry modules is found at the URL [https:/deno.land/x/](https:/deno.land/x/).
 
-Registered modules could be accessed under the `https://deno.land/x/` URL, so, for instance, the Fresh web framework would be accessed using the `https://deno.land/x/fresh` URL. Module authors were urged to published new versions of their module to a sequentially numbered tagged branch. In that case, the version number would be added to the end of the URL (e.g. `https://deno.land/x/fresh@1.1.4`).
+Registered modules can be accessed under the `https://deno.land/x/` URL, so, for instance, the Fresh web framework would be accessed using the `https://deno.land/x/fresh` URL. Module authors are urged to published new versions of their module to a sequentially numbered tagged branch (most authors use semver numbering). In that case, the version number would be added to the end of the URL (e.g. `https://deno.land/x/fresh@1.1.4`).
 
 The original module list was ranked by Github stars, but it was discovered that a lot of the highest ranked entries were npm modules that did not work in Deno using an `https://deno.land/x/` import URL. A change to that ranking was first [proposed by then Deno team member Kitson Kelly](https://github.com/denoland/dotland/issues/2133) in May 2022. He suggested a sorting algorithm based on metrics of popularity, quality and maintenance (see the proposal for details).
 
-The first step in implementing the new ranking uses popularity only. The popularity metric was produced by the use of Google Analytics to track the number of requests to different third-party library import URLs. The implementation was deployed in early October 2022. There are currently no immediate plans to change the ranking algorithm.
+The first implementation of the new ranking algorithm -- deployed in early October 2022 -- uses popularity only. This metric was produced using Google Analytics to track the number of requests to different third-party library import URLs. There are currently no immediate plans to change the ranking algorithm.
 
-## Important things to keep in mind before registering a module
+## Important things to keep in mind before registering a third-party module
 
 - **Modules are immutable**
 
@@ -36,13 +36,13 @@ The third-party registry does not support private Github repositories or another
 
 When a module is published the source code in the module's repository is scanned. Each source code file is checked for TSDoc/JSDoc comments for public functions, classes and TypeScript interfaces. If found, the content of the comment is used to create module documentation.  If not found, only the the signatures of public variables, classes, functions, TS interfaces and type aliases will be displayed with no additional documentation, so it is a good idea to make sure your public module exports are well-documented including example code.
 
-**Module authors must self-register a module**
+- **Module authors must self-register a module**
 
 Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". when that is done, the "Adding a module" page will be displayed. It looks like this:
 
 ![Add third-party module](img/blog/third_party_modules/add-module-screen.png)
 
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 
 
@@ -110,13 +110,10 @@ Here are some links to try out:
 
 ## Conclusions
 
----------------------------------------------------------------------------------------
-## Questions for Leo
-- Can npm modules be added to the 3rd party registry?
-- In Redwood JS talk you said you want to "Implement a 'local' symbol search". What do you mean by 'local'?
-- What happens to the documentation if there are no TSDoc/JSDoc comments in the code of a published third-party module?
-
-## Reference
+--------------------------------------------------------------------------------
+## References
+- Kitson's talk - https://youtu.be/G_2AgdgEbkI?t=1554
+- Kitson's repo demonstrating the API: https://github.innominds.com/kitsonk/deno-on-the-edge
 - Leo's talk: https://www.youtube.com/watch?v=q5wWK9blBKQ&t=912s
 
 
