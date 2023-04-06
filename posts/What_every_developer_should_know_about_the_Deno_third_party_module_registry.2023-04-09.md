@@ -36,7 +36,7 @@ When a module is published the source code in the module's repository is scanned
 
 - **Module authors must self-register a module**
 
-Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". when that is done, the "Adding a module" page will be displayed. It looks like this:
+Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It looks like this:
 
 ![Add third-party module](img/blog/third_party_modules/add-module-screen.png)
 
@@ -44,15 +44,15 @@ Publishing a new third-party module is accomplished by clicking on the button on
 ## The Third Party Registry API
 
 
-The module list for the third party modules page was pulled from a database via an API. Last October version 2 API was published. This coencided with the unvieling of the new ranking algorithm.
+The module list for the [Deno Third Party Modules](https://deno.land/x) page was pulled from a database via an API. Last October, version 2 of the API was published which coencided with the unvieling of a new ranking algorithm used on the page.
 
 The third party API is hosted at [https://apiland.deno.dev](https://apiland.deno.dev). An [OpenAPI specification for the API](https://apiland.deno.dev/~/spec) exists in additon to [human-readable documentation for the new API spec](https://redocly.github.io/redoc/?url=https://apiland.deno.dev/~/spec).
 
-The third-party API has endpoints for documentation (pages), module details and module metrics.
+The third-party API has endpoints for module details and module metrics and module documentation (pages).
 
 
 ### Module Endpoints
-The modules API provides information on all and specific third-party Deno modules.
+The modules API provides basic information on every third-party Deno module.
 
 - `/v2/modules` - Provide a list of all modules in the registry ([Link](https://apiland.deno.dev/v2/modules)).
 
@@ -108,14 +108,7 @@ This data is the same as an individual record in the `v2/modules` endpoint. For 
     "1.1.2",
     "1.1.1",
     "1.1.0",
-    "1.0.2",
-    "1.0.1",
-    "1.0.0",
-    "1.0.0-rc.6",
-    "1.0.0-rc.5",
-    "1.0.0-rc.4",
-    "1.0.0-rc.3",
-    "1.0.0-rc.2",
+    // ... other versions here
     "v1.0.0"
   ],
   "name": "fresh",
@@ -261,45 +254,9 @@ Here's what metrics for the Deno web framework [Ultra](https://ultrajs.dev) look
       "v2.0.1",
       "v2.0.0",
       "v2.0.0-beta.19",
-      "v2.0.0-beta.18",
-      "v2.0.0-beta.17",
-      "v2.0.0-beta.16",
-      "v2.0.0-beta.15",
-      "v2.0.0-beta.14",
-      "v2.0.0-beta.13",
-      "v2.0.0-beta.12",
-      "v2.0.0-beta.11",
-      "v2.0.0-beta.10",
-      "v2.0.0-beta.9",
-      "v2.0.0-beta.8",
-      "v2.0.0-beta.7",
-      "v2.0.0-beta.6",
-      "v2.0.0-beta.5",
-      "v2.0.0-beta.4",
-      "v2.0.0-beta.3",
-      "v2.0.0-beta.2",
-      "v2.0.0-beta.1",
+      // ... other beta versions
       "v2.0.0-alpha.19",
-      "v2.0.0-alpha.18",
-      "v2.0.0-alpha.17",
-      "v2.0.0-alpha.16",
-      "v2.0.0-alpha.15",
-      "v2.0.0-alpha.14",
-      "v2.0.0-alpha.13",
-      "v2.0.0-alpha.12",
-      "v2.0.0-alpha.11",
-      "v2.0.0-alpha.10",
-      "v2.0.0-alpha.9",
-      "v2.0.0-alpha.8",
-      "v2.0.0-alpha.7",
-      "v2.0.0-alpha.6",
-      "v2.0.0-alpha.5",
-      "v2.0.0-alpha.5",
-      "v2.0.0-alpha.4",
-      "v2.0.0-alpha.3",
-      "v2.0.0-alpha.2",
-      "v2.0.0-alpha.1",
-      "v2.0.0-alpha.0",
+      // ... other alpha versions
       "v1.0.1",
       "v1.0.0",
       "v0.8.2",
@@ -331,7 +288,10 @@ Here's what metrics for the Deno web framework [Ultra](https://ultrajs.dev) look
 }
 ```
 Under the **popularity** field, a "session" is defined by Google analytics as a visit to a page for 30 minutes or less.
-The **users** fields is also GA data.
+The **users** field value also comes from GA.
+
+Note that there is are **quality** and **maintenance** metric fields which were part of the [original page ranking proposal](https://github.com/denoland/dotland/issues/2133), but they are unused right now.
+
 ### Documentation Page Endpoints
 The pages API focuses on data for the module documentation pages
 Third party API routes that begin with `v2/pages` are used to display API documentation for a particular Deno module.
@@ -351,11 +311,11 @@ When this article was published it appears that the endpoint `/v2/pages/mod/info
 
 ### Example use of the third-party API
 
-Obviously, the third-module registry API provides a lot of data to work with. You could essentially create your own version of `https://deno.land/x`. This version could be supercharged with information in the API but not found on the Deno Third Party Modules pages. Ranking the results be a different characteristic would be interesting or creating your own popularity score algorithm.
+Obviously, the third-module registry API provides a lot of data to work with. You could essentially create your own version of `https://deno.land/x`. This version could be supercharged with information in the API but not found on the Deno Third Party Modules pages. Ranking the results by a different characteristic would be interesting or you could create your own popularity score algorithm.
 
-I have create a simple prototype that displays the Deno Third Party Modules page showing the top 500 modules and adding the Github star count to each module record. [You can see it in action here](https://3rd-party-api.deno.dev/).
+I have create a simple prototype that displays the Deno Third Party Modules page data showing the top 500 modules and adding the Github star count to each module record. [You can see it in action here](https://3rd-party-api.deno.dev/).
 
-This page includes a drop-down to sort the 500 results by popularity score, Github star count or a combination of popularity score (weighted 75%) and GH star count (weighted 25%).
+This page includes a drop-down to sort the top 500 results by popularity score, Github star count or a combination of popularity score (weighted 75%) and GH star count (weighted 25%).
 
 This demo shows one of the many ways the API data could be displayed. Graphical renditions would be an interesting option, for instance.
 
@@ -365,14 +325,16 @@ The code for my API demo is found at [this github repository](https://github.com
 
 This article focused on the Deno third party modules list and the API used to create that list.
 
-The API was used to revise the way modules are sorted on [Deno Third-Party Modules page](https://deno.land/x). Still, this new ranking is just an initial implementation of the [original algorithm  proposed by Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
+The API was used to revise the way modules are sorted on the [Deno Third Party Modules page](https://deno.land/x). Still, this new ranking is just an initial implementation of the [original algorithm  proposed by Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
 
+Finally, take a look at [my demo app that used the third party API]s(https://3rd-party-api.deno.dev/) to show different module ranking views. There are numerous other ways to display and analyze data coming from the API and I urge you to use your imagination and technical skill to improve my humble prototype.
 
 ---
 
 ## Acknowledgements
 
 The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps.
+
 ## References
 - Kitson Kelly's June, 2022 talk introducing the new third-party API version he was working on: https://youtu.be/G_2AgdgEbkI?t=1554
 - Kitson Kelly's Github repo demonstrating the API shown in his June, 2022 talk: https://github.innominds.com/kitsonk/deno-on-the-edge
