@@ -40,6 +40,7 @@ export default function App({ Component }: AppProps) {
           name="keywords"
           content="Deno, blog, JavaScript, TypeScript"
         />
+        <link rel="me" href="https://fosstodon.org/@deno_diary" />
       </Head>
       <body className="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
         <header
