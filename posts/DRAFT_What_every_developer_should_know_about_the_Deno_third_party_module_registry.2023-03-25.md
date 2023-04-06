@@ -353,13 +353,28 @@ When this article was published it appears that the endpoint `/v2/pages/mod/info
 
 ### Example use of the third-party API
 
+Obviously, the third-module registry API provides a lot of data to work with. You could essentially create your own version of `https://deno.land/x`. This version could be supercharged with information in the API but not found on the Deno Third Party Modules pages. Ranking the results be a different characteristic would be interesting or creating your own popularity score algorithm.
+
+I have create a simple prototype that displays the Deno Third Party Modules page showing the top 500 modules and adding the Github star count to each module record. [You can see it in action here](https://3rd-party-api.deno.dev/).
+
+This page includes a drop-down to sort the 500 results by popularity score, Github star count or a combination of popularity score (weighted 75%) and GH star count (weighted 25%).
+
+This demo shows one of the many ways the API data could be displayed. Graphical renditions would be an interesting option, for instance.
+
+The code for my API demo is found at [this github repository](https://github.com/cdoremus/3rd-party-api).
 
 ## Conclusions
 
---------------------------------------------------------------------------------
+This article focused on the Deno third party modules list and the API used to create that list. It should be emphasized that the current ranking algorithm is a work in progress based on the [original proposal from Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
+
+---
+
+## Acknowledgements
+
+The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps.
 ## References
-- Kitson's talk - https://youtu.be/G_2AgdgEbkI?t=1554
-- Kitson's repo demonstrating the API: https://github.innominds.com/kitsonk/deno-on-the-edge
-- Leo's talk: https://www.youtube.com/watch?v=q5wWK9blBKQ&t=912s
+- Kitson Kelly's June, 2022 talk introducing the new third-party API version he was working on: https://youtu.be/G_2AgdgEbkI?t=1554
+- Kitson Kelly's Github repo demonstrating the API shown in his June, 2022 talk: https://github.innominds.com/kitsonk/deno-on-the-edge
+- Section of Leo Kettmeir's February, 2023 talk covering the third-party API: https://www.youtube.com/watch?v=q5wWK9blBKQ&t=912s
 
 
