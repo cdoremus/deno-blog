@@ -40,8 +40,6 @@ Publishing a new third-party module is accomplished by clicking on the button on
 
 ![Add third-party module](img/blog/third_party_modules/add-module-screen.png)
 
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-
 
 ## The Third Party Registry API
 
@@ -365,7 +363,10 @@ The code for my API demo is found at [this github repository](https://github.com
 
 ## Conclusions
 
-This article focused on the Deno third party modules list and the API used to create that list. It should be emphasized that the current ranking algorithm is a work in progress based on the [original proposal from Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
+This article focused on the Deno third party modules list and the API used to create that list.
+
+The API was used to revise the way modules are sorted on [Deno Third-Party Modules page](https://deno.land/x). Still, this new ranking is just an initial implementation of the [original algorithm  proposed by Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
+
 
 ---
 
