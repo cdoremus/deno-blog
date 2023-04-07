@@ -37,7 +37,6 @@ When a module is published the source code in the module's repository is scanned
 - **Module authors must self-register a module**
 
 Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It looks like this:
-
 ![Add third party module](/img/blog/third_party_modules/add_module_screen.png)
 
 
@@ -301,7 +300,6 @@ Third party API routes that begin with `v2/pages` are used to display API docume
 For instance, to pull up the `types.ts` file documentation data, you would use the URL: https://apiland.deno.dev/v2/pages/mod/doc/std/0.182.0/testing/types.ts
 
 This is the data that goes into this page:
-
 ![types.ts doc page](/img/blog/third_party_modules/types.ts-documentation_page.png)
 
 The pages are rendered via a webapp that is found in the [denoland/docland](https://github.com/denoland/docland) Github repository, so it is a good idea to check this repo out if you want to use this part of the API.
