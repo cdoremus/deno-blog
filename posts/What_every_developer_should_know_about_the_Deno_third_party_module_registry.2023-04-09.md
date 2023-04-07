@@ -37,7 +37,7 @@ When a module is published the source code in the module's repository is scanned
 - **Module authors must self-register a module**
 
 Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It looks like this:
-![Add third party module](/img/blog/third_party_modules/add_module_screen.png)
+![Add third party module](/img/blog/third_party_modules/add_new_module.png)
 
 
 ## The Third Party Registry API
