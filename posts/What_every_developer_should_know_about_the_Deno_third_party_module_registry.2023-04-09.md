@@ -6,7 +6,7 @@ The Deno third-party registry is a place for Deno developers to publish their De
 
 The data in the third-party registry is used as content for the [Deno Third Party Modules page](https://deno.land/x). Each module on that page's list links to a page providing module details including documentation, version information and source code.
 
-Both developers who create a Deno libraries and users of those libraries should know how the third-party registry works and this post will fill in that gap.
+Both developers who create Deno libraries and users of those libraries should know how the third-party registry works and this post will fill in that gap.
 
 ## How the third-party registry is populated and organized
 
@@ -327,7 +327,7 @@ This article focused on the Deno third party modules list and the API used to cr
 
 The API was used to revise the way modules are sorted on the [Deno Third Party Modules page](https://deno.land/x). Still, this new ranking is just an initial implementation of the [original algorithm  proposed by Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
 
-Finally, take a look at [my demo app that used the third party API]s(https://3rd-party-api.deno.dev/) to show different module ranking views. There are numerous other ways to display and analyze data coming from the API and I urge you to use your imagination and technical skill to improve my humble prototype.
+Finally, take a look at [my demo app that used the third party API](https://3rd-party-api.deno.dev/) to show different module ranking views. There are numerous other ways to display and analyze data coming from the API and I urge you to use your imagination and technical skill to improve my humble prototype.
 
 ---
 
