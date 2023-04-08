@@ -36,8 +36,7 @@ When a module is published the source code in the module's repository is scanned
 
 - **Module authors must self-register a module**
 
-Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It looks like this:
-![Add third party module](/img/blog/third_party_modules/add_new_module.png)
+Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It asks for a module name and optionally a subdirectory. It then instructs the module author on how to create a Github webhook so the the module can be picked up by the third-party registry automation.
 
 
 ## The Third Party Registry API
@@ -92,8 +91,9 @@ The following query parameters are available for this endpoint:
   2. **page**: page number used for pagination
 
 
-So if you wanted to get a list of 10 results on the third page of results, your URL would be [https://apiland.deno.dev/v2/modules?limit=10&page=3&order_by=star_count](https://apiland.deno.dev/v2/modules?limit=10&page=3&order_by=star_count).
+So if you wanted to get a list of 10 results on the third page of the modules endpoint, your URL would be [https://apiland.deno.dev/v2/modules?limit=10&page=3](https://apiland.deno.dev/v2/modules?limit=10&page=3).
 
+Leo Kettmeir from the Deno teams says that you currently cannot request more than 1,000 records (or 100 rows of ten records each) using this endpoint.
 
 - `/v2/modules/:module` - Provide information about a specific module
 
@@ -297,14 +297,8 @@ Third party API routes that begin with `v2/pages` are used to display API docume
 
 * `/v2/pages/mod/doc/:module/:version/:path*` - Provides data to render a documentation page for a module
 
-For instance, to pull up the `types.ts` file documentation data, you would use the URL: https://apiland.deno.dev/v2/pages/mod/doc/std/0.182.0/testing/types.ts
-
-This is the data that goes into this page:
-![types.ts doc page](/img/blog/third_party_modules/types.ts-documentation_page.png)
-
-The pages are rendered via a webapp that is found in the [denoland/docland](https://github.com/denoland/docland) Github repository, so it is a good idea to check this repo out if you want to use this part of the API.
-
-When this article was published it appears that the endpoint `/v2/pages/mod/info/:module/:version` is not working as it returns a 404.
+For instance, to pull up the `types.ts` file documentation data, you would use the URL: https://apiland.deno.dev/v2/pages/mod/doc/std/0.182.0/testing/types.ts which is the data that goes into this page:
+![types.ts doc page](/img/blog/third_party_modules/std_testing_types_file.png)
 
 
 ### Example use of the third-party API
@@ -331,7 +325,7 @@ Finally, take a look at [my demo app that used the third party API](https://3rd-
 
 ## Acknowledgements
 
-The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps.
+The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps. Leo also reviewed this  article before it was published and I thank him for his thoughtful comments.
 
 ## References
 - Kitson Kelly's June, 2022 talk introducing the new third-party API version he was working on: https://youtu.be/G_2AgdgEbkI?t=1554
