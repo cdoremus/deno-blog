@@ -20,7 +20,7 @@ The first implementation of the new ranking algorithm -- deployed in early Octob
 
 - **Modules are immutable**
 
-Once a module is published in the third-party registry, it cannot be changed or deleted. This makes sure that anyone using a `https://deno.land/x/*` import URL can be assured that the module will always be there.
+Once a module is published in the third-party registry, it cannot be changed or deleted. This makes sure that anyone using a `https://deno.land/x/*` import URL can be assured that the module will always be there. Module Git tags are also immutable. Any code changes must me published as a new tag.
 
 - **Module name squatting is not allowed**
 
@@ -46,7 +46,7 @@ The module list for the [Deno Third Party Modules](https://deno.land/x) page was
 
 The third party API is hosted at [https://apiland.deno.dev](https://apiland.deno.dev). An [OpenAPI specification for the API](https://apiland.deno.dev/~/spec) exists in additon to [human-readable documentation for the new API spec](https://redocly.github.io/redoc/?url=https://apiland.deno.dev/~/spec).
 
-The third-party API has endpoints for module details and module metrics and module documentation (pages).
+The third-party API has endpoints for module details, module metrics and module documentation (pages). Each endpoint URL begins with https://apiland.deno.dev.
 
 
 ### Module Endpoints
@@ -120,7 +120,7 @@ This data is the same as an individual record in the `v2/modules` endpoint. For 
 
 - `/v2/modules/:module/:version` - Provide information about a specific module version ([Link for Fresh version 1.1.4](https://apiland.deno.dev/v2/modules/fresh/1.1.4)).
 
-Here's what the data looks like for Fresh:
+Here's what the data looks like for Fresh version 1.1.4:
 ```json
 {
   "upload_options": {
@@ -142,14 +142,14 @@ Here's what the data looks like for Fresh:
 - `/v2/metrics/modules` - All module's metrics ([Link](https://apiland.deno.dev/v2/metrics/modules))
 
 
-The "metrics" returned by this endpoint is much more than just metrics. Then include basic data on the module including dependencies and versions and **uploaded_at** datetime when a new module version github tag was created.
+The "metrics" returned by this endpoint is much more than just metrics. Then include basic data on the module including dependencies, versions and **uploaded_at** datetime when a new module version github tag was created.
 
 
 This endpoint supports the query parameters **limit** and **page** that is used to determine result set size and page number like the modules endpoint.
 
 If also supports an **order_by** query parameter which ranks the query results by a particular field value.
 
-The results set for this endpoint puts data in an **items** arral like was done for the modules endpoint above.
+The results set for this endpoint puts data in an **items** array like was done for the modules endpoint above.
 
 - `/v2/metrics/modules/:module` - Metrics for a specific third-party module
 
@@ -297,13 +297,11 @@ Third party API routes that begin with `v2/pages` are used to display API docume
 
 * `/v2/pages/mod/doc/:module/:version/:path*` - Provides data to render a documentation page for a module
 
-For instance, to pull up the `types.ts` file documentation data, you would use the URL: https://apiland.deno.dev/v2/pages/mod/doc/std/0.182.0/testing/types.ts which is the data that goes into this page:
-![types.ts doc page](/img/blog/third_party_modules/std_testing_types_file.png)
-
+For instance, to pull up the `types.ts` file documentation data, you would use the URL: https://apiland.deno.dev/v2/pages/mod/doc/std/0.182.0/testing/types.ts which is the data that is [rendered in this page](https://deno.land/std@0.182.0/testing/types.ts).
 
 ### Example use of the third-party API
 
-Obviously, the third-module registry API provides a lot of data to work with. You could essentially create your own version of `https://deno.land/x`. This version could be supercharged with information in the API but not found on the Deno Third Party Modules pages. Ranking the results by a different characteristic would be interesting or you could create your own popularity score algorithm.
+Obviously, the third-module registry API provides a lot of data to work with. You could essentially create your own version of `https://deno.land/x`. This version could be supercharged with information in the API not found on the Deno Third Party Modules pages. Ranking the results by a different characteristic would be interesting or you could create your own popularity score algorithm.
 
 I have create a simple prototype that displays the Deno Third Party Modules page data showing the top 500 modules and adding the Github star count to each module record. [You can see it in action here](https://3rd-party-api.deno.dev/).
 
@@ -319,7 +317,7 @@ This article focused on the Deno third party modules list and the API used to cr
 
 The API was used to revise the way modules are sorted on the [Deno Third Party Modules page](https://deno.land/x). Still, this new ranking is just an initial implementation of the [original algorithm  proposed by Kitson Kelly](https://github.com/denoland/dotland/issues/2133) who no longer works for Deno. If you are interested in improvements to the ranking system, you should post comments to that proposal.
 
-Finally, take a look at [my demo app that used the third party API](https://3rd-party-api.deno.dev/) to show different module ranking views. There are numerous other ways to display and analyze data coming from the API and I urge you to use your imagination and technical skill to improve my humble prototype.
+Finally, take a look at [my demo app that used the third party API](https://3rd-party-api.deno.dev/) to show different module ranking views. There are numerous other ways to display and analyze data coming from the API and I urge you to use your imagination and technical skill to improve on my humble prototype.
 
 ---
 
