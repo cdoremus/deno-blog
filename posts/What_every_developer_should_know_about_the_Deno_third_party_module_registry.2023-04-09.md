@@ -14,7 +14,7 @@ Registered modules can be accessed under the `https://deno.land/x/` URL for ESM 
 
 The original module list was ranked by Github stars, but it was discovered that a lot of the highest ranked entries were npm modules that did not work in Deno using an `https://deno.land/x/` import URL. A change to that ranking was first [proposed by then Deno team member Kitson Kelly](https://github.com/denoland/dotland/issues/2133) in May 2022. He suggested a sorting algorithm based on metrics of popularity, quality and maintenance (see the proposal for details).
 
-The first implementation of the new ranking algorithm -- deployed in early October 2022 -- uses popularity only. The current metric was produced using Google Analytics to track the number of requests to different third-party library import URLs. There are no immediate plans to update the ranking algorithm to include quality and maintenance metrics.
+The first implementation of the new ranking algorithm -- deployed in early October 2022 -- uses popularity only. This metric was produced using Google Analytics to track the number of requests to a given third-party library import URL, so that a popularity score of 100 means that 100 requests were made to that module over 30 days. There are no immediate plans to update the ranking algorithm to include quality and maintenance metrics.
 
 ## Important things to keep in mind before registering a third-party module
 
@@ -323,7 +323,7 @@ Finally, take a look at [my demo app that used the third party API](https://3rd-
 
 ## Acknowledgements
 
-The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps. Leo also reviewed this  article before it was published and I thank him for his thoughtful comments.
+The author would like to thank former Deno team member Kitson Kelly for answering some questions on the API last fall, and current Deno team member Leo Kettmeir for recently filling in my third-party module API knowledge gaps. Leo also reviewed this article before it was published and I thank him for his thoughtful comments.
 
 ## References
 - Kitson Kelly's June, 2022 talk introducing the new third-party API version he was working on: https://youtu.be/G_2AgdgEbkI?t=1554
