@@ -36,7 +36,7 @@ When a module is published the source code in the module's repository is scanned
 
 - **Module authors must self-register a module**
 
-Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It asks for a module name and optionally a subdirectory. It then instructs the module author on how to create a Github webhook so the the module can be picked up by the third-party registry automation.
+Publishing a new third-party module is accomplished by clicking on the button on the third-party modules page labelled "Publish a module". When that is done, the "Adding a module" page will be displayed. It asks for a module name and optionally a subdirectory. It then instructs the module author on how to create a Github webhook so the module can be picked up by the third-party registry automation.
 
 
 ## The Third Party Registry API
