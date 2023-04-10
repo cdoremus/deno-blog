@@ -32,7 +32,7 @@ The third-party registry does not support private Github repositories or another
 
 - **The registry uses TSDoc/JSDoc comments to display module symbols (variables, classes, functions, TS interfaces and type aliases)**
 
-When a module is published the source code in the module's repository is scanned. Each source code file is checked for TSDoc/JSDoc comments for public functions, classes and TypeScript interfaces. If found, the content of the comment is used to create module documentation.  If not found, only the the signatures of public variables, classes, functions, TS interfaces and type aliases will be displayed with no additional documentation, so it is a good idea to make sure your public module exports are well-documented and include example usage in the TSDoc/JSDoc comments.
+When a module is published the source code in the module's repository is scanned. Each source code file is checked for TSDoc/JSDoc comments for public functions, classes and TypeScript interfaces. If found, the content of the comment is used to create module documentation.  If not found, only the signatures of public variables, classes, functions, TS interfaces and type aliases will be displayed with no additional documentation, so it is a good idea to make sure your public module exports are well-documented and include example usage in the TSDoc/JSDoc comments.
 
 - **Module authors must self-register a module**
 
@@ -292,8 +292,7 @@ The **users** field value also comes from GA.
 Note that there is are **quality** and **maintenance** metric fields which were part of the [original page ranking proposal](https://github.com/denoland/dotland/issues/2133), but they are unused right now.
 
 ### Documentation Page Endpoints
-The pages API focuses on data for the module documentation pages
-Third party API routes that begin with `v2/pages` are used to display API documentation for a particular Deno module.
+The pages API focuses on data for the module documentation pages. Third party API routes that begin with `v2/pages` are used to display API documentation for a particular Deno module.
 
 * `/v2/pages/mod/doc/:module/:version/:path*` - Provides data to render a documentation page for a module
 
