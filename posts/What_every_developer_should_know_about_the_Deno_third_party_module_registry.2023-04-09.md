@@ -87,7 +87,7 @@ Here's what the results look like with data from one of the 5,800+ (at the time 
 }
 ```
 The following query parameters are available for this endpoint:
-  1. **limit**: number that limits the result set size
+  1. **limit**: number that limits the result set size (100 by default)
   2. **page**: page number used for pagination
 
 
