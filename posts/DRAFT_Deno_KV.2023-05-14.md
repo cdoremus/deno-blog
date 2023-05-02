@@ -20,13 +20,21 @@ This article will comprehensively summarize this documentation.
 
 ## Keys, values and versions
 ### Keys
-As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is an array. Array members can be of NNNNNNNNNNNNN type.
+As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is an array. Each of the members of the array is called a part. All parts are linked together by what is called 'invisible delimeters' to form the key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
+
+Key parts are ordered lexicographically by their type, and within a given type, they are ordered by their value. Type ordering follows that `Uint8Array` > `string` > `number` > `bigint` > `boolean`. Within each type, there is a [defined ordering](https://deno.com/manual@main/runtime/kv/key_space#key-part-ordering) too. 
 
 ### Values
-Deno KV values must be serializable. ???????
+In order for Deno KV values to be persisted, a value must be a serializable JavaScript type compatible with the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).  Exceptions under the algorithm that prevents persistence includes: 
+- function objects 
+- DOM nodes
+- `RegExp.lastIndex` is not preserved if `RegEx` is used as a value.
+- Property descriptors, setters, getters, and similar metadata-like features of objects are not preserved.
+
+The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument. It is required to do certian mathematical calculations on values including `sum`, `max` and `min`.
 
 ### Versioning
-Each time a new value is persisted to Deno KV, it is automatically given an alphanumeric version token which is based on the timestamp when the value was persisted. KV calls this version token a `versionstamp`. When that value is updated, a new versionstamp is created.
+Each time a new value is persisted to Deno KV, it is automatically given a version based on the timestamp when the value was persisted. KV calls this version a `versionstamp`. When a value is updated, a new versionstamp is created.
 
 
 ## CRUD operations: set, get, delete
