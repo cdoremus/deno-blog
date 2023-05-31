@@ -1,6 +1,6 @@
 ### 2023-05-14
 
-# Deno KV
+# A Comprehensive Guide to Deno KV
 
 Deno KV, a key-value based database is was built into the Deno runtime starting with Deno 1.32.0. Deno Deploy now incorporates Deno KV, and distributes KV data around the world (US, Europe and Asia). This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
 
