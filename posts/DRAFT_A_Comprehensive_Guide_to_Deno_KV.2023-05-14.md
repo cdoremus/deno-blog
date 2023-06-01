@@ -46,8 +46,77 @@ Each time a new value is persisted to Deno KV, it is automatically given a versi
 
 
 ## CRUD operations
+The main CRUD (create, read, update & delete) operations in KV are defined as methods on the `Deno.Kv` class: `set()`(create & update), `get()` (read) and `delete()` (delete).
+
+In it's basic form, the key has a string part representing the data table and an ID part representing a record id. The value would be the record being persisted.
 
 
+**CRUD data**
+
+Most apps contain a users entity encapsulating user data. In that case a TypeScript interface might look like this:
+```ts
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+  phone: string;
+}
+```
+Deno KV CRUD operations for a `User` starts with data that probably comes from a form filled out by a user. In our case, we'll manually create a user with a unique id:
+
+```ts
+const userId = crypto.randomUUID();
+const user = {
+  id: userId,
+  name: "John Doe",
+  email: "john@doe.com",
+  phone: "2071231234"
+}
+```
+
+**Create (`set`)**
+
+Lets connect to the KV data store and insert the data:
+```ts
+const kv = await Deno.openKv();
+await kv.set(["users", userId], user);
+```
+The data table is called "users" and the user id would be the primary key in a SQL database.
+
+The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvCommitResult` object contains a boolean `ok` field and a `versionstamp` field.
+
+
+**Read (`get`)**
+
+Reading or querying a record would use the record's key:
+```ts
+const kv = await Deno.openKv();
+const foundUser: User = await kv.get(["users", userId]);
+```
+
+The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`, which is the default.
+
+**Update (`set`)**
+
+Updating the data would also use the `set()` method
+
+```ts
+const kv = await Deno.openKv();
+user.phone = "5182349876"
+const result = await kv.set(["users", userId], user);
+```
+**Delete (`delete`)**
+
+Deleting a record uses the `delete` method which requires a key argument.
+
+```ts
+const kv = await Deno.openKv();
+await kv.delete(["users", userId]);
+```
+The delete method returns a `Promise<void>`
+
+If any of the
 
 ## Secondary Indexes
 
