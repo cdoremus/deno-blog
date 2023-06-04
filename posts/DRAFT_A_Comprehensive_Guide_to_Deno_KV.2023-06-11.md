@@ -18,45 +18,57 @@
   - [Deno manual and API docs](#deno-manual-and-api-docs)
   - [Apps that use Deno KV](#apps-that-use-deno-kv)
 ## Introduction
-Deno KV, a key-value based database is was built into the Deno runtime starting with Deno 1.32.0. Deno Deploy now incorporates Deno KV (currently on an invite-only basis), and distributes KV data around the world. This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
+Deno KV, a key-value based database was built into the Deno runtime starting with Deno 1.32.0. Deno Deploy now incorporates Deno KV (currently on an invite-only basis), and distributes KV data around the world. This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
 
 The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD. This is a big win for Deno developers!
 
-This article will comprehensively summarize this documentation.
+This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is [spread around the Deno documentation](#deno-manual-and-api-docs), consider this post as a one-stop guide to KV.
 
 
 ## Keys, values and versions
 ### Keys
-As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is an tuple. Each of the members of the tuple is called a part. All parts are linked together by what is called 'invisible delimiters' to form the key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
+As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is an tuple. Each of the members of the tuple is called a part. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
 
-Here's what a Deno KV key would look like:
+Here's what a Deno KV key would look like in it's simplest form:
 ```ts
 // User key
 const userKey = ["users", <userid>];
 // Address key
 const addressKey ["addresses", <addressid>, <userid>];
 ```
-Usually the first key part identifies the entity being persisted, `"users"` or `"addresses"` in this example. The key parts when combined into a compound key should point to a single record. You can ues `crypto.randomUUID()` built into the web framework to create a unique ID.
+Usually the first key part is usually a constant identifying the model collection being persisted, `"users"` or `"addresses"` in this example. The key parts when combined into a compound key should point to a single record. You can use `crypto.randomUUID()` built into the web framework to create a unique ID.
+
+The first-part identifier could be expanded into multiple tokens. For instance, if we have users with roles, we might have the second part representing a role such as:
+```ts
+const userAdminKey = ["users", "admin", <userId>];
+const userCustomerKey = ["users", "customer", <userId>];
+const userGuestKey = ["users", "guest", <userId>];
+```
+If there is a role field on the model, this key could be reduced to:
+```ts
+const userRoleKey = ["users", <userRole>, <userId>];
+```
 
 ### Values
-In order for Deno KV values to be persisted, a value must be a serializable JavaScript type compatible with the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).  Exceptions under the algorithm that prevents persistence includes:
+In order for Deno KV values to be persisted, a value must be a serializable JavaScript type compatible with the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).  The things that don't work with a structured clone include ([more details](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#things_that_dont_work_with_structured_clone)):
 - function objects
 - DOM nodes
 - `RegExp.lastIndex` is not preserved if `RegEx` is used as a value.
 - Property descriptors, setters, getters, and similar metadata-like features of objects are not preserved.
 
-The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. This value is required to do certain mathematical calculations on values including `sum()`, `max()` and `min()`.
+Despite these limitations most common JavaScript entities including `undefined`, `null`, `boolean`, `number`, `string`, `Array`, `Map`, `Uint8Array` and `Object` work as KV values ([a full list](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)).
 
-**TODO**: Elaborate-NNNNNNNNNNNNNNNNNNNNNNNN
-```ts
-const num = new Deno.KvU64(5n);
-console.log(num.value)
-```
-
+The Deno Manual notes that objects with a non-primitive prototype such as class instances or Web API objects are not supported as KV values.
 
 ### Versioning
-Each time a new value is persisted to Deno KV, it is automatically given a version based on the timestamp when the value was persisted. KV calls this version a `versionstamp`. When a value is updated, a new `versionstamp` is created.
+Each time a new value is persisted to Deno KV, it is automatically given a 12-byte version value based on the time when the record was persisted. KV calls this version a `versionstamp`. When a value is updated, a new `versionstamp` is created.
 
+One good use of the `versionstamp` is to reconstruct the mutation history of a particular KV value. **TODO:** how to do this?
+
+
+*TODO:* How to create a KV index with `versionstamp`
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## CRUD operations
 The main CRUD (create, read, update & delete) operations in KV are defined as methods on the `Deno.Kv` class: `set()`(create & update), `get()` (read) and `delete()` (delete).
@@ -196,6 +208,14 @@ await kv.atomic()
     value: new Deno.KvU64(1n),
   })
   .commit();
+```
+The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. This value is required to do certain mathematical calculations on values including `sum()`, `max()` and `min()`.
+
+**TODO**: Elaborate-NNNNNNNNNNNNNNNNNNNNNNNN
+```ts
+// TODO
+const num = new Deno.KvU64(5n);
+console.log(num.value)
 ```
 
 
