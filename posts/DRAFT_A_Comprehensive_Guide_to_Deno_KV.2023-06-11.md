@@ -147,7 +147,7 @@ The `get()` method has an second argument that is optional called `options`. The
 
 Reading multiple records involves the use of `list()` and `getMany()`, two methods on `Deno.Kv`.
 
-**`list()`**
+#### **`list()`**
 
 The `list()` method obtains multiple records and produces an async iterator (`Deno.KvListIterator`) which has a `cursor` field, the current position of the iteration, and a `next()` method to move the iteration to the `cursor` position.
 
@@ -155,7 +155,7 @@ Since the iterator is asynchronous, iteration is usually done with a [`for-of` l
 
 The `list()` method takes two arguments `selector` and `options`:
 
-#### The first `list` argument: `selector`
+1. **The first `list` argument: `selector`**
 
 The `selector` is an object with tree optional arguments: `prefix`, `start` and `end`. All the arguments have a standard KV key as discussed above.
 
@@ -170,37 +170,59 @@ const iterUsers = kv.list({prefix: ["users"]});
 // list of admins
 const iterAdmin = kv.list({prefix: ["users", "admin"]});
 ```
-Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either.
+Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either `start` or `end`.
 
 **`start` and `end` options**
 
-The `start` or `end` options of `list()` define a range of KV records you want to select. But to be able to use `start` or `end`, you need to understand how key ordering is done. The fancy term is lexicographical ordering which has been compared to dictionary order.
+The `start` or `end` options of `list()` define a range of KV records you want to select. But to be able to use `start` or `end`, you need to understand how key ordering is done (see the [sorting with indexes section below](#sorting-with-indexes)).
 
-Ordering comes in handing when you want to sort your KV records by one or more criteria ([see below]()). In the case of `start` and `end` they define the beginning or ending of a range of ordered keys.
-
-**TODO:** Elaborate key ordering (SHOULD THIS BE SOMEWHERE ELSE???)
+While key ordering is instrumental for displaying KV records by one or more criteria, for `start` and `end` is is used to define the beginning and ending of a range of ordered keys.
 
 The `start` option starts with the first matching record while the `end` method includes all previous records, but not the record it points to.
 ```ts
+// TODO: Example of start & end
+
+```
+If you want to make sure that the end record is included in the range, you can use a key like `["zzzzzzzzzzz"] to insure that there are no keys with lower order.
+```ts
+// TODO: Example
+```
+
+Either one of them can be used with `prefix`
+```ts
+// TODO: Example of all options with prefix
+
+```
+
+2. **The second `list()` argument: `options`**
+
+The `options` argument has a collection of fields:
+  - `limit: number` - A `number` limits the size of a `list()` result set
+  - `cursor: string` - the `cursor` to resume iteration. Recall the `list()` method returns a `Deno.KvListIterator` that contains a `cursor` field.
+  - `reverse: boolean` - returns the list in reverse order
+    - `prefix`, `start` or `end` can be used with `reverse`.
+  - `batchSize: number` - the size of the batches in which the list operation is performed. The default is equal to the 'limit' value or 100
+  - `consistency: Deno.KvConsistencyLevel` - the transactional consistency, either `"strong"` or `"eventual"`
+
+```ts
+// TODO: Example of all options with prefix
 
 ```
 
 
-Either one of them can be used with `prefix`
-
-**The second `list()` argument: `options`**
-
-- `options` fields
-  - `limit`
-  - `cursor`
-  - `reverse`
-  - `consistency`
-  - `batchSize`
-
-
 #### `getMany()`
 
-The `getMany()` method is used to combine two or more indexes. For instance NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+The `getMany()` method obtains an array of `Deno.KvEntryMaybe` records (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null).
+
+The `getMany` method takes two arguments, `keys` and `options` which is optional.
+
+**`keys`**
+
+The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getMany` is that the number of values in the result set are equal to the number of `keys` in the array.
+```ts
+// TODO: Example
+```
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 ### Update (`set`)
 
@@ -270,6 +292,7 @@ console.log(num.value)
 ```
 
 ## Deno KV Drawbacks
+- It restricts you to Deno Deploy deployment
 - Its a no-SQL database, not a relational db
   - the mental model is very different from a RDBMS
   - you need to create your own indexes manually
