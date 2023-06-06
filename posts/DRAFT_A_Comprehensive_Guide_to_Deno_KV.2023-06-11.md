@@ -134,13 +134,13 @@ Deno KV has three methods for reading or querying the data store. One -- `get()`
 
 ##### Reading single records (`get`)
 
-Reading or querying a record would use the record's key:
+Reading or querying a record would use the `get()` method that takes the key of the record being searched as the first argument:
 ```ts
 const kv = await Deno.openKv();
 const foundUser: User = await kv.get(["users", userId]);
 ```
 
-The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`, which is the default ([see discussion below for details](#data-consistency)).
+The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
 
 ##### Reading multiple records (`list` & `getMany`)
@@ -163,7 +163,7 @@ The `selector` is an object with tree optional arguments: `prefix`, `start` and 
 
 Unlike the `set`, `get` and `delete` CRUD methods, the `prefix` key can be a key part subset.
 
-So if you just wanted a list of users or user admins, your `list()` call would be one of the following:
+Let's say you just wanted a list of users or user admins, your `list()` call would be one of the following:
 ```ts
 // list of users
 const iterUsers = kv.list({prefix: ["users"]});
@@ -176,12 +176,11 @@ Besides `prefix`, `start` and `end` are `selector` argument options. The `list()
 
 The `start` or `end` options of `list()` define a range of KV records you want to select. But to be able to use `start` or `end`, you need to understand how key ordering is done (see the [sorting with indexes section below](#sorting-with-indexes)).
 
-While key ordering is instrumental for displaying KV records by one or more criteria, for `start` and `end` is is used to define the beginning and ending of a range of ordered keys.
+While key ordering is instrumental for sorting, with `start` and `end` the order is used to define the beginning and ending of a range of ordered keys returned in the result set.
 
 The `start` option starts with the first matching record while the `end` method includes all previous records, but not the record it points to.
 ```ts
 // TODO: Example of start & end
-
 ```
 If you want to make sure that the end record is included in the range, you can use a key like `["zzzzzzzzzzz"] to insure that there are no keys with lower order.
 ```ts
@@ -247,8 +246,37 @@ If any of the
 ## Transactions with `atomic()`
 - limit to 10 writes in an `atomic()` call
 - the function of `check()` and what happens if it fails
--
+- set
+- commit
+- transaction failures
+    - failed check
+    - failed commit
 ## Secondary Indexes
+
+It's recommended that you start with an index that contains an unique key, like user persistence with a user id;
+
+### Creation
+Think of a secondary index as a different way to find a record or to display the data.
+
+For instance, if you have a primary index that contains a key part that names the data grouping (e.g "users") and a part that contains a unique id (e.g. user id), you could also have an index that uses the email address as a unique identifier. Here are example records comparing the two:
+```ts
+// the primary index using the user id
+kv.set(["users", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+// a secondary index using the email address
+kv.set(["users_by_email", "jdoe@example.com"], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+```
+Keys can be created with multiple criteria such name and id. You should include the id because multiple users could have the same name.
+
+Here's an example:
+```ts
+// A secondary index by name
+kv.set(["users_by_name", "John Smith", 1], {id: 1, name: "John Smith", email: "jsmith@example.com"})
+```
+**TODO**: More including use of transactions when creating secondary indexes
+
+
+### Updating and deletion
+
 ### Sorting with indexes
 
 In KV, key parts are ordered lexicographically (roughly dictionary order) by their type, and within a given type, they are ordered by their value. Type ordering follows that `Uint8Array` > `string` > `number` > `bigint` > `boolean`. Within each type, there is a [defined ordering](https://deno.com/manual@main/runtime/kv/key_space#key-part-ordering) too.
@@ -319,7 +347,6 @@ For more details see https://deno.com/blog/kv#consistency-and-performance
 When data is written to a Deno KV store, the following things happen:
 1. The data is replicated synchronously to two data centers within the same Deno Deploy region.
 2. The data is replicated to the other data centers asynchronously.
-Data replication
 
 Deno Deploy docs state that the full asynchronous replication of data should occur withing 10 seconds.
 
