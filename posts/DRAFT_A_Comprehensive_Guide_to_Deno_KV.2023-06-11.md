@@ -6,7 +6,8 @@
 - [A Comprehensive Guide to Deno KV](#a-comprehensive-guide-to-deno-kv)
   - [Table of contents](#table-of-contents)
   - [Introduction](#introduction)
-  - [Keys, values and versions](#keys-values-and-versions)
+  - [Indexes](#indexes)
+  - [Keys, values and versionstamp](#keys-values-and-versionstamp)
     - [Keys](#keys)
     - [Values](#values)
     - [Versioning](#versioning)
@@ -44,25 +45,35 @@ The Deno runtime has an implementation of Deno KV using sqlite for persistence. 
 
 This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is in [multiple places in the Deno documentation](#deno-manual-and-api-docs), so consider this post as a one-stop guide to KV.
 
+## Indexes
+
+An index in Deno KV parlance are the units of data storage. In relational database (RDBMS) terms, they can be thought of as a table, but they are more like a SQL index because they are ordered by key value for fast lookup.
+
+A **primary index** is the index that stores a record using a unique key for each record, usually a UUID. We'll talk more about them in the next section. A **secondary index** stores additional information or is used for sorting. We'll talk about them later.
+
 
 ## Keys, values and versionstamp
 
-Deno KV have well-defined keys, values and a versionstamp that signifies a specific version of a value.
+Deno KV have well-defined keys, values and a versionstamp that represents a value's version.
 ### [KV Keys](https://deno.com/manual@v1.34.0/runtime/kv/key_space#keys)
-As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a fixed length. Each of the members of the tuple is called a part. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
+As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a fixed length. Each of the members of the tuple is called a **part**. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
 
-Here are a couple of examples of a Deno KV key in it's simplest form: :
+
+Here are a couple of examples of a Deno KV key used to identify unique records:
 ```ts
 // User key
-const userKey = ["user", <userid>]; // For storing user objects
-// Address key
-const addressKey ["user_address", <userid>]; // For storing user address
+const userKey = ["user", <userid>]; // Used for storing user objects
+// Address key for a particular User
+const addressKey ["address", <userId>]; // Used for storing a user's address
 ```
-When used to persist values, the resulting index is know as a **primary index** because it they are used to lookup values by an id.
+As stated above, when a unique key is used to persist values, the resulting index is know as a primary index. The Web platform provides `crypto.getRandomUUID()` to obtain a unique id.
 
-With a primary index the first key part (aka key prefix) is usually a string constant identifying the model collection being persisted, `"user"` or `"address"` in this example. The key parts when combined into a compound key should point to a single record.
+Key parts are an ordered sequence so that `[1, "user"]` is not the same as `["user", 1]`.
 
-The first part could be expanded into multiple parts. For instance, if we have user with roles, we might have the second part representing a role such as:
+When used in a primary index the first key part (aka key prefix) is usually a string constant identifying the model collection being persisted, `"user"` or `"address"` in the example. When used to add records to an index, the key parts are combined into a compound key.
+
+
+The first key part could be expanded into multiple parts. For instance, if we have user with roles, we might have the second part representing a role such as:
 ```ts
 const userAdminKey = ["user", "admin", <userId>];
 const userCustomerKey = ["user", "customer", <userId>];
@@ -72,7 +83,7 @@ If there is a role field on the model, the previous keys could be reduced to (as
 ```ts
 const userRoleKey = ["user_by_role", <userRole>, <userId>];
 ```
-Indexes like this are called secondary indexes. They need to be persisted in an atomic transaction with the primary index ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"` (`user_roles` is another appropriate name).
+Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"` (`user_roles` is another appropriate name).
 
 
 ### [KV Values](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)
@@ -113,7 +124,7 @@ The main CRUD (create, read, update & delete) operations in KV are defined as me
 All CRUD operations on Deno KV start with a connection to the KV database which is done with a simple call to `Deno.openKv()`:
 ```ts
 // Open a connection to Deno KV
-const kv = Deno.openKv();
+const kv = await Deno.openKv();
 ```
 
 We'll be using the `kv` KV connection object throughout our examples below.
@@ -163,12 +174,13 @@ Deno KV has three methods for reading or querying the data store. One -- `get()`
 
 ##### Finding single records (`get()`)
 
-In it's simplest form, the key has a string part representing the data table and an ID part representing a record id. The value would be the record being persisted.
-
-Reading or querying a record would use the `get()` method that takes the key of the record being searched as the first argument:
+Reading or querying a KV record would use the `get()` method that takes the key of the record being searched as the first argument:
 ```ts
 const foundUser: User = await kv.get<User>(["user", userId]);
 ```
+A call to `get()` always returns an object with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`.
+
+ If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`.
 
 The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
@@ -258,7 +270,6 @@ NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 Updating the data would also use the `set()` method
 
 ```ts
-const kv = await Deno.openKv();
 user.phone = "5182349876"
 const result = await kv.set(["user", userId], user);
 ```
@@ -267,7 +278,6 @@ const result = await kv.set(["user", userId], user);
 Deleting a record uses the `delete()` method which requires a key argument.
 
 ```ts
-const kv = await Deno.openKv();
 await kv.delete(["user", userId]);
 ```
 The delete method returns a `Promise<void>`
