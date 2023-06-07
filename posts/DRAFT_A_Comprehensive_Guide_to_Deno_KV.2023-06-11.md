@@ -20,7 +20,7 @@
     - [Reading a list with `list()`](#reading-a-list-with-list)
     - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
-    - [Track a record's history](#track-a-records-history)
+    - [Tracking a record's history](#tracking-a-records-history)
   - [Secondary Indexes](#secondary-indexes)
     - [Creation](#creation)
     - [Updating and deletion](#updating-and-deletion)
@@ -286,13 +286,16 @@ NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 ## Transactions with `atomic()`
 
-The `atomic()` method on `Deno.Kv` is used to do a transactions with KV to ensure that all KV operations are part of a single atomic transaction. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
+The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
 
-** check()**
+### Using check() to validate data
 
 A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of the key-value pair being persisted matches the `versionstamp` of the data being persisted.
 
-If the check fails, then the transaction will fail and the data will not be committed. For a new record, the `versionstamp` would be null since it is the first record in the KV data store. **TODO** Elaborate
+If `check()` fails, then the transaction will fail and the data will not be committed.
+
+The `set()` method
+
 
 ```ts
 // TODO: Fix
@@ -311,7 +314,7 @@ const ok = kv.atomic().
     - failed check
     - failed commit
 
-### Track a record's history
+### Tracking a record's history
 **TODO:** how use the versionstamp to create a record history
 - include discussion of versionstamp ordering
 - versionstamp is returned from a set() call, so you would need to persist the VS to an index for each record modification.
