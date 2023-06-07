@@ -11,13 +11,13 @@
     - [Values](#values)
     - [Versioning](#versioning)
   - [CRUD operations](#crud-operations)
-    - [Create (`set`)\*\*](#create-set)
+    - [Create (`set()`)\*\*](#create-set)
     - [Read (`get()`, `list()` \& `getMany()`)\*\*](#read-get-list--getmany)
         - [Finding single records (`get`)](#finding-single-records-get)
         - [Reading a list with `list()`](#reading-a-list-with-list)
         - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
-    - [Update (`set`)](#update-set)
-    - [Delete (`delete`)](#delete-delete)
+    - [Update (`set()`)](#update-set)
+    - [Delete (`delete()`)](#delete-delete)
   - [Transactions with `atomic()`](#transactions-with-atomic)
   - [Secondary Indexes](#secondary-indexes)
     - [Creation](#creation)
@@ -49,30 +49,30 @@ This article will cover all aspects of Deno KV with simple, easy-to-understand e
 
 Deno KV have well-defined keys, values and a versionstamp that signifies a specific version of a value.
 ### [KV Keys](https://deno.com/manual@v1.34.0/runtime/kv/key_space#keys)
-As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a constant number of values. Each of the members of the tuple is called a part. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
+As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a fixed length. Each of the members of the tuple is called a part. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
 
-Here's what a Deno KV key would look like in it's simplest form, know as a primary index because it is used to lookup values by one or more ids:
+Here are a couple of examples of a Deno KV key in it's simplest form: :
 ```ts
 // User key
-const userKey = ["users", <userid>];
+const userKey = ["user", <userid>]; // For storing user objects
 // Address key
-const addressKey ["addresses", <addressid>, <userid>];
+const addressKey ["user_address", <userid>]; // For storing user address
 ```
+When used to persist values, the resulting index is know as a **primary index** because it they are used to lookup values by an id.
 
+With a primary index the first key part (aka key prefix) is usually a string constant identifying the model collection being persisted, `"user"` or `"address"` in this example. The key parts when combined into a compound key should point to a single record.
 
-With a primary index the first key part is usually a constant identifying the model collection being persisted, `"users"` or `"addresses"` in this example. The key parts when combined into a compound key should point to a single record. You can use `crypto.randomUUID()` built into the standard Web API to create a unique ID.
-
-The first part could be expanded into multiple parts. For instance, if we have users with roles, we might have the second part representing a role such as:
+The first part could be expanded into multiple parts. For instance, if we have user with roles, we might have the second part representing a role such as:
 ```ts
-const userAdminKey = ["users", "admin", <userId>];
-const userCustomerKey = ["users", "customer", <userId>];
-const userGuestKey = ["users", "guest", <userId>];
+const userAdminKey = ["user", "admin", <userId>];
+const userCustomerKey = ["user", "customer", <userId>];
+const userGuestKey = ["user", "guest", <userId>];
 ```
 If there is a role field on the model, the previous keys could be reduced to (assuming each user has one role):
 ```ts
-const userRoleKey = ["users_by_role", <userRole>, <userId>];
+const userRoleKey = ["user_by_role", <userRole>, <userId>];
 ```
-Indexes like this are called secondary indexes and are created with the primary index within an atomic transaction ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"users_by_role"` (`user_roles` is another appropriate name).
+Indexes like this are called secondary indexes. They need to be persisted in an atomic transaction with the primary index ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"` (`user_roles` is another appropriate name).
 
 
 ### [KV Values](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)
@@ -89,7 +89,7 @@ The Deno Manual notes that objects with a non-primitive prototype such as class 
 Here are examples of how the keys and values are used to persist to Deno KV (the `set()` method will be discussed later):
 ```ts
 // persist an object with id, name and role fields
-kv.set(["users", "a12345"], {id: "a12345", name: "Craig", role: "admin"});
+kv.set(["user", "a12345"], {id: "a12345", name: "Craig", role: "admin"});
 // persist an environmental variable value
 kv.set(["env", "IS_PROD"], true);
 // persist a hit count by page and userId
@@ -110,12 +110,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## CRUD operations
 The main CRUD (create, read, update & delete) operations in KV are defined as methods on the `Deno.Kv` class: `set()`(create & update), `get()` (read) and `delete()` (delete).
 
-?????In it's basic form, the key has a string part representing the data table and an ID part representing a record id. The value would be the record being persisted.??????
+All CRUD operations on Deno KV start with a connection to the KV database which is done with a simple call to `Deno.openKv()`:
+```ts
+// Open a connection to Deno KV
+const kv = Deno.openKv();
+```
 
+We'll be using the `kv` KV connection object throughout our examples below.
 
 **CRUD data**
 
-Most apps contain a users model encapsulating user data. A TypeScript interface representing a user might look like this:
+It's best to create a TypeScript type or interface to represent data models. For instance, a user model will look something like this:
 ```ts
 interface User {
   id: string;
@@ -124,10 +129,10 @@ interface User {
   phone?: string;
 }
 ```
-Deno KV CRUD operations for a `User` starts with data that may come from an HTML form filled out by a user. In our case, we'll manually create a user with a unique id:
+Deno KV CRUD operations for a `User` will persist data that often comes from an HTML form filled out by a user. In our case, we'll manually create a user with a unique id:
 
 ```ts
-const userId = crypto.randomUUID();
+const userId = "1";
 const user = {
   id: userId,
   name: "John Doe",
@@ -136,14 +141,18 @@ const user = {
 }
 ```
 
-### Create (`set`)**
+The user id can be hard coded, but it's best that it is generated  as a unique value. The `crypto` object built into the Web platform is an easy way to create a unique id:
+```ts
+const userId = crypto.randomUUID();
+```
+
+### Create (`set()`)**
 
 Lets connect to the KV data store and insert the `user` data:
 ```ts
-const kv = await Deno.openKv();
-await kv.set(["users", userId], user);
+await kv.set<User>(["user", userId], user);
 ```
-In SQL database terms the data table would be called "users" and the user id would be the primary key.
+In SQL database terms the data table would be called "user" and the user id would be the primary key.
 
 The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvCommitResult` object contains a boolean `ok` field and a `versionstamp` field. If the `set()` call fails, `ok=false`. The `versionstamp` would be the versionstamp of the persisted record.
 
@@ -152,18 +161,19 @@ The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvC
 
 Deno KV has three methods for reading or querying the data store. One -- `get()` -- is used to find one value. The other two -- `list()` & `getMany()` -- are to query for multiple values.
 
-##### Finding single records (`get`)
+##### Finding single records (`get()`)
+
+In it's simplest form, the key has a string part representing the data table and an ID part representing a record id. The value would be the record being persisted.
 
 Reading or querying a record would use the `get()` method that takes the key of the record being searched as the first argument:
 ```ts
-const kv = await Deno.openKv();
-const foundUser: User = await kv.get(["users", userId]);
+const foundUser: User = await kv.get<User>(["user", userId]);
 ```
 
 The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
 
-##### Reading multiple records (`list` & `getMany`)
+##### Reading multiple records (`list()` & `getMany()`)
 
 Reading multiple records involves the use of `list()` and `getMany()`, two methods on `Deno.Kv`.
 
@@ -181,14 +191,14 @@ The `selector` is an object with tree optional arguments: `prefix`, `start` and 
 
 **`prefix` option of `list()`**
 
-Unlike the `set`, `get` and `delete` CRUD methods, the `prefix` key can be a key part subset.
+Unlike the `set()`, `get` and `delete()` CRUD methods, the `prefix` key can be a key part subset.
 
-Let's say you just wanted a list of users or user admins, your `list()` call would be one of the following:
+Let's say you just wanted a list of user or user admins, your `list()` call would be one of the following:
 ```ts
-// list of users
-const iterUsers = kv.list({prefix: ["users"]});
+// list of user
+const iteruser = kv.list({prefix: ["user"]});
 // list of admins
-const iterAdmin = kv.list({prefix: ["users", "admin"]});
+const iterAdmin = kv.list({prefix: ["user", "admin"]});
 ```
 Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either `start` or `end`.
 
@@ -233,37 +243,57 @@ The `options` argument has a collection of fields:
 
 The `getMany()` method obtains an array of `Deno.KvEntryMaybe` records (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null).
 
-The `getMany` method takes two arguments, `keys` and `options` which is optional.
+The `getMany()` method takes two arguments, `keys` and `options` which is optional.
 
 **`keys`**
 
-The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getMany` is that the number of values in the result set are equal to the number of `keys` in the array.
+The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getMany()` is that the number of values in the result set are equal to the number of `keys` in the array.
 ```ts
 // TODO: Example
 ```
 NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
-### Update (`set`)
+### Update (`set()`)
 
 Updating the data would also use the `set()` method
 
 ```ts
 const kv = await Deno.openKv();
 user.phone = "5182349876"
-const result = await kv.set(["users", userId], user);
+const result = await kv.set(["user", userId], user);
 ```
-### Delete (`delete`)
+### Delete (`delete()`)
 
-Deleting a record uses the `delete` method which requires a key argument.
+Deleting a record uses the `delete()` method which requires a key argument.
 
 ```ts
 const kv = await Deno.openKv();
-await kv.delete(["users", userId]);
+await kv.delete(["user", userId]);
 ```
 The delete method returns a `Promise<void>`
 
 If any of the
 ## Transactions with `atomic()`
+
+The `atomic()` method on `Deno.Kv` is used to do a transactions with KV to ensure that all KV operations are part of a single atomic transaction. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
+
+** check()**
+
+A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of the key-value pair being persisted matches the `versionstamp` of the data being persisted.
+
+If the check fails, then the transaction will fail and the data will not be committed. For a new record, the `versionstamp` would be null since it is the first record in the KV data store. **TODO** Elaborate
+
+```ts
+// TODO: Fix
+const ok = kv.atomic().
+  .check()
+  .set()
+  .commit();
+```
+
+
+
+
 - limit to 10 writes in an `atomic()` call
 - the function of `check()` and what happens if it fails
 - set
@@ -273,31 +303,31 @@ If any of the
     - failed commit
 ## Secondary Indexes
 
-You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "users" model. In that case, a particular "users" record will be found using the id.
+You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
 
 ### Creation
 A secondary index is a different way to find a record or multiple records.
 
-For instance, besides a primary index with a model part (e.g "users") and a unique id part (e.g. user id), you could have an index that uses the email address as a unique identifier. These indexes usually have a name part that describes the index such as "users_by_email".
+For instance, besides a primary index with a model part (e.g "user") and a unique id part (e.g. user id), you could have an index that uses the email address as a unique identifier. These indexes usually have a name part that describes the index such as "user_by_email".
 
 Here are example records comparing a primary and secondary index using a unique identifier:
 ```ts
 // the primary index using the user id
-kv.set(["users", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+kv.set(["user", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
 // a secondary index using the email address
-kv.set(["users_by_email", "jdoe@example.com"], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+kv.set(["user_by_email", "jdoe@example.com"], {id: 1, name: "John Doe", email: "jdoe@example.com"})
 ```
-Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple users could have the same name. Here's an example:
+Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple user could have the same name. Here's an example:
 ```ts
 // A secondary index by name and id
-kv.set(["users_by_name", "John Smith", 1], {id: 1, name: "John Smith", email: "jsmith@example.com"})
+kv.set(["user_by_name", "John Smith", 1], {id: 1, name: "John Smith", email: "jsmith@example.com"})
 ```
 Often a secondary index includes values that are a duplicate of the values in a primary index, usually an object or array. But, instead the secondary key could just have a value that id the id that can be used to look up the full value in the primary index. For instance:
 ```ts
 // A secondary index using the email address with the primary index id as the value
-kv.set(["users_by_email", "jdoe@example.com"], 1)
+kv.set(["user_by_email", "jdoe@example.com"], 1)
 // Use the id to lookup the full object
-kv.set(["users", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+kv.set(["user", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
 ```
 
 **TODO**: More including use of transactions when creating secondary indexes
@@ -311,15 +341,15 @@ In KV, key parts are ordered lexicographically (roughly dictionary order) by the
 
 The significance of the key ordering is it can be used to sort values. You do that by creating an secondary index using the desired sorting criteria as key parts.
 
-For instance, if you wanted to order users by their last name, your index would have a primary key with a record that looked was created like this:
+For instance, if you wanted to order user by their last name, your index would have a primary key with a record that looked was created like this:
 
 ```ts
-ks.set(["users", "<userId>"], <user object record>)
+ks.set(["user", "<userId>"], <user object record>)
 ```
 
 An index for sorting by name would look like this:
 ```ts
-ks.set(["users", "<lastName>", "<firstName>", "<userId>"], <user object record>)
+ks.set(["user", "<lastName>", "<firstName>", "<userId>"], <user object record>)
 ```
 You'll noticed that I added `userId` to the index. Otherwise duplicate records with the same first and last name will be ignored when the index is created. You could also use `email` (or another unique identifier) instead of `userId`.
 
