@@ -8,18 +8,19 @@
   - [Introduction](#introduction)
   - [Indexes](#indexes)
   - [Keys, values and versionstamp](#keys-values-and-versionstamp)
-    - [Keys](#keys)
-    - [Values](#values)
-    - [Versioning](#versioning)
+    - [Keys](#kv-keys)
+    - [Values](#kv-values)
+    - [Versionstamp](#kv-versionstamp)
   - [CRUD operations](#crud-operations)
-    - [Create (`set()`)\*\*](#create-set)
-    - [Read (`get()`, `list()` \& `getMany()`)\*\*](#read-get-list--getmany)
-        - [Finding single records (`get`)](#finding-single-records-get)
-        - [Reading a list with `list()`](#reading-a-list-with-list)
-        - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
+    - [Create (`set()`)](#create-set)
+    - [Read (`get()`)](#read-get)
     - [Update (`set()`)](#update-set)
     - [Delete (`delete()`)](#delete-delete)
+  - [Reading multiple records (`list()` & `getMany()`)](#reading-multiple-records-list--getmany)
+    - [Reading a list with `list()`](#reading-a-list-with-list)
+    - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
+    - [Track a record's history](#track-a-records-history)
   - [Secondary Indexes](#secondary-indexes)
     - [Creation](#creation)
     - [Updating and deletion](#updating-and-deletion)
@@ -73,7 +74,7 @@ Key parts are an ordered sequence so that `[1, "user"]` is not the same as `["us
 When used in a primary index the first key part (aka key prefix) is usually a string constant identifying the model collection being persisted, `"user"` or `"address"` in the example. When used to add records to an index, the key parts are combined into a compound key.
 
 
-The first key part could be expanded into multiple parts. For instance, if we have user with roles, we might have the second part representing a role such as:
+The first key part could be expanded into multiple parts. For instance, if we have a user with roles, we might have the second part representing a role such as:
 ```ts
 const userAdminKey = ["user", "admin", <userId>];
 const userCustomerKey = ["user", "customer", <userId>];
@@ -83,7 +84,7 @@ If there is a role field on the model, the previous keys could be reduced to (as
 ```ts
 const userRoleKey = ["user_by_role", <userRole>, <userId>];
 ```
-Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"` (`user_roles` is another appropriate name).
+Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index in order that the data is consistent between indexes ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"`.
 
 
 ### [KV Values](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)
@@ -104,30 +105,28 @@ kv.set(["user", "a12345"], {id: "a12345", name: "Craig", role: "admin"});
 // persist an environmental variable value
 kv.set(["env", "IS_PROD"], true);
 // persist a hit count by page and userId
-kv.set(["hits", "account", "a12345"], 254);
+kv.set(["hits", "account.tsx", "a12345"], 254);
 ```
 ### [KV versionstamp](https://deno.com/manual@v1.34.0/runtime/kv/key_space#versionstamp)
 Each time a new value is persisted to Deno KV, it is automatically given a 12-byte version value based on the time when the record was persisted. KV calls this version a `versionstamp`. When a value is updated, a new `versionstamp` is created.
 
-One good use of the `versionstamp` is to reconstruct the mutation history of a particular KV value.
+A new `versionstamp` will always be 'larger' than the previous one such that the second modification of a record will always be greater than the first in a boolean comparison (versionstamp2 > versionstamp1).
 
-**TODO:** how use the versionstamp to create a record history
-- include discussion of versionstamp ordering
+The `versionstamp` assures that transactions are done atomically thus making sure that affiliated relational records in different indexes are consistent. Atomic operations in Deno KV can be checked to make sure that the data is consistent between the last fetch (`get()`) and when the new data will be persisted. This check is done with the record's `versionstamp` ([for details see below](#transactions-with-atomic)).
 
-**TODO:** How to create a KV index with `versionstamp`
+One good use of the `versionstamp` is to [reconstruct the mutation history of a particular KV record](#track-a-records-history).
 
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## CRUD operations
 The main CRUD (create, read, update & delete) operations in KV are defined as methods on the `Deno.Kv` class: `set()`(create & update), `get()` (read) and `delete()` (delete).
 
 All CRUD operations on Deno KV start with a connection to the KV database which is done with a simple call to `Deno.openKv()`:
 ```ts
-// Open a connection to Deno KV
-const kv = await Deno.openKv();
+// Open a KV connection returning a Deno.Kv instance
+const kv: Deno.Kv = await Deno.openKv();
 ```
 
-We'll be using the `kv` KV connection object throughout our examples below.
+We'll be using the `kv` KV connection object (`Deno.Kv` instance) throughout our examples below.
 
 **CRUD data**
 
@@ -140,7 +139,7 @@ interface User {
   phone?: string;
 }
 ```
-Deno KV CRUD operations for a `User` will persist data that often comes from an HTML form filled out by a user. In our case, we'll manually create a user with a unique id:
+Deno KV CRUD operations for a `User` will persist data that often comes from an HTML registration form filled out by a user. In our case, we'll manually create a user with a unique id:
 
 ```ts
 const userId = "1";
@@ -168,28 +167,46 @@ In SQL database terms the data table would be called "user" and the user id woul
 The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvCommitResult` object contains a boolean `ok` field and a `versionstamp` field. If the `set()` call fails, `ok=false`. The `versionstamp` would be the versionstamp of the persisted record.
 
 
-### Read (`get()`, `list()` & `getMany()`)**
+### Read (`get()`)**
 
-Deno KV has three methods for reading or querying the data store. One -- `get()` -- is used to find one value. The other two -- `list()` & `getMany()` -- are to query for multiple values.
-
-##### Finding single records (`get()`)
-
-Reading or querying a KV record would use the `get()` method that takes the key of the record being searched as the first argument:
+The `get()` method is used to get a single record from the Deno KV store. That operation takes an argument that is the key of the record being searched:
 ```ts
-const foundUser: User = await kv.get<User>(["user", userId]);
+const foundUser: Deno.KvEntryMaybe<User> = await kv.get<User>(["user", userId]);
 ```
-A call to `get()` always returns an object with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`.
+A call to `get()` returns an object `Deno.KvEntryMaybe` object containing with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`. In this example the found
 
- If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`.
+ If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`. That is why there return value is typed `KvEntryMaybe` and not `KvEntry`, which is a valid type.
 
-The `get()` method has an second argument that is optional called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
+#### Options
 
+The `get()` method has an optional second argument called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
-##### Reading multiple records (`list()` & `getMany()`)
+When running Deno KV locally, the `consistency` value is not relevant since the KV store is local. It is relevant when an application using Deno KV runs in the cloud on Deno Deploy since KV store instances are distributed in the cloud([see below](LINK NEEDED)).
+
+### Update (`set()`)
+
+Updating the data would also use the `set()` method
+
+```ts
+user.phone = "5182349876"
+const result = await kv.set(["user", userId], user);
+```
+### Delete (`delete()`)
+
+Deleting a record uses the `delete()` method which requires a key argument.
+
+```ts
+await kv.delete(["user", userId]);
+```
+The delete method returns a `Promise<void>`
+
+If any of the
+
+## Reading multiple records (`list()` & `getMany()`)
 
 Reading multiple records involves the use of `list()` and `getMany()`, two methods on `Deno.Kv`.
 
-#### Reading a list with `list()`
+### Reading a list with `list()`
 
 The `list()` method obtains multiple records and produces an async iterator (`Deno.KvListIterator`) which has a `cursor` field, the current position of the iteration, and a `next()` method to move the iteration to the `cursor` position.
 
@@ -251,7 +268,7 @@ The `options` argument has a collection of fields:
 ```
 
 
-##### Combining index records with `getMany()`
+### Combining index records with `getMany()`
 
 The `getMany()` method obtains an array of `Deno.KvEntryMaybe` records (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null).
 
@@ -265,24 +282,8 @@ The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getM
 ```
 NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
-### Update (`set()`)
 
-Updating the data would also use the `set()` method
 
-```ts
-user.phone = "5182349876"
-const result = await kv.set(["user", userId], user);
-```
-### Delete (`delete()`)
-
-Deleting a record uses the `delete()` method which requires a key argument.
-
-```ts
-await kv.delete(["user", userId]);
-```
-The delete method returns a `Promise<void>`
-
-If any of the
 ## Transactions with `atomic()`
 
 The `atomic()` method on `Deno.Kv` is used to do a transactions with KV to ensure that all KV operations are part of a single atomic transaction. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
@@ -302,8 +303,6 @@ const ok = kv.atomic().
 ```
 
 
-
-
 - limit to 10 writes in an `atomic()` call
 - the function of `check()` and what happens if it fails
 - set
@@ -311,6 +310,17 @@ const ok = kv.atomic().
 - transaction failures
     - failed check
     - failed commit
+
+### Track a record's history
+**TODO:** how use the versionstamp to create a record history
+- include discussion of versionstamp ordering
+- versionstamp is returned from a set() call, so you would need to persist the VS to an index for each record modification.
+- VS is als returned from kv.atomic() call. The same VS is assigned to each set() call chained to atomic()
+**TODO:** How to create a KV index with `versionstamp`
+- use VS in return value of set() or atomic().set().commit() and put it in an index that has the primary index key, something like:
+  kv.set(["user_history", <userid>], <versionstamp>)
+
+
 ## Secondary Indexes
 
 You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
@@ -392,7 +402,8 @@ console.log(num.value)
 - Its a no-SQL database, not a relational db
   - the mental model is very different from a RDBMS
   - you need to create your own indexes manually
-- future pricing is unknown
+- Deno Deploy is the only cloud provider that supports Deno KV
+  - future pricing is unknown and may depend on use or storage
 
 ## KV on Deno Deploy
 
