@@ -18,9 +18,13 @@
     - [Delete (`delete()`)](#delete-delete)
   - [Reading multiple records (`list()` & `getMany()`)](#reading-multiple-records-list--getmany)
     - [Reading a list with `list()`](#reading-a-list-with-list)
+      - [Pagination with `list()`](#pagination-with-list)
     - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
+    - [Using `check()` to validate data](#using-check-to-validate-data)
+    - [Persisting data in a KV transaction](#persisting-data-in-a-kv-transaction)
     - [Tracking a record's history](#tracking-a-records-history)
+    - [Transaction failures](#transaction-failures)
   - [Secondary Indexes](#secondary-indexes)
     - [Creation](#creation)
     - [Updating and deletion](#updating-and-deletion)
@@ -266,8 +270,12 @@ The `options` argument has a collection of fields:
 // TODO: Example of all options with prefix
 
 ```
+#### Pagination with `list()`
 
+You use the `cursor` filed of the iterator returned by a `list()` call to paginate NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+```ts
 
+```
 ### Combining index records with `getMany()`
 
 The `getMany()` method obtains an array of `Deno.KvEntryMaybe` records (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null).
@@ -288,13 +296,13 @@ NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
 
-### Using check() to validate data
+### Using `check()` to validate data
 
-A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of the key-value pair being persisted matches the `versionstamp` of the data being persisted.
+A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of data already in the KV store matches the `versionstamp` of the data being persisted.
 
 If `check()` fails, then the transaction will fail and the data will not be committed. That method gets chained to a  `set()` or `delete()` call, two methods that behave the same way they do when called outside an `atomic()` chain ([see CRUD section above](#crud-operations)).
 
-An example will clarify how `check()` is used.
+An example will clarify how `check()` is used. Here we are trying to persist a user object with a changed phone number.
 
 ```ts
 //
@@ -306,10 +314,60 @@ const ok = kv.atomic().
   .set(["user", user.id], {...user.value, phone: "2070987654"  })
   .commit();
 ```
+If a `check()` fails, then and persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError` that contains an `ok` field that is equal to `false`.
 
+Notice that I am using object spread to create the user here, which creates a new object with a new phone number. I could have used `delete()` to blow away the old object and replace it with a new object, but that would delete the old record and I would not be able to reconstruct the mutation history of this record. If you don't care about version history and want to save on storage space, then you should call `delete()` before `set()`.
+
+### Persisting data in a KV transaction
+
+The full power of KV transaction is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You start with Typescript types defining the model:
+```ts
+interface User {
+  id?: string; // id added just prior to persistence
+  name: string;
+  email: string;
+}
+interface Address {
+  userId?: string;
+  street: string;
+  city: string
+  state: string;
+  country: string;
+  postalCode: string;
+}
+interface Phone {
+  userId?: string;
+  cell: string;
+  work?: string;
+  home?: string;
+}
+```
+Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Heres a function to insert that data into KV within a transaction:
+```ts
+function createUser(user: User, address: Address, phone: Phone) {
+  const userId = crypto.randomUUID();
+  address.userId = userId;
+  phone.userId = userId;
+  const userKey = ["user", userId];
+  const addressKey = ["address", userId];
+  const phoneKey = ["phone", userId];
+  kv.atomic()
+    // checks may be superfluous
+    .check({key: userKey, versionstamp: null})
+    .check({key: addressKey, versionstamp: null})
+    .check({key: phoneKey, versionstamp: null})
+    .set(userKey, user)
+    .set(addressKey, address)
+    .set(phoneKey, phone)
+    .commit();
+}
+
+```
+
+
+# Transaction failures
 
 - limit to 10 writes in an `atomic()` call
-- the function of `check()` and what happens if it fails
 - set
 - commit
 - transaction failures
@@ -331,9 +389,11 @@ const ok = kv.atomic().
 You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
 
 ### Creation
-A secondary index is a different way to find a record or multiple records.
+A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do on a primary index.
 
-For instance, besides a primary index with a model part (e.g "user") and a unique id part (e.g. user id), you could have an index that uses the email address as a unique identifier. These indexes usually have a name part that describes the index such as "user_by_email".
+For instance, you want to search for a user by an email address you could have an index that uses the email address as the search criteria. These indexes usually have a name part that describes the index such as "user_by_email".
+
+**TODO**: REWRITE NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 Here are example records comparing a primary and secondary index using a unique identifier:
 ```ts
