@@ -292,16 +292,18 @@ The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. Transact
 
 A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of the key-value pair being persisted matches the `versionstamp` of the data being persisted.
 
-If `check()` fails, then the transaction will fail and the data will not be committed.
+If `check()` fails, then the transaction will fail and the data will not be committed. That method gets chained to a  `set()` or `delete()` call, two methods that behave the same way they do when called outside an `atomic()` chain ([see CRUD section above](#crud-operations)).
 
-The `set()` method
-
+An example will clarify how `check()` is used.
 
 ```ts
-// TODO: Fix
+//
+const user = kv.get(["user", 123])
 const ok = kv.atomic().
-  .check()
-  .set()
+  // make sure versionstamp has not changed after last get()
+  .check(user)
+  // update phone number
+  .set(["user", user.id], {...user.value, phone: "2070987654"  })
   .commit();
 ```
 
