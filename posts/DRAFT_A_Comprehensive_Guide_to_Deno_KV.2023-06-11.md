@@ -228,10 +228,10 @@ Unlike the `set()`, `get` and `delete()` CRUD methods, the `prefix` key can be a
 
 Let's say you just wanted a list of user or user admins, your `list()` call would be one of the following:
 ```ts
-// list of user
-const iteruser = kv.list({prefix: ["user"]});
+// get list of users; to avoid TypeScript errors, call list() with a generic parameter
+const iteruser = kv.list<User>({prefix: ["user"]});
 // list of admins
-const iterAdmin = kv.list({prefix: ["user", "admin"]});
+const iterAdmin = kv.list<User>({prefix: ["user", "admin"]});
 ```
 Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either `start` or `end`.
 
@@ -291,7 +291,6 @@ The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getM
 NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 
-
 ## Transactions with `atomic()`
 
 The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
@@ -342,7 +341,7 @@ interface Phone {
   home?: string;
 }
 ```
-Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Heres a function to insert that data into KV within a transaction:
+Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert that data into KV within a transaction:
 ```ts
 function createUser(user: User, address: Address, phone: Phone) {
   const userId = crypto.randomUUID();
@@ -351,7 +350,7 @@ function createUser(user: User, address: Address, phone: Phone) {
   const userKey = ["user", userId];
   const addressKey = ["address", userId];
   const phoneKey = ["phone", userId];
-  kv.atomic()
+  await kv.atomic()
     // checks may be superfluous
     .check({key: userKey, versionstamp: null})
     .check({key: addressKey, versionstamp: null})
@@ -363,25 +362,48 @@ function createUser(user: User, address: Address, phone: Phone) {
 }
 
 ```
+At this point, KV allows up to 10 writes in an `atomic()` call chain.
+
+The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be true in a successful transaction.
+
+### Tracking a record's history
+The `versionstamp` of a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` in a separate index. Here's what that would look like
+
+```ts
+const userId = crypto.randomUUID();
+const user = kv.get(["user", userId])
+const result = await kv.atomic()
+  .check(user)
+  .set(["user", userId], {id: userId, name: "Joan Smith", email: "jsmith@example.com"})
+  .commit();
+if (result.ok) {
+// add the result versionstamp to a separate index with a timestamp
+  await kv.set(["user_versionstamp", userId, result.versionstamp ], {version: result.versionstamp, date: new Date().getTime()});
+}
+```
+The versionstamp is part of the index so that records will be ordered by versionstamp for each user.
+
+You can then use `list()` to display the history of a particular user's record.
+```ts
+// display in version in reverse chronological order
+const iter = kv.list({ prefix: ["user_versionstamp", userId] },
+    {reverse:  true});
+for await (const version of iter) {
+  // display to stdout here; I'm sure you can do better
+  console.log(`Version: ${version.value.version} Date: ${version.value.date}`);
+}
+```
 
 
-# Transaction failures
+### Transaction failures
+If a KV transaction fails within an `atomic()` call chain, a `Deno.KvCommitError` is returned. That object has one field `ok` that is set to `false` in this case.
 
-- limit to 10 writes in an `atomic()` call
-- set
-- commit
+If a call to `atomic().check()` fails (returns `false`), then any `set()` or `delete()` call in the `atomic()` chain is skipped and the data is not persisted (or deleted).
+
 - transaction failures
     - failed check
     - failed commit
 
-### Tracking a record's history
-**TODO:** how use the versionstamp to create a record history
-- include discussion of versionstamp ordering
-- versionstamp is returned from a set() call, so you would need to persist the VS to an index for each record modification.
-- VS is als returned from kv.atomic() call. The same VS is assigned to each set() call chained to atomic()
-**TODO:** How to create a KV index with `versionstamp`
-- use VS in return value of set() or atomic().set().commit() and put it in an index that has the primary index key, something like:
-  kv.set(["user_history", <userid>], <versionstamp>)
 
 
 ## Secondary Indexes
