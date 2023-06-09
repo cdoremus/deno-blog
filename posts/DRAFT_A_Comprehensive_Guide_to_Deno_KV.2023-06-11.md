@@ -21,7 +21,8 @@
       - [Pagination with `list()`](#pagination-with-list)
     - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
-    - [Using `check()` to validate data](#using-check-to-validate-data)
+    - [Using `check()` to validate transactions](#using-check-to-validate-transactions)
+    - [Using `set()` and `delete()` for transactional persistance](#using-set-and-delete-for-transactional-persistance)
     - [Persisting data in a KV transaction](#persisting-data-in-a-kv-transaction)
     - [Tracking a record's history](#tracking-a-records-history)
     - [Transaction failures](#transaction-failures)
@@ -175,11 +176,13 @@ The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvC
 
 The `get()` method is used to get a single record from the Deno KV store. That operation takes an argument that is the key of the record being searched:
 ```ts
-const foundUser: Deno.KvEntryMaybe<User> = await kv.get<User>(["user", userId]);
+const foundRecord: Deno.KvEntryMaybe<User> = await kv.get<User>(["user", userId]);
+// Get user value
+const user = foundRecord.value;
 ```
-A call to `get()` returns an object `Deno.KvEntryMaybe` object containing with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`. In this example the found
+A call to `get()` returns an object `Deno.KvEntryMaybe` object containing with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`. Be aware that in order to get the value of a `get()` call you need to use the `value` property of the `get()` call result.
 
- If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`. That is why there return value is typed `KvEntryMaybe` and not `KvEntry`, which is a valid type.
+If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`. That is why there return value is typed `KvEntryMaybe` and not `KvEntry`, which is a valid type.
 
 #### Options
 
@@ -293,9 +296,9 @@ NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 ## Transactions with `atomic()`
 
-The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
+The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. It returns a `Deno.AtomicOperation` class instance. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
 
-### Using `check()` to validate data
+### Using `check()` to validate transactions
 
 A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of data already in the KV store matches the `versionstamp` of the data being persisted.
 
@@ -306,7 +309,7 @@ An example will clarify how `check()` is used. Here we are trying to persist a u
 ```ts
 //
 const user = kv.get(["user", 123])
-const ok = kv.atomic().
+const result = kv.atomic().
   // make sure versionstamp has not changed after last get()
   .check(user)
   // update phone number
@@ -316,10 +319,15 @@ const ok = kv.atomic().
 If a `check()` fails, then and persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError` that contains an `ok` field that is equal to `false`.
 
 Notice that I am using object spread to create the user here, which creates a new object with a new phone number. I could have used `delete()` to blow away the old object and replace it with a new object, but that would delete the old record and I would not be able to reconstruct the mutation history of this record. If you don't care about version history and want to save on storage space, then you should call `delete()` before `set()`.
+### Using `set()` and `delete()` for transactional persistance
 
-### Persisting data in a KV transaction
+In the previous example, `set()` is used to create or update data in a transactional chain (and a `Deno.AtomicOperation` method). It works the same way as `Deno.Kv.set()` taking a key and value as arguments. It is used to persist the value in a KV store with the key as the primary key.
 
-The full power of KV transaction is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You start with Typescript types defining the model:
+Likewise, `delete()`, an `Deno.AtomicOperation` method, works the same way as it's `Deno..Kv` counterpart. It takes a key argument and is used to remove records from a Deno KV store.
+
+Both `set()` and `delete()` can be chained to `atomic()` multiple times, but there cannot be more than 10 writes in a single persistent chain.
+
+The full power of KV transactional persistence is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You start with Typescript types defining the model:
 ```ts
 interface User {
   id?: string; // id added just prior to persistence
@@ -341,20 +349,23 @@ interface Phone {
   home?: string;
 }
 ```
-Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert that data into KV within a transaction:
+Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert or update that data within a KV transaction:
 ```ts
-function createUser(user: User, address: Address, phone: Phone) {
-  const userId = crypto.randomUUID();
-  address.userId = userId;
-  phone.userId = userId;
-  const userKey = ["user", userId];
-  const addressKey = ["address", userId];
-  const phoneKey = ["phone", userId];
+function persistUser(user: User, address: Address, phone: Phone) {
+  if (!user.id) {
+    const userId = crypto.randomUUID();
+    address.userId = userId;
+    phone.userId = userId;
+  }
+  // get current records
+  const userRecord = kv.get(["user", userId]);
+  const addressRecord = kv.get(["address", userId]);
+  const phoneRecord = kv.get(["phone", userId]);
   await kv.atomic()
-    // checks may be superfluous
-    .check({key: userKey, versionstamp: null})
-    .check({key: addressKey, versionstamp: null})
-    .check({key: phoneKey, versionstamp: null})
+    // check that data has not changed
+    .check({key: userRecord.key, versionstamp: userRecord.versionstamp})
+    .check({key: addressRecord.key, versionstamp: addressRecord.versionstamp})
+    .check({key: phoneRecord.key, versionstamp: phoneRecord.versionstamp})
     .set(userKey, user)
     .set(addressKey, address)
     .set(phoneKey, phone)
@@ -362,8 +373,6 @@ function createUser(user: User, address: Address, phone: Phone) {
 }
 
 ```
-At this point, KV allows up to 10 writes in an `atomic()` call chain.
-
 The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be true in a successful transaction.
 
 ### Tracking a record's history
