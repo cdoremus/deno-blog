@@ -404,7 +404,7 @@ for await (const version of iter) {
 
 ### Transaction failures
 
-**TODO:** needs work; combine with commit discusion??
+**TODO:** needs work; ??combine with commit discusion??
 
 If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another error, a `Deno.KvCommitError` is returned.
 
@@ -415,7 +415,7 @@ When the `Deno.KvCommitError`is returned, the transaction is not persisted. That
 
 You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
 
-### Creation
+### Creation and mutation
 A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do on a primary index.
 
 For instance, if you want to search for a user by an email address you could have an index that uses the email address as the search criteria. These indexes usually have a name part that describes the index such as "user_by_email".
@@ -443,7 +443,10 @@ const userByEmailRecord = await kv.get<User>(["user_by_email", <userEmail>]);
 const userByIdRecord = await kv.get<User>(["user", userByEmailRecord.value]);
 const user: User = userByIdRecord.value;
 ```
+When the data is updated or deleted, you need to do that for both primary and secondary indexes
+```ts
 
+```
 Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple users could have the same name. Here's an example:
 ```ts
 // A secondary index by name and id
@@ -457,7 +460,8 @@ interface Player {
   name: string;
   position: Position;
 }
-const players: Player = [/* player data goes here */]
+const players: Player[] = [/* player data goes here */]
+// persist players to KV
 for (const player of players) {
   player.id = crypto.RandomUUID();
   await kv.atomic()
@@ -469,6 +473,7 @@ for (const player of players) {
 // lookup players by a position
 const findPlayersByPosition = async (position: Position) => {
   const iter =  kv.list({prefix: ["players_by_position", position]});
+  console.log(`Players in ${position} position:`);
   for await (const player of iter) {
     const playerPosition = await kv.get<Player>([
       "players_by_position",
@@ -489,48 +494,101 @@ In KV, key parts are ordered lexicographically (roughly dictionary order) by the
 
 The significance of the key ordering is it can be used to sort values. You do that by creating an secondary index using the desired sorting criteria as key parts.
 
-For instance, if you wanted to order user by their last name, your index would have a primary key with a record that looked was created like this:
+For instance, if you wanted to order user by their last name, you would have primary index and a secondary sorting index created like this:
 
 ```ts
-ks.set(["user", "<userId>"], <user object record>)
+// create indexes within a transaction
+await kv.atomic()
+  // check() calls omitted for brevity
+  .set(["user", <userId>], <user object>) // primary index
+  // sorting by name
+  .set(["user_by_name", <lastName>, <firstName>, <userId>], <user object>)
+  .commit();
+```
+You'll noticed that I added `userId` to the secondary index. Otherwise duplicate records with the same first and last name will be ignored when the index is created. You could also use `email` (or another unique identifier) instead of `userId`.
+
+To display the sorted values you use the `list()` method. If you want to sort the list in reverse order (largest value to smallest) set `reverse: true`. A good example of that is sorting by date with most recent dates are first:
+```ts
+// create user and user_create_date indexes
+await kv.atomic()
+  // check() calls omitted
+  .set(["user", <userId>], <user object>) // primary index
+  .set(["user_by_create_date", <createDate>, <userId>], <user object>)
+  .commit();
+// print out the index previously created in reverse chronological order
+const iter = kv.list({prefix: ["user_by_create_date"]}, {reverse: true});
+for await (const user of iter) {
+  console.log(user.value);
+}
 ```
 
-An index for sorting by name would look like this:
+## Math operations: `sum`, `min` & `max`
+
+There are three aggregate operations that can be used to keep track of a sum, a minimum and a maximum of a series of values that are stored in another index. They there is a method for each one of the operations and a `mutate()` method that can alternatively used to collate those stats.
+
+All of these operations are `Deno.AtomicOperations` methods so they must be chained to `atomic()` with `commit()` as the chain terminator.
+### `sum()`, `min()` and `max()` methods
+
+To keep track of aggregate sum, minimal and maximum values, you can use the `sum()`, `min()` and `max()` methods. All of these methods take a key and a value that is a `bigint` type. Here is an example
 ```ts
-ks.set(["user", "<lastName>", "<firstName>", "<userId>"], <user object record>)
+//shopping cart item
+interface CartItem {
+  userId: string;
+  itemDesc: string;
+  price: number;
+}
+// cart data
+const cart: CartItem[] = [
+  { userId: "100", itemDesc: "Arduino Uno kit", price: 60 },
+  { userId: "100", itemDesc: "Temp sensor", price: 10 },
+  { userId: "100", itemDesc: "Humidity sensor", price: 15 },
+  { userId: "100", itemDesc: "Power cord with 5V regulator", price: 18 },
+  { userId: "100", itemDesc: "Servo", price: 8 },
+];
+
+// add data to indexes
+for (const item of cart) {
+  kv.atomic()
+    .set(["cart", item.userId], item) // primary index
+    .min(["cart_min"], BigInt(item.price))
+    .max(["cart_max"], BigInt(item.price))
+    .sum(["cart_sum"], BigInt(item.price))
+    .commit();
+}
+// get stats
+const cartMin = await kv.get(["cart_min"]);
+const cartMax = await kv.get(["cart_max"]);
+const cartSum = await kv.get(["cart_sum"]);
+// print out cart stats
+console.log("Shopping cart data");
+console.log(`Min price: ${(cartMin as Deno.KvEntry<bigint>).value}`);
+console.log(`Max price: ${(cartMax as Deno.KvEntry<bigint>).value}`);
+console.log(`Total price: ${(cartSum as Deno.KvEntry<bigint>).value}`);
 ```
-You'll noticed that I added `userId` to the index. Otherwise duplicate records with the same first and last name will be ignored when the index is created. You could also use `email` (or another unique identifier) instead of `userId`.
 
+### `mutate()` method
 
-## Math operations: sum, min & max
+The `mutate()` method is an alternate way to get aggregate stats. It takes an object with `type`, `key` and `value` properties. The type value can be either "sum", "min", or "kax.
 
-- `sum()`, `min()` and `max()` methods
-
-- `mutate()` method
 ```ts
+// keep track of website visits
 await kv.atomic()
   .mutate({
-    type: "sum",
-    key: ["example_view_counter"],
+    type: "sum", // valid types are 'sum', 'min' & 'max'
+    key: ["hit_counter"],
     value: new Deno.KvU64(1n),
   })
   .commit();
 ```
-The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. This value is required to do certain mathematical calculations on values including `sum()`, `max()` and `min()`.
+The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. The `mutate()` value argument is always a `Deno.KvU64`.
 
-**TODO**: Elaborate-NNNNNNNNNNNNNNNNNNNNNNNN
-```ts
-// TODO: Better example
-const num = new Deno.KvU64(5n);
-console.log(num.value)
-```
 
 ## Deno KV Drawbacks
 - It restricts you to Deno Deploy deployment
-- Its a no-SQL database, not a relational db
+- Its a no-SQL database, not a relational DB
   - the mental model is very different from a RDBMS
   - you need to create your own indexes manually
-- Deno Deploy is the only cloud provider that supports Deno KV
+- At this time Deno Deploy is the only cloud provider that supports Deno KV
   - future pricing is unknown and may depend on use or storage
 
 ## KV on Deno Deploy
