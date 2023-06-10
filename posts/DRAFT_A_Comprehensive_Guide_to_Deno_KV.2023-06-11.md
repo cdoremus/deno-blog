@@ -169,7 +169,7 @@ await kv.set<User>(["user", userId], user);
 ```
 In SQL database terms the data table would be called "user" and the user id would be the primary key.
 
-The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvCommitResult` object contains a boolean `ok` field and a `versionstamp` field. If the `set()` call fails, `ok=false`. The `versionstamp` would be the versionstamp of the persisted record.
+The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvCommitResult` object contains a boolean `ok` field and a `versionstamp` field. If the `set()` call fails, `ok` is set to `false`. The `versionstamp` would be the versionstamp of the persisted record.
 
 
 ### Read (`get()`)**
@@ -316,18 +316,17 @@ const result = kv.atomic().
   .set(["user", user.id], {...user.value, phone: "2070987654"  })
   .commit();
 ```
-If a `check()` fails, then and persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError` that contains an `ok` field that is equal to `false`.
+If a `check()` fails, then any persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError`.
 
-Notice that I am using object spread to create the user here, which creates a new object with a new phone number. I could have used `delete()` to blow away the old object and replace it with a new object, but that would delete the old record and I would not be able to reconstruct the mutation history of this record. If you don't care about version history and want to save on storage space, then you should call `delete()` before `set()`.
 ### Using `set()` and `delete()` for transactional persistance
 
-In the previous example, `set()` is used to create or update data in a transactional chain (and a `Deno.AtomicOperation` method). It works the same way as `Deno.Kv.set()` taking a key and value as arguments. It is used to persist the value in a KV store with the key as the primary key.
+In the previous example, `set()` is used to create or update data in a transactional chain. It is a method of `Deno.AtomicOperation` and works the same way as `Deno.Kv.set()` taking a key and value as arguments. It is used to persist the value in a KV store with the key as the primary key.
 
-Likewise, `delete()`, an `Deno.AtomicOperation` method, works the same way as it's `Deno..Kv` counterpart. It takes a key argument and is used to remove records from a Deno KV store.
+Likewise, `delete()`, also an `Deno.AtomicOperation` method, works the same way as it's `Deno.Kv` counterpart. It takes a key argument and is used to remove records from a Deno KV store.
 
 Both `set()` and `delete()` can be chained to `atomic()` multiple times, but there cannot be more than 10 writes in a single persistent chain.
 
-The full power of KV transactional persistence is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You start with Typescript types defining the model:
+The full power of KV transactional persistence is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You should start with Typescript types defining the model:
 ```ts
 interface User {
   id?: string; // id added just prior to persistence
@@ -349,7 +348,7 @@ interface Phone {
   home?: string;
 }
 ```
-Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert or update that data within a KV transaction:
+Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user this information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert or update that data within a KV transaction:
 ```ts
 function persistUser(user: User, address: Address, phone: Phone) {
   if (!user.id) {
@@ -376,7 +375,7 @@ function persistUser(user: User, address: Address, phone: Phone) {
 The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be true in a successful transaction.
 
 ### Tracking a record's history
-The `versionstamp` of a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` in a separate index. Here's what that would look like
+The `versionstamp` of a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` to a separate index. Here's what that would look like:
 
 ```ts
 const userId = crypto.randomUUID();
@@ -386,11 +385,11 @@ const result = await kv.atomic()
   .set(["user", userId], {id: userId, name: "Joan Smith", email: "jsmith@example.com"})
   .commit();
 if (result.ok) {
-// add the result versionstamp to a separate index with a timestamp
+// add the result versionstamp to a separate "user_versionstamp" index with a timestamp
   await kv.set(["user_versionstamp", userId, result.versionstamp ], {version: result.versionstamp, date: new Date().getTime()});
 }
 ```
-The versionstamp is part of the index so that records will be ordered by versionstamp for each user.
+The `versionstamp` is part of the index so that records will be ordered by `versionstamp` for each user.
 
 You can then use `list()` to display the history of a particular user's record.
 ```ts
@@ -403,16 +402,13 @@ for await (const version of iter) {
 }
 ```
 
-
 ### Transaction failures
-If a KV transaction fails within an `atomic()` call chain, a `Deno.KvCommitError` is returned. That object has one field `ok` that is set to `false` in this case.
 
-If a call to `atomic().check()` fails (returns `false`), then any `set()` or `delete()` call in the `atomic()` chain is skipped and the data is not persisted (or deleted).
+**TODO:** needs work; combine with commit discusion??
 
-- transaction failures
-    - failed check
-    - failed commit
+If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another error, a `Deno.KvCommitError` is returned.
 
+When the `Deno.KvCommitError`is returned, the transaction is not persisted. That object has one field `ok` that is set to `false`.
 
 
 ## Secondary Indexes
@@ -422,34 +418,70 @@ You usually begin a Deno KV implementation for an app by creating a primary inde
 ### Creation
 A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do on a primary index.
 
-For instance, you want to search for a user by an email address you could have an index that uses the email address as the search criteria. These indexes usually have a name part that describes the index such as "user_by_email".
+For instance, if you want to search for a user by an email address you could have an index that uses the email address as the search criteria. These indexes usually have a name part that describes the index such as "user_by_email".
 
-**TODO**: REWRITE NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-
-Here are example records comparing a primary and secondary index using a unique identifier:
+When you have secondary indexes, you need to create them in a transactional context with the primary index to maintain data consistency.
 ```ts
-// the primary index using the user id
-kv.set(["user", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
-// a secondary index using the email address
-kv.set(["user_by_email", "jdoe@example.com"], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+const userId = crypto.randomUUID();
+const user = {id: userId, name:"Joan Smith", email: "joan.smith@example.com"};
+const userKey = ["user", userId];
+const userEmailLookupKey = ["user_by_email", user.email, userId];
+const result = kv.atomic()
+  .check({key: userKey, versionstamp: null})
+  .check({key: userEmailLookupKey, versionstamp: null})
+  .set(userKey, user) // primary index
+  .set(userEmailLookup, user.id) // secondary index
+  .commit();
+if (!result.ok) {
+  throw new Error("Problem persisting user & user_by_email");
+}
 ```
-Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple user could have the same name. Here's an example:
+A `get()` call to "user_by_email" index returns the user's id. This will be used to find the record in the "user" primary index.
+```ts
+// The "user_by_email" record's value is the userId (see previous code)
+const userByEmailRecord = await kv.get<User>(["user_by_email", <userEmail>]);
+const userByIdRecord = await kv.get<User>(["user", userByEmailRecord.value]);
+const user: User = userByIdRecord.value;
+```
+
+Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple users could have the same name. Here's an example:
 ```ts
 // A secondary index by name and id
 kv.set(["user_by_name", "John Smith", 1], {id: 1, name: "John Smith", email: "jsmith@example.com"})
 ```
-Often a secondary index includes values that are a duplicate of the values in a primary index, usually an object or array. But, instead the secondary key could just have a value that id the id that can be used to look up the full value in the primary index. For instance:
+A secondary index can also be structured to store records by a group or category. For instance you might want to group football/soccer players by their position on the pitch. That might look like this:
 ```ts
-// A secondary index using the email address with the primary index id as the value
-kv.set(["user_by_email", "jdoe@example.com"], 1)
-// Use the id to lookup the full object
-kv.set(["user", 1], {id: 1, name: "John Doe", email: "jdoe@example.com"})
+type Position = "Goalkeeper" | "Defender" | "Midfielder" | "Forward";
+interface Player {
+  id?: string; // id added later
+  name: string;
+  position: Position;
+}
+const players: Player = [/* player data goes here */]
+for (const player of players) {
+  player.id = crypto.RandomUUID();
+  await kv.atomic()
+    // skip check() calls here;
+    .set(["players", player.id], player);
+    .set(["players_by_position", player.position, player.id], player);
+    .commit();
+}
+// lookup players by a position
+const findPlayersByPosition = async (position: Position) => {
+  const iter =  kv.list({prefix: ["players_by_position", position]});
+  for await (const player of iter) {
+    const playerPosition = await kv.get<Player>([
+      "players_by_position",
+      player.value.position,
+      player.value.id ?? "",
+    ]);
+    console.log(playerPosition.value?.name);
+  }
+}
+// Lookup midfielders
+await findPlayersByPosition("Midfielder");
 ```
 
-**TODO**: More including use of transactions when creating secondary indexes
-
-
-### Updating and deletion
 
 ### Sorting with indexes
 
