@@ -31,6 +31,8 @@
     - [Updating and deletion](#updating-and-deletion)
     - [Sorting with indexes](#sorting-with-indexes)
   - [Math operations: sum, min \& max](#math-operations-sum-min--max)
+    - [`sum()`, `min()` and `max()` methods](#sum-min-and-max-methods)
+    - [`mutate()` method](#mutate-method)
   - [Deno KV Drawbacks](#deno-kv-drawbacks)
   - [KV on Deno Deploy](#kv-on-deno-deploy)
     - [Deno Deploy Data Centers](#deno-deploy-data-centers)
@@ -44,19 +46,20 @@
   - [References](#references)
     - [Deno Manual and API Docs](#deno-manual-and-api-docs)
     - [Apps that use Deno KV](#apps-that-use-deno-kv)
+---
 ## Introduction
-Deno KV, a key-value based database was built into the Deno runtime starting with Deno 1.32.0. Deno Deploy now incorporates Deno KV (currently on an invite-only basis), and distributes KV data around the world. This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
+
+Deno KV, a key-value based database, was built into the Deno runtime starting with Deno 1.32.0 as an unstable API. Deno Deploy now incorporates Deno KV (currently on an invite-only basis), and distributes KV data around the world. This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
 
 The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD. This is a big win for Deno developers!
 
-This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is in [multiple places in the Deno documentation](#deno-manual-and-api-docs), so consider this post as a one-stop guide to KV.
+This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is in [multiple places in the Deno documentation](#deno-manual-and-api-docs), consider this post as a one-stop guide to KV.
 
 ## Indexes
 
-An index in Deno KV parlance are the units of data storage. In relational database (RDBMS) terms, they can be thought of as a table, but they are more like a SQL index because they are ordered by key value for fast lookup.
+An index in Deno KV parlance are the units of data storage. In relational database (RDBMS) terms, they can be loosely thought of as a table, but they are more like a SQL index because they are ordered by key value for fast lookup.
 
-A **primary index** is the index that stores a record using a unique key for each record, usually a UUID. We'll talk more about them in the next section. A **secondary index** stores additional information or is used for sorting. We'll talk about them later.
-
+A KV **primary index** is the index that stores a record using a unique key for each record, usually a UUID. We'll talk more about them in the next few sections. A **secondary index** stores additional information or is used for sorting. [We'll talk about them later](#secondary-indexes).
 
 ## Keys, values and versionstamp
 
@@ -91,13 +94,12 @@ const userRoleKey = ["user_by_role", <userRole>, <userId>];
 ```
 Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index in order that the data is consistent between indexes ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"`.
 
-
 ### [KV Values](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)
-In order for Deno KV values to be persisted, a value must be a serializable JavaScript type compatible with [JavaScript's structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).  The things that don't work with a structured clone include ([more details](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#things_that_dont_work_with_structured_clone)):
-- function objects
-- DOM nodes
-- `RegExp.lastIndex` is not preserved if `RegEx` is used as a value.
-- Property descriptors, setters, getters, and similar metadata-like features of objects are not preserved.
+In order for Deno KV values to be persisted, a value must be a structured, serializable JavaScript type compatible with [JavaScript's structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
+
+Basically, it is anything that can be passed as the first argument of [`structuredClone()`](https://developer.mozilla.org/en-US/docs/Web/API/structuredClone) except `SharedArrayBuffer`. The `SharedArrayBuffer` is an exception because is is a shared memory data structure that cannot be passed across KV isolates.
+
+See  [this discussion on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#things_that_dont_work_with_structured_clone) for more details on what does not conform to the structured clone algorithm.
 
 Despite these limitations most common JavaScript entities including `undefined`, `null`, `boolean`, `number`, `string`, `Array`, `Map`, `Uint8Array` and `Object` work as KV values ([a full list](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)).
 
@@ -487,7 +489,6 @@ const findPlayersByPosition = async (position: Position) => {
 await findPlayersByPosition("Midfielder");
 ```
 
-
 ### Sorting with indexes
 
 In KV, key parts are ordered lexicographically (roughly dictionary order) by their type, and within a given type, they are ordered by their value. Type ordering follows that `Uint8Array` > `string` > `number` > `bigint` > `boolean`. Within each type, there is a [defined ordering](https://deno.com/manual@main/runtime/kv/key_space#key-part-ordering) too.
@@ -507,7 +508,7 @@ await kv.atomic()
 ```
 You'll noticed that I added `userId` to the secondary index. Otherwise duplicate records with the same first and last name will be ignored when the index is created. You could also use `email` (or another unique identifier) instead of `userId`.
 
-To display the sorted values you use the `list()` method. If you want to sort the list in reverse order (largest value to smallest) set `reverse: true`. A good example of that is sorting by date with most recent dates are first:
+To display the sorted values you use the `list()` method. If you want to sort the list in reverse order (largest value to smallest) set `reverse: true`. A good example of that is sorting by date with most recent dates ordered at the top:
 ```ts
 // create user and user_create_date indexes
 await kv.atomic()
@@ -583,14 +584,6 @@ await kv.atomic()
 The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. The `mutate()` value argument is always a `Deno.KvU64`.
 
 
-## Deno KV Drawbacks
-- It restricts you to Deno Deploy deployment
-- Its a no-SQL database, not a relational DB
-  - the mental model is very different from a RDBMS
-  - you need to create your own indexes manually
-- At this time Deno Deploy is the only cloud provider that supports Deno KV
-  - future pricing is unknown and may depend on use or storage
-
 ## KV on Deno Deploy
 
 ### Deno Deploy Data Centers
@@ -615,22 +608,40 @@ When data is written to a Deno KV store, the following things happen:
 
 Deno Deploy docs state that the full asynchronous replication of data should occur withing 10 seconds.
 
-
 ## Deno KV Frontiers
 
 The future is hard to predict especially the future of new technologies like Deno KV.
-### The Deno team
-
-The Deno teams says they are working on adding blog storage to Deno KV
 
 ### Tools under development
--[Pentagon](https://github.com/skoshx/pentagon) a [Prisma]()-like ORM built on top of Deno KV
-- [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
+
+Deno KV is in its infancy, so there are no mature tools for working with it. The following is a list of some promising utilities to use with KV:
+
+- [Pentagon](https://github.com/skoshx/pentagon) - a [Prisma](https://www.prisma.io/)-like ORM built on top of Deno KV
+- [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - for building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
+- [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
+- [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
+- [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
+
 
 ## Conclusions
+Deno KV is not finished, so you should expect it to evolve. Here are some expectations:
+- Stabilization of the KV API
+- More KV features in the future and abstractions built on it.
+- Mature tools to aide its use as a database and to view and edit KV data stores.
+It remains to be seen whether these items will come from the Deno team or outside contributors.
+
+Since the technology is young, there is still some hesitancy in its use. Another issue holding people back from using it is that the only deployment option is Deno Deploy at this time. KV pricing has not been set and whether the price will be based on Deno Deploy storage and/or throughput. Currently it is free to use locally and on Deploy.
+
+Another KV drawback for some is that the mental model is very different than the familiar relational database with no tools like SQL available for easy persistence and querying.
+
+Still, KV has generated a lot of interest within the Deno community and there are a lot of apps and tools under development.
+
+The best place to stay on top of Deno KV development and application is the **kv** channel on the [Deno Discord instance](https://discord.gg/deno).
 
 ---
+# Acknowledgements
 
+_The author would like to thank members on the KV channel of the Deno Discord server for their direct and indirect help. In particular, I would like to point out the support from N.D. Hrones, Andreu Botella, Lino Le Van and Heyang Zhou_
 # Appendix
 ## References
 ### Deno Manual and API Docs
@@ -644,5 +655,8 @@ The Deno teams says they are working on adding blog storage to Deno KV
 
 ### Apps that use Deno KV
 
-- kv-sketchbook: https://github.com/hashrock/kv-sketchbook/tree/main
-- tic-tac-toe: https://github.com/denoland/tic-tac-toe
+- [kv-sketchbook](https://github.com/hashrock/kv-sketchbook) - a 'dead simple' sketchbook app using Deno Fresh and KV.
+- [tic-tac-toe](https://github.com/denoland/tic-tac-toe) - the classic game using Deno Fresh and KV.
+(https://discord.com/channels/684898665143206084/1108074003018551327/1110625440948830238)
+- [kv-notepad](https://github.com/hashrock/kv-notepad) - a classic notepad app using Deno Fresh and KV.
+- [kv-town](https://github.com/hashrock/kv-town) - WIP app using Deno Fresh and KV
