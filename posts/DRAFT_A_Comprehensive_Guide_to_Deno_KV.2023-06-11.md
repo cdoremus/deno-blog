@@ -33,19 +33,16 @@
   - [Math operations: sum, min \& max](#math-operations-sum-min--max)
     - [`sum()`, `min()` and `max()` methods](#sum-min-and-max-methods)
     - [`mutate()` method](#mutate-method)
-  - [Deno KV Drawbacks](#deno-kv-drawbacks)
   - [KV on Deno Deploy](#kv-on-deno-deploy)
     - [Deno Deploy Data Centers](#deno-deploy-data-centers)
       - [Data Consistency](#data-consistency)
       - [Synchronization Between Data Centers](#synchronization-between-data-centers)
-  - [Deno KV Frontiers](#deno-kv-frontiers)
-    - [The Deno team](#the-deno-team)
-    - [Tools under development](#tools-under-development)
   - [Conclusions](#conclusions)
 - [Appendix](#appendix)
   - [References](#references)
     - [Deno Manual and API Docs](#deno-manual-and-api-docs)
     - [Apps that use Deno KV](#apps-that-use-deno-kv)
+    - [KV Tools under development](#kv-tools-under-development)
 ---
 ## Introduction
 
@@ -593,7 +590,7 @@ Deno KV databases are replicated across at least 6 data centers, spanning 3 regi
 Data consistency refers to the assurance that all data centers maintain the same data even after new data is persisted.
 
 There are two kinds of data consistency in Deno Deploy. They can be configured using the `consistency` option when data is read from Deno KV. There are two options:
-- `consistency: "strong"` _(default)_ data reads from KV will come from the nearest region
+- `consistency: "strong"` _(default)_ - data reads from KV will come from the nearest region.
 - `consistency: "eventual"`
 
 Data access is quicker with eventual consistency, but the data possibly will not be consistent between different replicated KV instances if a query is done shortly after one or more KV writes.
@@ -608,44 +605,32 @@ When data is written to a Deno KV store, the following things happen:
 
 Deno Deploy docs state that the full asynchronous replication of data should occur withing 10 seconds.
 
-## Deno KV Frontiers
-
-The future is hard to predict especially the future of new technologies like Deno KV.
-
-### Tools under development
-
-Deno KV is in its infancy, so there are no mature tools for working with it. The following is a list of some promising utilities to use with KV:
-
-- [Pentagon](https://github.com/skoshx/pentagon) - a [Prisma](https://www.prisma.io/)-like ORM built on top of Deno KV
-- [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - for building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
-- [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
-- [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
-- [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
-
-
 ## Conclusions
 Deno KV is not finished, so you should expect it to evolve. Here are some expectations:
 - Stabilization of the KV API
-- More KV features in the future and abstractions built on it.
-- Mature tools to aide its use as a database and to view and edit KV data stores.
+- More KV features and abstractions built on it.
+- Mature tools to aid its use as a database and to view and edit KV data stores.
+
 It remains to be seen whether these items will come from the Deno team or outside contributors.
 
-Since the technology is young, there is still some hesitancy in its use. Another issue holding people back from using it is that the only deployment option is Deno Deploy at this time. KV pricing has not been set and whether the price will be based on Deno Deploy storage and/or throughput. Currently it is free to use locally and on Deploy.
+Since the technology is young, there is still some hesitancy to use KV. Another issue holding people back from using it is that the only deployment option is Deno Deploy at this time. KV pricing has not been set and whether the price will be based on Deno Deploy storage and/or throughput. Currently it is free to use locally and on Deploy.
 
-Another KV drawback for some is that the mental model is very different than the familiar relational database with no tools like SQL available for easy persistence and querying.
+The fact that the mental model of KV is different from a relational database is also a drawback for some. KV has no tools like SQL available for easy persistence and querying.
 
-Still, KV has generated a lot of interest within the Deno community and there are a lot of apps and tools under development.
+Still, KV has generated a lot of interest within the Deno community and there are a number of [app examples](#apps-that-use-deno-kv) and [tools under development](#kv-tools-under-development).
 
-The best place to stay on top of Deno KV development and application is the **kv** channel on the [Deno Discord instance](https://discord.gg/deno).
+If you this article piques your interest in Deno KV, make sure you check out the [Deno Manual and API docs as outlined below](#deno-manual-and-api-docs). The best place to stay on top of recent news on Deno KV development and application is the **kv** channel on the [Deno Discord instance](https://discord.gg/deno).
+
+Finally, check out [the code affiliated with this post](https://github.com/cdoremus/deno-blog-code/tree/main/deno-kv) for simple command-line examples of the things detailed in this article.
 
 ---
 # Acknowledgements
 
-_The author would like to thank members on the KV channel of the Deno Discord server for their direct and indirect help. In particular, I would like to point out the support from N.D. Hrones, Andreu Botella, Lino Le Van and Heyang Zhou_
+_The author would like to thank members on the kv channel of the Deno Discord server for their direct and indirect help. In particular, I would like to point out the aid from N.D. Hrones, Andreu Botella, Lino Le Van and Heyang Zhou. Thank you._
 # Appendix
 ## References
 ### Deno Manual and API Docs
-- **Deno KV Concepts and Patterns** covered in the [Deno Manual](https://deno.com/manual@v1.33.1/runtime/kv) covers Deno KV's various concepts and patterns:
+- **Deno KV Concepts and Patterns** covered in the [Deno Manual](https://deno.com/manual@v1.33.1/runtime/kv) details Deno KV's various concepts and patterns:
   - [Key Space](https://deno.com/manual@main/runtime/kv/key_space) is an overview of the keys, values and the versioning of the key-value records.
   - [KV Operations](https://deno.com/manual@main/runtime/kv/operations) covers KV methods.
   - [Deno KV Transactions](https://deno.com/manual@main/runtime/kv/transactions) shows how atomic transactions work in Deno KV.
@@ -656,7 +641,18 @@ _The author would like to thank members on the KV channel of the Deno Discord se
 ### Apps that use Deno KV
 
 - [kv-sketchbook](https://github.com/hashrock/kv-sketchbook) - a 'dead simple' sketchbook app using Deno Fresh and KV.
-- [tic-tac-toe](https://github.com/denoland/tic-tac-toe) - the classic game using Deno Fresh and KV.
+- [tic-tac-toe](https://github.com/denoland/tic-tac-toe) - the classic game built with Deno Fresh and KV.
 (https://discord.com/channels/684898665143206084/1108074003018551327/1110625440948830238)
-- [kv-notepad](https://github.com/hashrock/kv-notepad) - a classic notepad app using Deno Fresh and KV.
-- [kv-town](https://github.com/hashrock/kv-town) - WIP app using Deno Fresh and KV
+- [kv-notepad](https://github.com/hashrock/kv-notepad) - multiversion of a classic notepad app built with Deno Fresh and KV.
+- [PixelPage](https://github.com/denoland/pixelpage) - a shared pixel art canvas build with Deno Fresh and KV.
+- [Todo List](https://github.com/denoland/showcase_todo) - collaborative todo list build with Deno Fresh and KV.
+### KV Tools under development
+
+Deno KV is in its infancy, so there are no mature tools for working with it. The following is a list of some promising utilities to use with KV:
+
+- [Pentagon](https://github.com/skoshx/pentagon) - a [Prisma](https://www.prisma.io/)-like ORM built on top of Deno KV
+- [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - for building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
+- [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
+- [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
+- [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
+
