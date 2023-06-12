@@ -162,9 +162,12 @@ const userId = crypto.randomUUID();
 
 ### Create (`set()`)**
 
-Lets connect to the KV data store and insert the `user` data:
+Lets connect to the KV data store and insert the `user` data which requires two arguments, a `Deno.KvKey` and a value whose type is the method's TypeScript generic parameter (`User` in this example):
 ```ts
-await kv.set<User>(["user", userId], user);
+const result = await kv.set<User>(["user", userId], user);
+if (result.ok === false) {
+  throw new Error(`There was a problem persisting user ${user.name}`)
+}
 ```
 In SQL database terms the data table would be called "user" and the user id would be the primary key.
 
@@ -173,17 +176,20 @@ The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvC
 
 ### Read (`get()`)**
 
-The `get()` method is used to get a single record from the Deno KV store. That operation takes an argument that is the key of the record being searched:
+The `get()` method is used to obtain a single record from Deno KV. For example:
+
 ```ts
 const foundRecord: Deno.KvEntryMaybe<User> = await kv.get<User>(["user", userId]);
 // Get user value
 const user = foundRecord.value;
 ```
-A call to `get()` returns an object `Deno.KvEntryMaybe` object containing with `key`, `value` and `versionstamp` fields. The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`. Be aware that in order to get the value of a `get()` call you need to use the `value` property of the `get()` call result.
+A call to `get()` returns a `Deno.KvEntryMaybe` object containing `key`, `value` and `versionstamp` properties (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null). The `key` will always be the key you used in the the `get()` call. The `value` and `timestamp` values are those found in the KV store associated with the `key`.
+
+Be aware that the value of a `get()` call is found in the `value` property of the call's result. This can trip you up since you might expect that the `get()` call returns only the value. Also be aware that the return value is wrapped in a `Promise` so make sure you prefix the call with `await`.
 
 If you call `get()` with a `key` that is not in the KV store, you will get back an object with both `value` and `versionstamp` equal to `null`. That is why there return value is typed `KvEntryMaybe` and not `KvEntry`, which is a valid type.
 
-#### Options
+#### `set()` Options
 
 The `get()` method has an optional second argument called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
@@ -191,22 +197,27 @@ When running Deno KV locally, the `consistency` value is not relevant since the 
 
 ### Update (`set()`)
 
-Updating the data would also use the `set()` method
+Updating KV data would also use the `set()` method as does inserts:
 
 ```ts
 user.phone = "5182349876"
-const result = await kv.set(["user", userId], user);
+const result = await kv.set<User>(["user", userId], user);
+if (result.ok === false) {
+  throw new Error(`There was a problem persisting user ${user.name}`)
+}
 ```
+The arguments and return value form an update is the same as a create/insert.
 ### Delete (`delete()`)
 
-Deleting a record uses the `delete()` method which requires a key argument.
+Deleting a record uses the `delete()` method which requires a key (`Deno.KvKey`) argument.
 
 ```ts
 await kv.delete(["user", userId]);
 ```
-The delete method returns a `Promise<void>`
+The delete method returns a `Promise<void>` which resolves to an `undefined` value.
 
-If any of the
+It is recommended that the mutation methods `set()` and `delete()` are done in a transaction which will return a result with an `ok` property to indicate if the transaction succeeded (`ok: true`) or failed (`ok: false`). See the [transaction section below for more details](#transactions-with-atomic).
+
 
 ## Reading multiple records (`list()` & `getMany()`)
 
@@ -280,18 +291,37 @@ You use the `cursor` filed of the iterator returned by a `list()` call to pagina
 ```
 ### Combining index records with `getMany()`
 
-The `getMany()` method obtains an array of `Deno.KvEntryMaybe` records (the Maybe part of `KvEntryMaybe` means that the result's value and versionstamp may be null).
+The `getMany()` method provides the opportunity to do a number of `get()` calls to separate indexes in one operation. The method accepts an array of keys and returns an array of `Deno.KvEntryMaybe` records, objects that include a `key`, `value` and `timestamp` fields.
 
-The `getMany()` method takes two arguments, `keys` and `options` which is optional.
+It is important to know that each one of the keys should return single `KvEntryMaybe` objects like they would in a `get()` call. So it follows that the number of keys in the `getMany()` argument will always equal the number of of results in the call return array.
 
-**`keys`**
+For example, suppose we have three environmental variables stored in three separate indexes. Here's what that would look like:
 
-The `keys` argument is an array of keys (`Deno.KvKey`). The tricky part of `getMany()` is that the number of values in the result set are equal to the number of `keys` in the array.
 ```ts
-// TODO: Example
-```
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+// keys for storing env variables in KV
+const githubSecretKey = ["env_var", "GITHUB_ACCESS_KEY"];
+const googleSecretKey = ["env_var", "GOOGLE_ACCESS_KEY"];
+const discordSecretKey: Deno.KvKey = ["env_var", "DISCORD_ACCESS_KEY"];
 
+// store env vars in separate indexes
+await kv.set(discordSecretKey, "password1");
+await kv.set(githubSecretKey, "password2");
+await kv.set(googleSecretKey, "password3");
+
+// get all env var entries in one call to separate indexes
+const envVars = await kv.getMany([
+  githubSecretKey,
+  googleSecretKey,
+  discordSecretKey,
+]);
+// the 'enVars' result array would contain these values:
+// enVars[0] = {key: ["env_var", "GITHUB_ACCESS_KEY"], value: "password2", versionstamp: "001234" }
+// enVars[1] = {key: ["env_var", "GOOGLE_ACCESS_KEY"], value: "password3", versionstamp: "001235" }
+// enVars[2] = {key: ["env_var", "DISCORD_ACCESS_KEY"], value: "password1", versionstamp: "001236" }
+
+```
+
+The `getMany()` method takes a second argument, `options` which is optional. The `option` argument has one property `consistency` which can be "strong" or "eventual". See the [data consistency section](#data-consistency) for more details on this topic.
 
 ## Transactions with `atomic()`
 
@@ -591,7 +621,7 @@ Data consistency refers to the assurance that all data centers maintain the same
 
 There are two kinds of data consistency in Deno Deploy. They can be configured using the `consistency` option when data is read from Deno KV. There are two options:
 - `consistency: "strong"` _(default)_ - data reads from KV will come from the nearest region.
-- `consistency: "eventual"`
+- `consistency: "eventual"` NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 Data access is quicker with eventual consistency, but the data possibly will not be consistent between different replicated KV instances if a query is done shortly after one or more KV writes.
 
