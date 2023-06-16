@@ -12,6 +12,7 @@
     - [Values](#kv-values)
     - [Versionstamp](#kv-versionstamp)
   - [CRUD operations](#crud-operations)
+    - [CRUD data](#crud-data)
     - [Create (`set()`)](#create-set)
     - [Read (`get()`)](#read-get)
     - [Update (`set()`)](#update-set)
@@ -132,7 +133,7 @@ const kv: Deno.Kv = await Deno.openKv();
 
 We'll be using the `kv` KV connection object (`Deno.Kv` instance) throughout our examples below.
 
-**CRUD data**
+### CRUD data
 
 It's best to create a TypeScript type or interface to represent data models. For instance, a user model will look something like this:
 ```ts
@@ -143,6 +144,8 @@ interface User {
   phone?: string;
 }
 ```
+Adding relations to the model, such as address and phone numbers would use `Address` and `Phone` interfaces. Both of them would have a `userId` field that would allow the lookup of an address and phone number for a particular user. For simplicity, we will focus on the `User` model here.
+
 Deno KV CRUD operations for a `User` will persist data that often comes from an HTML registration form filled out by a user. In our case, we'll manually create a user with a unique id:
 
 ```ts
@@ -155,7 +158,7 @@ const user = {
 }
 ```
 
-The user id can be hard coded, but it's best that it is generated  as a unique value. The `crypto` object built into the Web platform is an easy way to create a unique id:
+The user id can be hard coded like I did here, but it's best that it is generated  as a unique value. The `crypto` object built into the Web platform is an easy way to create a unique id:
 ```ts
 const userId = crypto.randomUUID();
 ```
@@ -197,7 +200,7 @@ When running Deno KV locally, the `consistency` value is not relevant since the 
 
 ### Update (`set()`)
 
-Updating KV data would also use the `set()` method as does inserts:
+Updating KV data would also use the `set()` method as we do for inserts:
 
 ```ts
 user.phone = "5182349876"
@@ -206,7 +209,8 @@ if (result.ok === false) {
   throw new Error(`There was a problem persisting user ${user.name}`)
 }
 ```
-The arguments and return value form an update is the same as a create/insert.
+The arguments and return value from an update is the same as a create/insert call to `set()`.
+
 ### Delete (`delete()`)
 
 Deleting a record uses the `delete()` method which requires a key (`Deno.KvKey`) argument.
@@ -285,10 +289,88 @@ The `options` argument has a collection of fields:
 ```
 #### Pagination with `list()`
 
-You use the `cursor` filed of the iterator returned by a `list()` call to paginate NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-```ts
+You use the `cursor` field of the iterator returned by a `list()` call to paginate.
+As stated above the Deno KV list iterator is of type `Deno.KvListiterator`.
 
+The key to iterating a list in groups is to the fact that `list()` returns a [`Deno.KvListIterator`](https://deno.land/api@v1.34.2?s=Deno.KvListIterator&unstable=) is that has a `cursor` field and a `next()` method, a consequence of that fact that it implements the [async iterator protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols).
+
+You'll notice that `list()` has an `cursor` property in the `options` argument. To paginate, you pass the cursor from one `list()` call to the next using the `cursor` property of the second `list()` argument like this:
+```ts
+  // First call to list() returns iterator
+  let iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25})
+  // Second call sets the cursor using the iterator from the first call to set the second call's cursor
+  iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25, cursor: iterator.cursor});
 ```
+When you done't know the number of items in an index you are querying with `list()` ("user_by_age" in this case), you can't just call until you get a null iterator, because `list()` always returns a `KvListIterator` object even if there are no results that can be obtained from the iterator.
+
+So, you need another ways to figure out when you have completed the `list()` calls. That's done by using `LvListIterator.next()` method's  `done` property. This is best shown with an example.
+
+First, start with a list of users:
+```ts
+// start with a User interface
+interface User {
+  id: number;
+  name: string;
+  age: number;
+}
+const users: User = [/* Multiple User objects here */];
+```
+Next we'll create a function to get an iterator. It will be called each time we want to display another group of users on a page. The first call to this method will set the `cursor` argument to an empty string which is used to determine whether `cursor` will be part of the second `list()` argument.
+```ts
+// Obtain a new User iterator
+function getIterator(cursor: string, limit: number): Deno.KvListIterator<User> {
+  const optionsArg = cursor !== "" ? { limit, cursor } : { limit };
+  const iterator = kv.list<User>({ prefix: ["user_by_age"] }, optionsArg);
+  return iterator;
+}
+```
+We are going to run this example from the command line and display results in the console.
+
+```ts
+// Print out iterator values to the console
+async function processIterator(
+  iterator: Deno.KvListIterator<User>,
+  pageNumber: number,
+): Promise<string> {
+  let cursor = "";
+  let result = await iter.next();
+  const users = [];
+  while (!result.done) {
+    cursor = iterator.cursor;
+    // result.value returns full KvEntry object
+    const user = result.value.value as User;
+    users.push(user);
+    result = await iter.next();
+  }
+  if (users.length > 0) {
+    // Print out array of users with page number
+    console.log(`Page ${pageNumber}`);
+    for (const u of users) {
+      console.log(`${u.name} ${u.age}`);
+    }
+  }
+  return cursor;
+}
+```
+
+Finally, initiate the pagination, printing out user data to console:
+```ts
+// print out users in batches of USERS_PER_PAGE
+const USERS_PER_PAGE = 3; // aka page size
+let pageNumber = 1; // in a webapp. this will be a query param
+let cursor = ""; // in a webapp. this will be a query param
+let iter = getIterator<User>(cursor, USERS_PER_PAGE);
+await processIterator(iter, pageNumber);
+pageNumber++; // in a webapp. increment this in the handler
+cursor = iter.cursor; // in a webapp, reset this in the handler
+while (cursor !== "") {
+  iter = getIterator<User>(cursor, USERS_PER_PAGE);
+  cursor = await printIterator(iter, pageNumber);
+  pageNumber++;
+}
+```
+If you want to paginate results in a webapp, you would do the following with this code using Deno Fresh as an example:
+- In each page handler, call the `getIterator` and `printIterator` increment `pageNumber` and
 ### Combining index records with `getMany()`
 
 The `getMany()` method provides the opportunity to do a number of `get()` calls to separate indexes in one operation. The method accepts an array of keys and returns an array of `Deno.KvEntryMaybe` records, objects that include a `key`, `value` and `timestamp` fields.
@@ -685,4 +767,3 @@ Deno KV is in its infancy, so there are no mature tools for working with it. The
 - [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
 - [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
 - [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
-
