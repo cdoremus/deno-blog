@@ -34,10 +34,12 @@
   - [Math operations: sum, min \& max](#math-operations-sum-min--max)
     - [`sum()`, `min()` and `max()` methods](#sum-min-and-max-methods)
     - [`mutate()` method](#mutate-method)
+  - [Using KV Queue](#using-kv-queue)
   - [KV on Deno Deploy](#kv-on-deno-deploy)
     - [Deno Deploy Data Centers](#deno-deploy-data-centers)
       - [Data Consistency](#data-consistency)
       - [Synchronization Between Data Centers](#synchronization-between-data-centers)
+    - [Loading KV data into Deno Deploy](#loading-kv-data-into-deno-deploy)
   - [Conclusions](#conclusions)
 - [Appendix](#appendix)
   - [References](#references)
@@ -49,9 +51,9 @@
 
 Deno KV, a key-value based database, was built into the Deno runtime starting with Deno 1.32.0 as an unstable API. Deno Deploy now incorporates Deno KV (currently on an invite-only basis), and distributes KV data around the world. This means that when a web application is put on Deploy, there will now be a database close to each server instance. In addition, Deno Deploy uses synchronization to maintain data consistency.
 
-The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD. This is a big win for Deno developers!
-
 This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is in [multiple places in the Deno documentation](#deno-manual-and-api-docs), consider this post as a one-stop guide to KV.
+
+Note that a dozen code examples have been created to support this blog post. The can be found in [this repository folder](https://github.com/cdoremus/deno-blog-code/tree/main/deno-kv).
 
 ## Indexes
 
@@ -397,6 +399,7 @@ const envVars = await kv.getMany([
   discordSecretKey,
 ]);
 // the 'enVars' result array would contain these values:
+//
 // enVars[0] = {key: ["env_var", "GITHUB_ACCESS_KEY"], value: "password2", versionstamp: "001234" }
 // enVars[1] = {key: ["env_var", "GOOGLE_ACCESS_KEY"], value: "password3", versionstamp: "001235" }
 // enVars[2] = {key: ["env_var", "DISCORD_ACCESS_KEY"], value: "password1", versionstamp: "001236" }
@@ -485,6 +488,10 @@ function persistUser(user: User, address: Address, phone: Phone) {
 ```
 The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be true in a successful transaction.
 
+### Transaction failures
+
+If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another error, a `Deno.KvCommitError` is returned. In that case, the transaction is not persisted. The `KvCommitError` object has one field `ok` that is set to `false` when a failure happens.
+
 ### Tracking a record's history
 The `versionstamp` of a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` to a separate index. Here's what that would look like:
 
@@ -512,15 +519,6 @@ for await (const version of iter) {
   console.log(`Version: ${version.value.version} Date: ${version.value.date}`);
 }
 ```
-
-### Transaction failures
-
-**TODO:** needs work; ??combine with commit discusion??
-
-If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another error, a `Deno.KvCommitError` is returned.
-
-When the `Deno.KvCommitError`is returned, the transaction is not persisted. That object has one field `ok` that is set to `false`.
-
 
 ## Secondary Indexes
 
@@ -692,9 +690,28 @@ await kv.atomic()
 ```
 The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint` value. The value is set via the constructor argument and is retrieved using the `value` field on a `Deno.KvU64()` instance. The `mutate()` value argument is always a `Deno.KvU64`.
 
+## Using KV Queue
 
+A queue was been added to Deno KV in Deno v1.34.3. If you recall from your data structures class (if you took one or picked it up on-th-fly like me), a queue is a linear sequence where operations are performed in first-in, first-out (FIFO) order. Enqueueing is the operation that adds items to a queue and dequeueing removes items from the queue.
+
+The KV queue implementation is done using the `Deno.Kv.enqueue()` and the `Deno.Kv.queueListen()` methods. The `enqueue` method adds items to the database queue while the `queueListen` method's callback function gets called when the item is dequeued.
+
+Besides being called as a standalone method, `enqueue()` can also  be chained to `Deno.Kv.atomic()` to be part of an atomic transaction.
+
+There are two arguments to `Deno.Kv.enqueue()`. The first one is the value to be queued, which is a [valid KV value](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values). It returns a `Promise<Deno.KvCommitResult>` which resolves with a boolean `ok` value.
+
+The second `enqueue` argument is optional. It is an object that contains two properties (both of them optional):
+- `delay` - the time in milliseconds to delay the delivery of an enqueued object. The default is zero.
+- `keysIfUndelivered` - `Deno.Kv.Key[]` are keys used to store a value if the value delivery to a queue listener is not successful after it has been retried several times.
+
+The `Deno.Kv.queueListen()` method has one argument which is a callback handler function. It takes an argument which is the queue value.
+
+```ts
+// TODO: example
+```
 ## KV on Deno Deploy
 
+The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD.
 ### Deno Deploy Data Centers
 Deno KV databases are replicated across at least 6 data centers, spanning 3 regions (US, Europe, and Asia).
 
@@ -703,7 +720,7 @@ Data consistency refers to the assurance that all data centers maintain the same
 
 There are two kinds of data consistency in Deno Deploy. They can be configured using the `consistency` option when data is read from Deno KV. There are two options:
 - `consistency: "strong"` _(default)_ - data reads from KV will come from the nearest region.
-- `consistency: "eventual"` NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+- `consistency: "eventual"` - data reads NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 Data access is quicker with eventual consistency, but the data possibly will not be consistent between different replicated KV instances if a query is done shortly after one or more KV writes.
 
@@ -717,6 +734,11 @@ When data is written to a Deno KV store, the following things happen:
 
 Deno Deploy docs state that the full asynchronous replication of data should occur withing 10 seconds.
 
+#### Loading KV data into Deno Deploy
+
+One issue with working with KV on Deno Deploy is how to seed the database before an app is started. The team recommends that you create an API route to do handle the data loading and call the API route from a local command-line application sending the data with the command line calls.
+
+Loading of large amounts of data should be done using batch calls to the API to avoid overloading the system and minimize server CPU usage. In any case, you should make sure the API returns an OK (202) response if persistence succeeded or a failure response (500) enumerating which records were not persisted into KV.
 ## Conclusions
 Deno KV is not finished, so you should expect it to evolve. Here are some expectations:
 - Stabilization of the KV API
