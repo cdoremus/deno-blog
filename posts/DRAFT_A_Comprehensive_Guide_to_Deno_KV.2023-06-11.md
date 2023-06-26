@@ -20,7 +20,7 @@
   - [Reading multiple records (`list()` & `getMany()`)](#reading-multiple-records-list--getmany)
     - [Reading a list with `list()`](#reading-a-list-with-list)
       - [Pagination with `list()`](#pagination-with-list)
-    - [Combining index records with `getMany()`](#combining-index-records-with-getmany)
+    - [Combining records from multiple indexes with `getMany()`](#combining-records-from-multiple-indexes-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
     - [Using `check()` to validate transactions](#using-check-to-validate-transactions)
     - [Using `set()` and `delete()` for transactional persistance](#using-set-and-delete-for-transactional-persistance)
@@ -287,7 +287,7 @@ The `options` argument has a collection of fields:
 
 ```ts
 // TODO: Example of all options with prefix
-
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 ```
 #### Pagination with `list()`
 
@@ -373,7 +373,8 @@ while (cursor !== "") {
 ```
 If you want to paginate results in a webapp, you would do the following with this code using Deno Fresh as an example:
 - In each page handler, call the `getIterator` and `printIterator` increment `pageNumber` and
-### Combining index records with `getMany()`
+
+### Combining records from multiple indexes with `getMany()`
 
 The `getMany()` method provides the opportunity to do a number of `get()` calls to separate indexes in one operation. The method accepts an array of keys and returns an array of `Deno.KvEntryMaybe` records, objects that include a `key`, `value` and `timestamp` fields.
 
@@ -412,11 +413,15 @@ The `getMany()` method takes a second argument, `options` which is optional. The
 
 The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. It returns a `Deno.AtomicOperation` class instance. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
 
+
 ### Using `check()` to validate transactions
 
-A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of data already in the KV store matches the `versionstamp` of the data being persisted.
 
-If `check()` fails, then the transaction will fail and the data will not be committed. That method gets chained to a  `set()` or `delete()` call, two methods that behave the same way they do when called outside an `atomic()` chain ([see CRUD section above](#crud-operations)).
+A transactional chain off of `atomic()` should first call the `check()` method for each persistent operation. The `check()` method ensures that the `versionstamp` of data already in the KV store matches the `versionstamp` of the data being persisted. This feature is called optimistic concurrency control and assures data consistency and integrity within the KV store.
+
+A `get()` call must be done prior to `check()` to provide the `key` and `versionstamp` arguments of `check()`. For a new data insert the `get()` call will return null for the `versionstamp` (and `value`). If `check()` fails, then the transaction will fail and the data will not be committed.
+
+After `check()`, a series of `set()` and/or `delete()` calls are done to persist or delete KV data based on the provided key. These two methods behave the same way they do when called outside an `atomic()` chain ([see CRUD section above](#crud-operations)).
 
 An example will clarify how `check()` is used. Here we are trying to persist a user object with a changed phone number.
 
@@ -424,26 +429,30 @@ An example will clarify how `check()` is used. Here we are trying to persist a u
 //
 const user = kv.get(["user", 123])
 const result = kv.atomic().
-  // make sure versionstamp has not changed after last get()
-  .check(user)
+  // Make sure versionstamp has not changed after last get()..
+  // This method requires both a key and versionstamp
+  .check({key: user.key, versionstamp: user.versionstamp})
   // update phone number
   .set(["user", user.id], {...user.value, phone: "2070987654"  })
   .commit();
 ```
-If a `check()` fails, then any persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError`.
+In this example, the `user` object could have been used as the `check()` argument since it contains both `key` and `versionstamp` fields (the `value` field would have been ignored).
+
+If `check()` fails, then any persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError`.
 
 ### Using `set()` and `delete()` for transactional persistance
 
-In the previous example, `set()` is used to create or update data in a transactional chain. It is a method of `Deno.AtomicOperation` and works the same way as `Deno.Kv.set()` taking a key and value as arguments. It is used to persist the value in a KV store with the key as the primary key.
+In the previous example, `set()` is used to create or update data in a transactional chain. It is a method of `Deno.AtomicOperation` and works the same way as `Deno.Kv.set()` taking a key and value as arguments. It persists the value in a KV store with the key as the primary key (the record also contains a `versionstamp`).
 
-Likewise, `delete()`, also an `Deno.AtomicOperation` method, works the same way as it's `Deno.Kv` counterpart. It takes a key argument and is used to remove records from a Deno KV store.
+Likewise, `delete()`, also an `Deno.AtomicOperation` method, works the same way as its `Deno.Kv` counterpart. It takes a key argument and is used to remove records from a Deno KV store.
 
 Both `set()` and `delete()` can be chained to `atomic()` multiple times, but there cannot be more than 10 writes in a single persistent chain.
 
 The full power of KV transactional persistence is revealed when you need to store related objects. For instance, if you have a user who has an address and phone numbers. You should start with Typescript types defining the model:
 ```ts
+// userId added prior to persistence
 interface User {
-  id?: string; // id added just prior to persistence
+  id?: string;
   name: string;
   email: string;
 }
@@ -462,7 +471,7 @@ interface Phone {
   home?: string;
 }
 ```
-Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that user this information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert or update that data within a KV transaction:
+Each one of the entities will be persisted into a separate KV index within an atomic transaction. Let's assume that this information has been collected from an HTML user-registration form and processed into `User`, `Address` and `Phone` model objects. Here's a function to insert or update that data within a KV transaction:
 ```ts
 function persistUser(user: User, address: Address, phone: Phone) {
   if (!user.id) {
@@ -484,19 +493,36 @@ function persistUser(user: User, address: Address, phone: Phone) {
     .set(phoneKey, phone)
     .commit();
 }
-
 ```
-The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be true in a successful transaction.
+
+The return value of a `kv.atomic()....commit()` call chain is a `Promise<Deno.KvCommitResult>` if the transaction succeeds. That object contains two fields: `ok` and `versionstamp`. The `ok` value will be `true` in a successful transaction.
 
 ### Transaction failures
 
-If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another error, a `Deno.KvCommitError` is returned. In that case, the transaction is not persisted. The `KvCommitError` object has one field `ok` that is set to `false` when a failure happens.
+If a KV transaction fails within an `atomic()` call chain either by a failed `check()` or another transactional error, a `Deno.KvCommitError` is returned. In that case, the transaction is not persisted. The `KvCommitError` object has one field `ok` that is set to `false` when a failure happens.
 
+Here's what happens if you try to insert data that has already been inserted causing `check()` to fail:
+```ts
+// Assumes that User 1 has already been added to the KV index
+const id = 1; // user id
+const result = kv.atomic()
+  // Initial insert has null versionstamp
+  .check({key: [
+    "user", id], versionstamp: null})
+  .set(["user", id], `User ${id}`)
+  .commit();
+
+if (result.ok === false) {
+  throw new Error(`Data insert failed for User ${id} because it already exists`);
+}
+```
 ### Tracking a record's history
-The `versionstamp` of a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` to a separate index. Here's what that would look like:
+
+The `versionstamp` returned in a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` to a separate index. Here's what that would look like:
 
 ```ts
 const userId = crypto.randomUUID();
+// Assumes kv is a Deno.Kv object
 const user = kv.get(["user", userId])
 const result = await kv.atomic()
   .check(user)
@@ -507,11 +533,11 @@ if (result.ok) {
   await kv.set(["user_versionstamp", userId, result.versionstamp ], {version: result.versionstamp, date: new Date().getTime()});
 }
 ```
-The `versionstamp` is part of the index so that records will be ordered by `versionstamp` for each user.
+Since the `versionstamp` is part of the index records will be ordered by `versionstamp` for each user.
 
 You can then use `list()` to display the history of a particular user's record.
 ```ts
-// display in version in reverse chronological order
+// display version in reverse chronological order
 const iter = kv.list({ prefix: ["user_versionstamp", userId] },
     {reverse:  true});
 for await (const version of iter) {
@@ -522,7 +548,7 @@ for await (const version of iter) {
 
 ## Secondary Indexes
 
-You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a unique key part, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
+You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a part unique to the value being persisted, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
 
 ### Creation and mutation
 A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do on a primary index.
@@ -535,6 +561,7 @@ const userId = crypto.randomUUID();
 const user = {id: userId, name:"Joan Smith", email: "joan.smith@example.com"};
 const userKey = ["user", userId];
 const userEmailLookupKey = ["user_by_email", user.email, userId];
+// Assumes kv is a Deno.Kv object
 const result = kv.atomic()
   .check({key: userKey, versionstamp: null})
   .check({key: userEmailLookupKey, versionstamp: null})
@@ -573,6 +600,7 @@ const players: Player[] = [/* player data goes here */]
 // persist players to KV
 for (const player of players) {
   player.id = crypto.RandomUUID();
+  // Assumes kv is a Deno.Kv object
   await kv.atomic()
     // skip check() calls here;
     .set(["players", player.id], player);
@@ -605,6 +633,7 @@ The significance of the key ordering is it can be used to sort values. You do th
 For instance, if you wanted to order user by their last name, you would have primary index and a secondary sorting index created like this:
 
 ```ts
+// Assumes kv is a Deno.Kv object
 // create indexes within a transaction
 await kv.atomic()
   // check() calls omitted for brevity
@@ -618,6 +647,7 @@ You'll noticed that I added `userId` to the secondary index. Otherwise duplicate
 To display the sorted values you use the `list()` method. If you want to sort the list in reverse order (largest value to smallest) set `reverse: true`. A good example of that is sorting by date with most recent dates ordered at the top:
 ```ts
 // create user and user_create_date indexes
+// Assumes kv is a Deno.Kv object
 await kv.atomic()
   // check() calls omitted
   .set(["user", <userId>], <user object>) // primary index
@@ -656,6 +686,7 @@ const cart: CartItem[] = [
 
 // add data to indexes
 for (const item of cart) {
+// Assumes kv is a Deno.Kv object
   kv.atomic()
     .set(["cart", item.userId], item) // primary index
     .min(["cart_min"], BigInt(item.price))
@@ -679,6 +710,7 @@ console.log(`Total price: ${(cartSum as Deno.KvEntry<bigint>).value}`);
 The `mutate()` method is an alternate way to get aggregate stats. It takes an object with `type`, `key` and `value` properties. The type value can be either "sum", "min", or "kax.
 
 ```ts
+// Assumes kv is a Deno.Kv object
 // keep track of website visits
 await kv.atomic()
   .mutate({
@@ -707,8 +739,28 @@ The second `enqueue` argument is optional. It is an object that contains two pro
 The `Deno.Kv.queueListen()` method has one argument which is a callback handler function. It takes an argument which is the queue value.
 
 ```ts
-// TODO: example
+// Assumes kv is a Deno.Kv object
+// Listen to enqueued objects
+kv.listenQueue(async (msg: unknown) => {
+  // Do a operation on the queued object
+  await kv.set(msg.key, msg.value);
+  console.log("Value delivered: ", msg);
+});
+
+const res = await kv.enqueue(
+  { key: ["test1"], value: "testing 1,2,3" },
+  {
+    delay: 1000, // delay delivery for 1 second
+    keysIfUndelivered: [["queue_failed", "test1`"]],
+  },
+);
+console.log("Queue result: ", res);
+
+// Output:
+// Queue result:  { ok: true, versionstamp: "0000000000001d100000" }
+// Value delivered:  { key: [ "test1" ], value: "testing 1,2,3" }
 ```
+Like the `atomic()` method, the `enqueue()` method returns a result that contains `ok` and `versionstamp` fields. If the enqueueing fails, `ok` will be `false`; otherwise `true`.
 ## KV on Deno Deploy
 
 The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD.
@@ -719,8 +771,14 @@ Deno KV databases are replicated across at least 6 data centers, spanning 3 regi
 Data consistency refers to the assurance that all data centers maintain the same data even after new data is persisted.
 
 There are two kinds of data consistency in Deno Deploy. They can be configured using the `consistency` option when data is read from Deno KV. There are two options:
-- `consistency: "strong"` _(default)_ - data reads from KV will come from the nearest region.
-- `consistency: "eventual"` - data reads NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+- `consistency: "strong"` _(default)_ - data reads from KV will come from the nearest region. Strong consistency implies:
+  - _Serializability_: meaning that transactions are isolated at the highest level. It ensures that concurrent execution of multiple transactions results in a system state that would be the same as if the transactions were executed sequentially.
+  - _Linearizability_: guarantees that read and write operations appear to be instantaneous and occur in real-time. Linearizability ensures a strong real-time ordering of operations.
+
+- `consistency: "eventual"` - uses global replica's and caches for data reads and writes to maximize performance. In most cases the difference between strong and eventual consistency speed ranges from zero to about 100 milliseconds, which depends on how close the deployed app region is to North Virginia, USA which holds the primary write database for KV.
+
+See the [Deno KV consistency section of the Deno Deploy docs](https://deno.com/deploy/docs/kv#consistency) for more information.
+
 
 Data access is quicker with eventual consistency, but the data possibly will not be consistent between different replicated KV instances if a query is done shortly after one or more KV writes.
 
@@ -739,6 +797,8 @@ Deno Deploy docs state that the full asynchronous replication of data should occ
 One issue with working with KV on Deno Deploy is how to seed the database before an app is started. The team recommends that you create an API route to do handle the data loading and call the API route from a local command-line application sending the data with the command line calls.
 
 Loading of large amounts of data should be done using batch calls to the API to avoid overloading the system and minimize server CPU usage. In any case, you should make sure the API returns an OK (202) response if persistence succeeded or a failure response (500) enumerating which records were not persisted into KV.
+
+An alternative for a small amount of is to have the data loaded once when the application starts. This could be done in a `useEffect` hook with an empty array argument that would set an "is_loaded" index with a `true` value when the initial load is completed and have that value checked before loading to make sure that they are not loaded multiple times.
 ## Conclusions
 Deno KV is not finished, so you should expect it to evolve. Here are some expectations:
 - Stabilization of the KV API
@@ -789,3 +849,5 @@ Deno KV is in its infancy, so there are no mature tools for working with it. The
 - [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
 - [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
 - [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
+- [Multiplayer KV Beats](git@github.com:KevinBatdorf/beats-kv-demo.git) - a beat box game using Deno KV.
+- [Reddino](https://github.com/Wave-Studio/Reddino) - A Reddit clone using Deno KV
