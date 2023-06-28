@@ -19,6 +19,8 @@
     - [Delete (`delete()`)](#delete-delete)
   - [Reading multiple records (`list()` & `getMany()`)](#reading-multiple-records-list--getmany)
     - [Reading a list with `list()`](#reading-a-list-with-list)
+      - [The first `list()` argument: `selector`](#1-the-first-list-argument-selector)
+      - [The second `list()` argument: `options`](#2-the-second-list-argument-options)
       - [Pagination with `list()`](#pagination-with-list)
     - [Combining records from multiple indexes with `getMany()`](#combining-records-from-multiple-indexes-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
@@ -53,7 +55,7 @@ Deno KV, a key-value based database, was built into the Deno runtime starting wi
 
 This article will cover all aspects of Deno KV with simple, easy-to-understand examples. Since info on Deno KV is in [multiple places in the Deno documentation](#deno-manual-and-api-docs), consider this post as a one-stop guide to KV.
 
-Note that a dozen code examples have been created to support this blog post. The can be found in [this repository folder](https://github.com/cdoremus/deno-blog-code/tree/main/deno-kv).
+Note that a dozen working code examples have been created to support this blog post. The can be found in [this repository folder](https://github.com/cdoremus/deno-blog-code/tree/main/deno-kv). You'll also find each example linked in the relevant section of this article.
 
 ## Indexes
 
@@ -65,7 +67,7 @@ A KV **primary index** is the index that stores a record using a unique key for 
 
 Deno KV have well-defined keys, values and a versionstamp that represents a value's version.
 ### [KV Keys](https://deno.com/manual@v1.34.0/runtime/kv/key_space#keys)
-As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a fixed length. Each of the members of the tuple is called a **part**. All parts are linked together into a compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
+As stated above, Deno KV is a key-value database. In it's simplest form, a database record's data is persisted and found using the key. In Deno KV, the key is a tuple, an array with a fixed length. Each of the members of the tuple is called a **part**. All parts are linked together into a kind of compound key. Key parts can be of types `string`, `number`, `boolean`, `Uint8Array`, or `bigint`.
 
 
 Here are a couple of examples of a Deno KV key used to identify unique records:
@@ -77,27 +79,27 @@ const addressKey ["address", <userId>]; // Used for storing a user's address
 ```
 As stated above, when a unique key is used to persist values, the resulting index is know as a primary index. The Web platform provides `crypto.getRandomUUID()` to obtain a unique id.
 
-Key parts are an ordered sequence so that `[1, "user"]` is not the same as `["user", 1]`.
+An index is an ordered sequence of key parts so that `[1, "user"]` is not the same as `["user", 1]`.
 
 When used in a primary index the first key part (aka key prefix) is usually a string constant identifying the model collection being persisted, `"user"` or `"address"` in the example. When used to add records to an index, the key parts are combined into a compound key.
 
-
-The first key part could be expanded into multiple parts. For instance, if we have a user with roles, we might have the second part representing a role such as:
+The initial key part of an index can be expanded into multiple parts. For instance, if we have a user with roles, we might have the second part representing a role such as:
 ```ts
 const userAdminKey = ["user", "admin", <userId>];
 const userCustomerKey = ["user", "customer", <userId>];
 const userGuestKey = ["user", "guest", <userId>];
 ```
-If there is a role field on the model, the previous keys could be reduced to (assuming each user has one role):
+If there is a role field on the model, the previous keys could be reduced to something like this (assuming each user has one role):
 ```ts
 const userRoleKey = ["user_by_role", <userRole>, <userId>];
 ```
-Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index in order that the data is consistent between indexes ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"`.
+Indexes created with these keys are called secondary indexes. They need to be persisted in an atomic transaction with the primary index in order for the data to be is consistent between indexes ([see the secondary index discussion below](#secondary-indexes)). Secondary indexes should have a first part name describing their function. In this case, the key is used to lookup a user and the first part is `"user_by_role"`.
 
 ### [KV Values](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values)
+
 In order for Deno KV values to be persisted, a value must be a structured, serializable JavaScript type compatible with [JavaScript's structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
-Basically, it is anything that can be passed as the first argument of [`structuredClone()`](https://developer.mozilla.org/en-US/docs/Web/API/structuredClone) except `SharedArrayBuffer`. The `SharedArrayBuffer` is an exception because is is a shared memory data structure that cannot be passed across KV isolates.
+Basically, it is anything that can be passed as the first argument of [`structuredClone()`](https://developer.mozilla.org/en-US/docs/Web/API/structuredClone) except `SharedArrayBuffer`. The `SharedArrayBuffer` is an exception because is is a shared memory data structure that cannot be passed across KV remote isolates.
 
 See  [this discussion on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#things_that_dont_work_with_structured_clone) for more details on what does not conform to the structured clone algorithm.
 
@@ -115,9 +117,9 @@ kv.set(["env", "IS_PROD"], true);
 kv.set(["hits", "account.tsx", "a12345"], 254);
 ```
 ### [KV versionstamp](https://deno.com/manual@v1.34.0/runtime/kv/key_space#versionstamp)
-Each time a new value is persisted to Deno KV, it is automatically given a 12-byte version value based on the time when the record was persisted. KV calls this version a `versionstamp`. When a value is updated, a new `versionstamp` is created.
+Each time a new value is persisted to Deno KV, it is automatically given a 12-byte version value based on the time when the record was saved. KV calls this a `versionstamp`. When a value is updated, a new `versionstamp` is created.
 
-A new `versionstamp` will always be 'larger' than the previous one such that the second modification of a record will always be greater than the first in a boolean comparison (versionstamp2 > versionstamp1).
+A new `versionstamp` will always be 'larger' than the previous one such that the second modification of a record will always be greater than the first in a boolean comparison (versionstamp2 > versionstamp1). This is important if you want to [track and display a record's version history](#tracking-a-records-history).
 
 The `versionstamp` assures that transactions are done atomically thus making sure that affiliated relational records in different indexes are consistent. Atomic operations in Deno KV can be checked to make sure that the data is consistent between the last fetch (`get()`) and when the new data will be persisted. This check is done with the record's `versionstamp` ([for details see below](#transactions-with-atomic)).
 
@@ -126,6 +128,8 @@ One good use of the `versionstamp` is to [reconstruct the mutation history of a 
 
 ## CRUD operations
 The main CRUD (create, read, update & delete) operations in KV are defined as methods on the `Deno.Kv` class: `set()`(create & update), `get()` (read) and `delete()` (delete).
+
+Working code that demonstrates CRUD operations can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/crud.ts).
 
 All CRUD operations on Deno KV start with a connection to the KV database which is done with a simple call to `Deno.openKv()`:
 ```ts
@@ -184,7 +188,9 @@ The return value of a `set()` call is a `Promise<Deno.KvCommitResult>`, The `KvC
 The `get()` method is used to obtain a single record from Deno KV. For example:
 
 ```ts
-const foundRecord: Deno.KvEntryMaybe<User> = await kv.get<User>(["user", userId]);
+const foundRecord: Deno.KvEntryMaybe<User> = await
+// Assumes kv is a Deno.Kv object
+kv.get<User>(["user", userId]);
 // Get user value
 const user = foundRecord.value;
 ```
@@ -198,7 +204,7 @@ If you call `get()` with a `key` that is not in the KV store, you will get back 
 
 The `get()` method has an optional second argument called `options`. The `options` argument contains one field `consistency`. which has two values `"eventual"` or `"strong"`([see discussion below for details](#data-consistency)).
 
-When running Deno KV locally, the `consistency` value is not relevant since the KV store is local. It is relevant when an application using Deno KV runs in the cloud on Deno Deploy since KV store instances are distributed in the cloud([see below](LINK NEEDED)).
+When running Deno KV locally, the `consistency` value is not relevant since the KV store is local. It is relevant when an application using Deno KV runs in the cloud on Deno Deploy since KV store instances are distributed in the cloud ([see below](#deno-deploy-data-centers)).
 
 ### Update (`set()`)
 
@@ -206,6 +212,7 @@ Updating KV data would also use the `set()` method as we do for inserts:
 
 ```ts
 user.phone = "5182349876"
+// Assumes kv is a Deno.Kv object
 const result = await kv.set<User>(["user", userId], user);
 if (result.ok === false) {
   throw new Error(`There was a problem persisting user ${user.name}`)
@@ -218,6 +225,7 @@ The arguments and return value from an update is the same as a create/insert cal
 Deleting a record uses the `delete()` method which requires a key (`Deno.KvKey`) argument.
 
 ```ts
+// Assumes kv is a Deno.Kv object
 await kv.delete(["user", userId]);
 ```
 The delete method returns a `Promise<void>` which resolves to an `undefined` value.
@@ -233,28 +241,36 @@ Reading multiple records involves the use of `list()` and `getMany()`, two metho
 
 The `list()` method obtains multiple records and produces an async iterator (`Deno.KvListIterator`) which has a `cursor` field, the current position of the iteration, and a `next()` method to move the iteration to the `cursor` position.
 
+Working code that demonstrates the `list()` method can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/lists.ts).
+
 Since the iterator is asynchronous, iteration is usually done with a [`for-of` loop using `await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of).
 
 The `list()` method takes two arguments `selector` and `options`:
 
-1. **The first `list` argument: `selector`**
+#### 1. The first `list()` argument: `selector`
 
-The `selector` is an object with tree optional arguments: `prefix`, `start` and `end`. All the arguments have a standard KV key as discussed above.
+The `selector` is an object with tree optional fields: `prefix`, `start` and `end`. All the arguments have a standard KV key as discussed above.
 
-**`prefix` option of `list()`**
+**The `prefix` `selector` field**
 
-Unlike the `set()`, `get` and `delete()` CRUD methods, the `prefix` key can be a key part subset.
+Unlike the `set()`, `get` and `delete()` CRUD methods, the `prefix` key can be a key part subset. The first key part of a `prefix` is often a string literal.
 
 Let's say you just wanted a list of user or user admins, your `list()` call would be one of the following:
 ```ts
-// get list of users; to avoid TypeScript errors, call list() with a generic parameter
+// Assumes kv is a Deno.Kv object
+// get list of users
 const iteruser = kv.list<User>({prefix: ["user"]});
 // list of admins
 const iterAdmin = kv.list<User>({prefix: ["user", "admin"]});
 ```
-Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either `start` or `end`.
+To avoid TypeScript errors, call `list()` with a generic parameter (`User` in the previous example).
 
-**`start` and `end` options**
+Besides its use in querying, index prefixes are important to have because indexes with the same prefix are usually stored near to each other which facilitates rapid retrieval.
+
+
+**`Selector` fields `start` and `end`**
+
+Besides `prefix`, `start` and `end` are `selector` argument options. The `list()` method takes one or two arguments. The first one can be either `prefix` or `start`. The second one can be either `start` or `end`.
 
 The `start` or `end` options of `list()` define a range of KV records you want to select. But to be able to use `start` or `end`, you need to understand how key ordering is done (see the [sorting with indexes section below](#sorting-with-indexes)).
 
@@ -262,48 +278,62 @@ While key ordering is instrumental for sorting, with `start` and `end` the order
 
 The `start` option starts with the first matching record while the `end` method includes all previous records, but not the record it points to.
 ```ts
-// TODO: Example of start & end
+// Assumes kv is a Deno.Kv object
+const rows = kv.list({
+  start: ["user_by_name", "Dow"],
+  end: ["user_by_name", "Zozos"],
+});
+for await (const row of rows) {
+  const user = row.value as User;
+  console.log(user.name);
+}
 ```
-If you want to make sure that the end record is included in the range, you can use a key like `["zzzzzzzzzzz"] to insure that there are no keys with lower order.
+In order for the `start` option to work correctly, you need to make sure that the index you are sorting with is unique. For instance if the "user_by_name" index shown in the example was created using only the last name and if there are records with the same last name, only one will be included in the results.
+
+You can pair either `start` or `end` with the `prefix` field. When `prefix` is paired with `start`, the end point is the last record in the index. Alternately, when `prefix` is paired with `end`, the start point is the first index record. Here is an example:
 ```ts
-// TODO: Example
+// Assumes kv is a Deno.Kv object
+const rows = kv.list({
+  prefix: ["user_by_name"], // points to first record
+  end: ["user_by_name", "Zozos"],
+});
+// Loop through results
+for await (const row of rows) {
+  const user = row.value as User;
+  console.log(user.name);
+}
 ```
 
-Either one of them can be used with `prefix`
-```ts
-// TODO: Example of all options with prefix
+This example illustrates the easiest way to iterate through results returned from `list()`: a [for await...of](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) loop. This standard JavaScript block statement is used to move through async iterable objects one at a time as it satisfies the [iterator protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterator_protocol) with a `next()` function.
 
-```
 
-2. **The second `list()` argument: `options`**
+#### 2. The second `list()` argument: `options`
 
-The `options` argument has a collection of fields:
-  - `limit: number` - A `number` limits the size of a `list()` result set
-  - `cursor: string` - the `cursor` to resume iteration. Recall the `list()` method returns a `Deno.KvListIterator` that contains a `cursor` field.
+The `options` `list()` argument is an object with a collection of fields:
+  - `limit: number` - limits the size of a `list()` result set.
+  - `cursor: string` - the `cursor` to resume iteration. Recall the `list()` method returns a `Deno.KvListIterator` that contains a `cursor` field. This is important in a [pagination use case](#pagination-with-list).
   - `reverse: boolean` - returns the list in reverse order
     - `prefix`, `start` or `end` can be used with `reverse`.
   - `batchSize: number` - the size of the batches in which the list operation is performed. The default is equal to the 'limit' value or 100
-  - `consistency: Deno.KvConsistencyLevel` - the transactional consistency, either `"strong"` or `"eventual"`
+  - `consistency: Deno.KvConsistencyLevel` - the transactional consistency, either `"strong"` or `"eventual"`(see the [consistency section below](#data-consistency)).
 
-```ts
-// TODO: Example of all options with prefix
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-```
 #### Pagination with `list()`
 
-You use the `cursor` field of the iterator returned by a `list()` call to paginate.
-As stated above the Deno KV list iterator is of type `Deno.KvListiterator`.
+You use the `cursor` field of the iterator returned by a `list()` call to paginate. As stated above the Deno KV list iterator is of type `Deno.KvListiterator`.
+
+Working code that demonstrates pagination with the `list()` method can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/pagination.ts).
 
 The key to iterating a list in groups is to the fact that `list()` returns a [`Deno.KvListIterator`](https://deno.land/api@v1.34.2?s=Deno.KvListIterator&unstable=) is that has a `cursor` field and a `next()` method, a consequence of that fact that it implements the [async iterator protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols).
 
 You'll notice that `list()` has an `cursor` property in the `options` argument. To paginate, you pass the cursor from one `list()` call to the next using the `cursor` property of the second `list()` argument like this:
 ```ts
-  // First call to list() returns iterator
-  let iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25})
-  // Second call sets the cursor using the iterator from the first call to set the second call's cursor
-  iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25, cursor: iterator.cursor});
+// Assumes kv is a Deno.Kv object
+// First call to list() returns iterator
+let iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25})
+// Second call sets the cursor using the iterator from the first call to set the second call's cursor
+iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25, cursor: iterator.cursor});
 ```
-When you done't know the number of items in an index you are querying with `list()` ("user_by_age" in this case), you can't just call until you get a null iterator, because `list()` always returns a `KvListIterator` object even if there are no results that can be obtained from the iterator.
+When you don't know the number of items in an index you are querying with `list()` ("user_by_age" in this case), you can't just call until you get a null iterator, because `list()` always returns a `KvListIterator` object even if there are no results that can be obtained from the iterator.
 
 So, you need another ways to figure out when you have completed the `list()` calls. That's done by using `LvListIterator.next()` method's  `done` property. This is best shown with an example.
 
@@ -322,6 +352,7 @@ Next we'll create a function to get an iterator. It will be called each time we 
 // Obtain a new User iterator
 function getIterator(cursor: string, limit: number): Deno.KvListIterator<User> {
   const optionsArg = cursor !== "" ? { limit, cursor } : { limit };
+  // Assumes kv is a Deno.Kv object
   const iterator = kv.list<User>({ prefix: ["user_by_age"] }, optionsArg);
   return iterator;
 }
@@ -378,6 +409,8 @@ If you want to paginate results in a webapp, you would do the following with thi
 
 The `getMany()` method provides the opportunity to do a number of `get()` calls to separate indexes in one operation. The method accepts an array of keys and returns an array of `Deno.KvEntryMaybe` records, objects that include a `key`, `value` and `timestamp` fields.
 
+Working code that demonstrates the `getMany()` method can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/get-many.ts).
+
 It is important to know that each one of the keys should return single `KvEntryMaybe` objects like they would in a `get()` call. So it follows that the number of keys in the `getMany()` argument will always equal the number of of results in the call return array.
 
 For example, suppose we have three environmental variables stored in three separate indexes. Here's what that would look like:
@@ -388,6 +421,7 @@ const githubSecretKey = ["env_var", "GITHUB_ACCESS_KEY"];
 const googleSecretKey = ["env_var", "GOOGLE_ACCESS_KEY"];
 const discordSecretKey: Deno.KvKey = ["env_var", "DISCORD_ACCESS_KEY"];
 
+// Assumes kv is a Deno.Kv object
 // store env vars in separate indexes
 await kv.set(discordSecretKey, "password1");
 await kv.set(githubSecretKey, "password2");
@@ -413,7 +447,7 @@ The `getMany()` method takes a second argument, `options` which is optional. The
 
 The `atomic()` method on `Deno.Kv` is used to do a transaction with KV. It returns a `Deno.AtomicOperation` class instance. Transactional operations are chained to `atomic()`. The chain must be terminated with a call to `commit()` in order for the transactional operations to be completed and the data persisted.
 
-
+Code that demonstrates atomic transactions can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/atomic.ts)
 ### Using `check()` to validate transactions
 
 
@@ -426,7 +460,7 @@ After `check()`, a series of `set()` and/or `delete()` calls are done to persist
 An example will clarify how `check()` is used. Here we are trying to persist a user object with a changed phone number.
 
 ```ts
-//
+// Assumes kv is a Deno.Kv object
 const user = kv.get(["user", 123])
 const result = kv.atomic().
   // Make sure versionstamp has not changed after last get()..
@@ -479,6 +513,7 @@ function persistUser(user: User, address: Address, phone: Phone) {
     address.userId = userId;
     phone.userId = userId;
   }
+  // Assumes kv is a Deno.Kv object
   // get current records
   const userRecord = kv.get(["user", userId]);
   const addressRecord = kv.get(["address", userId]);
@@ -505,6 +540,7 @@ Here's what happens if you try to insert data that has already been inserted cau
 ```ts
 // Assumes that User 1 has already been added to the KV index
 const id = 1; // user id
+// Assumes kv is a Deno.Kv object
 const result = kv.atomic()
   // Initial insert has null versionstamp
   .check({key: [
@@ -519,6 +555,8 @@ if (result.ok === false) {
 ### Tracking a record's history
 
 The `versionstamp` returned in a successful `atomic()` transaction is the versionstamp given to all operations within the `atomic()` call chain. This can be used to construct a version history of a record. In order to do this, you need to persist the `versionstamp` to a separate index. Here's what that would look like:
+
+Code that demonstrates how to track a record's history can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/record-history.ts).
 
 ```ts
 const userId = crypto.randomUUID();
@@ -548,10 +586,12 @@ for await (const version of iter) {
 
 ## Secondary Indexes
 
-You usually begin a Deno KV implementation for an app by creating a primary index. The primary index will contain a model identifier part and a part unique to the value being persisted, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
+You usually begin a Deno KV implementation by creating a primary index. The primary index will contain a model identifier part and a part unique to the value being persisted, like a user id for a "user" model. In that case, a particular "user" record will be found using the id.
+
+Code that demonstrates how to create and use secondary indexes  can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/secondary-index.ts).
 
 ### Creation and mutation
-A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do on a primary index.
+A secondary index is used to find a KV record or multiple records beyond the find-by-id search you can do with a primary index.
 
 For instance, if you want to search for a user by an email address you could have an index that uses the email address as the search criteria. These indexes usually have a name part that describes the index such as "user_by_email".
 
@@ -585,6 +625,7 @@ When the data is updated or deleted, you need to do that for both primary and se
 ```
 Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple users could have the same name. Here's an example:
 ```ts
+// Assumes kv is a Deno.Kv object
 // A secondary index by name and id
 kv.set(["user_by_name", "John Smith", 1], {id: 1, name: "John Smith", email: "jsmith@example.com"})
 ```
@@ -628,6 +669,8 @@ await findPlayersByPosition("Midfielder");
 
 In KV, key parts are ordered lexicographically (roughly dictionary order) by their type, and within a given type, they are ordered by their value. Type ordering follows that `Uint8Array` > `string` > `number` > `bigint` > `boolean`. Within each type, there is a [defined ordering](https://deno.com/manual@main/runtime/kv/key_space#key-part-ordering) too.
 
+Code that shows an example of index ordering can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/key-order.ts).
+
 The significance of the key ordering is it can be used to sort values. You do that by creating an secondary index using the desired sorting criteria as key parts.
 
 For instance, if you wanted to order user by their last name, you would have primary index and a secondary sorting index created like this:
@@ -644,6 +687,8 @@ await kv.atomic()
 ```
 You'll noticed that I added `userId` to the secondary index. Otherwise duplicate records with the same first and last name will be ignored when the index is created. You could also use `email` (or another unique identifier) instead of `userId`.
 
+A further exploration of duplicate record sorting behavior can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/sort-dup.ts).
+
 To display the sorted values you use the `list()` method. If you want to sort the list in reverse order (largest value to smallest) set `reverse: true`. A good example of that is sorting by date with most recent dates ordered at the top:
 ```ts
 // create user and user_create_date indexes
@@ -659,10 +704,13 @@ for await (const user of iter) {
   console.log(user.value);
 }
 ```
+Working code that demonstrates KV sorting can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/sort.ts).
 
 ## Math operations: `sum`, `min` & `max`
 
 There are three aggregate operations that can be used to keep track of a sum, a minimum and a maximum of a series of values that are stored in another index. They there is a method for each one of the operations and a `mutate()` method that can alternatively used to collate those stats.
+
+Working code that demonstrates the `min()`, `max()` and `sum()` methods can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/min-max-sum.ts).
 
 All of these operations are `Deno.AtomicOperations` methods so they must be chained to `atomic()` with `commit()` as the chain terminator.
 ### `sum()`, `min()` and `max()` methods
@@ -726,15 +774,17 @@ The `Deno.KvU64()` constructor function is a wrapper around an unsigned `bigint`
 
 A queue was been added to Deno KV in Deno v1.34.3. If you recall from your data structures class (if you took one or picked it up on-th-fly like me), a queue is a linear sequence where operations are performed in first-in, first-out (FIFO) order. Enqueueing is the operation that adds items to a queue and dequeueing removes items from the queue.
 
-The KV queue implementation is done using the `Deno.Kv.enqueue()` and the `Deno.Kv.queueListen()` methods. The `enqueue` method adds items to the database queue while the `queueListen` method's callback function gets called when the item is dequeued.
+Code that demonstrates queueing can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/queue.ts).
 
-Besides being called as a standalone method, `enqueue()` can also  be chained to `Deno.Kv.atomic()` to be part of an atomic transaction.
+The KV queue implementation is done using the `Deno.Kv.enqueue()` and the `Deno.Kv.queueListen()` methods. The `enqueue()` method adds items to the database queue while the `queueListen()` method's callback function argument gets called when the item is dequeued.
+
+Besides being called as a standalone method, `enqueue()` can also  be chained to `Deno.Kv.atomic()` and be part of an atomic transaction.
 
 There are two arguments to `Deno.Kv.enqueue()`. The first one is the value to be queued, which is a [valid KV value](https://deno.com/manual@v1.34.0/runtime/kv/key_space#values). It returns a `Promise<Deno.KvCommitResult>` which resolves with a boolean `ok` value.
 
-The second `enqueue` argument is optional. It is an object that contains two properties (both of them optional):
+The second `enqueue()` argument is optional. It is an object that contains two properties (both of them optional):
 - `delay` - the time in milliseconds to delay the delivery of an enqueued object. The default is zero.
-- `keysIfUndelivered` - `Deno.Kv.Key[]` are keys used to store a value if the value delivery to a queue listener is not successful after it has been retried several times.
+- `keysIfUndelivered` - an array of `Deno.Kv.Key[]` keys used to store a value if the value delivery to a queue listener is not successful after it has been retried several times.
 
 The `Deno.Kv.queueListen()` method has one argument which is a callback handler function. It takes an argument which is the queue value.
 
@@ -765,7 +815,7 @@ Like the `atomic()` method, the `enqueue()` method returns a result that contain
 
 The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD.
 ### Deno Deploy Data Centers
-Deno KV databases are replicated across at least 6 data centers, spanning 3 regions (US, Europe, and Asia).
+At this time Deno KV databases are replicated across at least 6 data centers, spanning 3 regions (US, Europe, and Asia).
 
 #### Data Consistency
 Data consistency refers to the assurance that all data centers maintain the same data even after new data is persisted.
@@ -775,7 +825,7 @@ There are two kinds of data consistency in Deno Deploy. They can be configured u
   - _Serializability_: meaning that transactions are isolated at the highest level. It ensures that concurrent execution of multiple transactions results in a system state that would be the same as if the transactions were executed sequentially.
   - _Linearizability_: guarantees that read and write operations appear to be instantaneous and occur in real-time. Linearizability ensures a strong real-time ordering of operations.
 
-- `consistency: "eventual"` - uses global replica's and caches for data reads and writes to maximize performance. In most cases the difference between strong and eventual consistency speed ranges from zero to about 100 milliseconds, which depends on how close the deployed app region is to North Virginia, USA which holds the primary write database for KV.
+- `consistency: "eventual"` - uses global replica's and caches for data reads and writes to maximize performance. In most cases the difference between strong and eventual consistency speed ranges from zero to about 100 milliseconds, which depends on how close the deployed app region is to North Virginia, USA which holds the primary write database for KV (at this point).
 
 See the [Deno KV consistency section of the Deno Deploy docs](https://deno.com/deploy/docs/kv#consistency) for more information.
 
@@ -829,25 +879,31 @@ _The author would like to thank members on the kv channel of the Deno Discord se
   - [KV Operations](https://deno.com/manual@main/runtime/kv/operations) covers KV methods.
   - [Deno KV Transactions](https://deno.com/manual@main/runtime/kv/transactions) shows how atomic transactions work in Deno KV.
   - [Deno KV Secondary Indexes](https://deno.com/manual@main/runtime/kv/secondary_indexes) demonstrates how to create a secondary key to be used to query data in the key-value store outside of using the unique, primary-key-like id.
-- **The Deno KV API** is covered in the [API documentation](https://deno.land/api@v1.33.1?unstable=&s=Deno.Kv) covers the various public classes, interfaces, methods and variables in the Deno KV API.
+- **The Deno KV API** is covered in the [API documentation](https://deno.land/api@v1.33.1?unstable=&s=Deno.Kv) highlighting the various public classes, interfaces, methods and variables in the API.
 - **Deno Deploy** the KV implementation on DD is explained on the [Deno Deploy KV page](https://deno.com/deploy/docs/kv). It shows how to work with Deno KV on Deno Deploy and how the Deno KV data store is distributed and synchronized in various regions.
 
 ### Apps that use Deno KV
 
+- [SaasKit](https://github.com/denoland/saaskit) - A boilerplate for creating SAAS applications using Fresh, OAuth, Stripe and Deno KV.
 - [kv-sketchbook](https://github.com/hashrock/kv-sketchbook) - a 'dead simple' sketchbook app using Deno Fresh and KV.
 - [tic-tac-toe](https://github.com/denoland/tic-tac-toe) - the classic game built with Deno Fresh and KV.
 (https://discord.com/channels/684898665143206084/1108074003018551327/1110625440948830238)
 - [kv-notepad](https://github.com/hashrock/kv-notepad) - multiversion of a classic notepad app built with Deno Fresh and KV.
 - [PixelPage](https://github.com/denoland/pixelpage) - a shared pixel art canvas build with Deno Fresh and KV.
 - [Todo List](https://github.com/denoland/showcase_todo) - collaborative todo list build with Deno Fresh and KV.
+- [fresh-kv-demo](https://github.com/denoland/fresh-kv-demo) - a sboilerplate that uses Fresh and Deno KV for persistence.
+- [Multiplayer KV Beats](https://github.com/KevinBatdorf/beats-kv-demo) - a multi-player beat box machine using Deno KV.
+- [Reddino](https://github.com/Wave-Studio/Reddino) - A Reddit clone using Deno KV
+- [Stone, Bone, Cone](https://github.com/the-abe-train/stone-bone-cone) - a Deno KV powered take on the Rock, Paper, Scissors game
+- [Deno KV Hackathon submissions](https://github.com/denoland/deno-kv-hackathon/issues) - final entries for a recent hackathon to create apps and libraries that use Deno KV.
 ### KV Tools under development
 
 Deno KV is in its infancy, so there are no mature tools for working with it. The following is a list of some promising utilities to use with KV:
 
 - [Pentagon](https://github.com/skoshx/pentagon) - a [Prisma](https://www.prisma.io/)-like ORM built on top of Deno KV
+- [kv_api](https://github.com/denoland/kv_api) - a WIP demonstration of a REST-like API for invoking Deno KV operations.
 - [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - for building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
-- [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV spore.
+- [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV store.
 - [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
 - [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
-- [Multiplayer KV Beats](git@github.com:KevinBatdorf/beats-kv-demo.git) - a beat box game using Deno KV.
-- [Reddino](https://github.com/Wave-Studio/Reddino) - A Reddit clone using Deno KV
+- [graphql-denokv](https://github.com/vwkd/graphql-denokv) - GraphQL bindings for Deno KV.
