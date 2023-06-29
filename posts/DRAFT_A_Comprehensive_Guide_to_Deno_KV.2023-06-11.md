@@ -492,7 +492,6 @@ const result = await kv.atomic()
   .set(["user", user.id], {...user.value, phone: "2070987654"  })
   .commit();
 ```
-In this example, the `user` object could have been used as the `check()` argument since it contains both `key` and `versionstamp` fields (the `value` field would have been ignored).
 
 If `check()` fails, then any persistent operation in the chain will be bypassed and the `commit()` call returns a `Deno.KvCommitError`.
 
@@ -537,9 +536,9 @@ function persistUser(user: User, address: Address, phone: Phone) {
   }
   // Assumes kv is a Deno.Kv object
   // get current records
-  const userRecord = kv.get(["user", userId]);
-  const addressRecord = kv.get(["address", userId]);
-  const phoneRecord = kv.get(["phone", userId]);
+  const userRecord = await kv.get(["user", userId]);
+  const addressRecord = await kv.get(["address", userId]);
+  const phoneRecord = await kv.get(["phone", userId]);
   await kv.atomic()
     // check that data has not changed
     .check({key: userRecord.key, versionstamp: userRecord.versionstamp})
@@ -583,7 +582,7 @@ The `versionstamp` returned in a successful `atomic()` transaction is the versio
 ```ts
 const userId = crypto.randomUUID();
 // Assumes kv is a Deno.Kv object
-const user = kv.get(["user", userId])
+const user = await kv.get(["user", userId])
 const result = await kv.atomic()
   .check(user)
   .set(["user", userId], {id: userId, name: "Joan Smith", email: "jsmith@example.com"})
@@ -593,7 +592,7 @@ if (result.ok) {
   await kv.set(["user_versionstamp", userId, result.versionstamp ], {version: result.versionstamp, date: new Date().getTime()});
 }
 ```
-Since the `versionstamp` is part of the index records will be ordered by `versionstamp` for each user.
+Since the `versionstamp` is part of the key, records will be ordered by `versionstamp` for each user.
 
 You can then use `list()` to display the history of a particular user's record.
 ```ts
@@ -866,12 +865,13 @@ Deno Deploy docs state that the full asynchronous replication of data should occ
 
 #### Loading KV data into Deno Deploy
 
-One issue with working with KV on Deno Deploy is how to seed the database before an app is started. The team recommends that you create an API route to do handle the data loading and call the API route from a local command-line application sending the data with the command line calls.
+One issue with working with KV on Deno Deploy is how to seed the database before an app is started. The team recommends that you create an API route to handle the data loading and call the API route from a local command-line application sending the data with the command line calls.
 
 Loading of large amounts of data should be done using batch calls to the API to avoid overloading the system and minimize server CPU usage. In any case, you should make sure the API returns an OK (202) response if persistence succeeded or a failure response (500) enumerating which records were not persisted into KV.
 
 An alternative for a small amount of is to have the data loaded once when the application starts. This could be done in a `useEffect` hook with an empty array argument that would set an "is_loaded" index with a `true` value when the initial load is completed and have that value checked before loading to make sure that they are not loaded multiple times.
 ## Conclusions
+
 Deno KV is not finished, so you should expect it to evolve. Here are some expectations:
 - Stabilization of the KV API
 - More KV features and abstractions built on it.
@@ -885,7 +885,7 @@ The fact that the mental model of KV is different from a relational database is 
 
 Still, KV has generated a lot of interest within the Deno community and there are a number of [app examples](#apps-that-use-deno-kv) and [tools under development](#kv-tools-under-development).
 
-If you this article piques your interest in Deno KV, make sure you check out the [Deno Manual and API docs as outlined below](#deno-manual-and-api-docs). The best place to stay on top of recent news on Deno KV development and application is the **kv** channel on the [Deno Discord instance](https://discord.gg/deno).
+If this article piques your interest in Deno KV, make sure you check out the [Deno Manual and API docs as outlined below](#deno-manual-and-api-docs). The best place to stay on top of recent news on Deno KV development and application is the **kv** channel on the [Deno Discord instance](https://discord.gg/deno).
 
 Finally, check out [the code affiliated with this post](https://github.com/cdoremus/deno-blog-code/tree/main/deno-kv) for simple command-line examples of the things detailed in this article.
 
