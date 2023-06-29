@@ -22,6 +22,7 @@
       - [The first `list()` argument: `selector`](#1-the-first-list-argument-selector)
       - [The second `list()` argument: `options`](#2-the-second-list-argument-options)
       - [Pagination with `list()`](#pagination-with-list)
+      - [Paginate KV results in a webapp](#paginate-kv-results-in-a-webapp)
     - [Combining records from multiple indexes with `getMany()`](#combining-records-from-multiple-indexes-with-getmany)
   - [Transactions with `atomic()`](#transactions-with-atomic)
     - [Using `check()` to validate transactions](#using-check-to-validate-transactions)
@@ -249,7 +250,7 @@ Reading multiple records involves the use of `list()` and `getMany()`, two metho
 
 ### Reading a list from KV with `list()`
 
-The `list()` method obtains multiple records and produces an async iterator (`Deno.KvListIterator`). The easiest way to loop through this kind of iterator is to use a [`for-of` loop using `await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) loop. Here is a simple example:
+The `list()` method obtains multiple records and produces an async iterator (`Deno.KvListIterator`). The easiest way to loop through this kind of iterator is to use a [`for-of` loop with `await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of) loop. Here is a simple example:
 ```ts
 // The iterator is returned from a call to list().
 // 'await' used with 'for' because the iterator is async
@@ -335,8 +336,6 @@ The `options` `list()` argument is an object with a collection of fields:
 
 You use the `cursor` field of the iterator returned by a `list()` call to paginate. As stated above the Deno KV list iterator is of type `Deno.KvListiterator`.
 
-> 💡 Working code that demonstrates pagination with the `list()` method can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/pagination.ts).
-
 The key to iterating a list in groups is the fact that `list()` returns a [`Deno.KvListIterator`](https://deno.land/api@v1.34.2?s=Deno.KvListIterator&unstable=). That iterator has a `cursor` field and a `next()` method, a consequence of that fact that it implements the [async iterator protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols).
 
 You'll notice that `list()` has an `cursor` property in the `options` argument. To paginate, you pass the cursor from one `list()` call to the next using the `cursor` property of the second `list()` argument like this:
@@ -378,7 +377,7 @@ We are going to run this example from the command line and display results in th
 async function processIterator(
   iterator: Deno.KvListIterator<User>,
   pageNumber: number,
-): Promise<string> {
+): Promise<{cursor: string, users: User}> {
   let cursor = "";
   let result = await iter.next();
   const users = [];
@@ -396,7 +395,7 @@ async function processIterator(
       console.log(`${u.name} ${u.age}`);
     }
   }
-  return cursor;
+  return {cursor, users};
 }
 ```
 
@@ -416,8 +415,17 @@ while (cursor !== "") {
   pageNumber++;
 }
 ```
+> 💡 The example snippets are taken from code that demonstrates `list()` pagination can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/pagination.ts).
+
+
+#### Paginate KV results in a webapp
+
 If you want to paginate results in a webapp, you would do the following with this code using Deno Fresh as an example:
-- In each page handler, call the `getIterator` and `printIterator` increment `pageNumber` and
+- Pass the `cursor` and `pageNumber` between pages in `Request` params.
+- In each page handler, call the `getIterator` and `processIterator`.
+  - Pass `cursor` to `getIterator` and get the new `cursor` and next page data (`users`) from `processIterator`.
+- Send the new `cursor` to the next page as a request param.
+- Increment `pageNumber` and reset the request parameter of the same name.
 
 ### Combining records from multiple indexes with `getMany()`
 
@@ -475,8 +483,8 @@ An example will clarify how `check()` is used. Here we are trying to persist a u
 
 ```ts
 // Assumes kv is a Deno.Kv object
-const user = kv.get(["user", 123])
-const result = kv.atomic().
+const user = await kv.get(["user", 123])
+const result = await kv.atomic()
   // Make sure versionstamp has not changed after last get()..
   // This method requires both a key and versionstamp
   .check({key: user.key, versionstamp: user.versionstamp})
