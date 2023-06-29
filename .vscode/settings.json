@@ -6,6 +6,7 @@
     "deno",
     "Hono",
     "Preact",
-    "readlines"
+    "readlines",
+    "versionstamp"
   ]
 }
