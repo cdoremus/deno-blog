@@ -4,6 +4,7 @@
 /// <reference lib="dom.asynciterable" />
 /// <reference lib="deno.ns" />
 
+/** Entry point for the app in prod */
 import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
 
