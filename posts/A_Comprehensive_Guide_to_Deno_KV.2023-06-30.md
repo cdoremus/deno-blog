@@ -420,9 +420,9 @@ while (cursor !== "") {
 
 #### Paginate KV results in a webapp
 
-Paginating webapp results uses a lot of the previous code including `getIterator` and `processIterator`. You will also need to keep track of the `cursor` and `pageNumber` between requests, passing then into the next URL invocation via params in 'Next Page' and 'Previous Page' links.
+Paginating webapp results uses a lot of the previous code including `getIterator` and `processIterator`. You will also need to keep track of the `cursor` and `pageNumber` between requests for new pages, passing them into the next URL invocation via params in 'Next Page' and 'Previous Page' links in the footer.
 
-This is a tough thing to explain in black and white without example code (and in the process prolonging this already-too-long post), so I'll leave this an an exercise for the reader. However, please stay tuned. I hope to cover this in detail in a future blog post.
+This is a tough thing to explain in black and white without example code (and in the process prolonging this already-too-long post), so I'll leave this as an exercise for the reader. However, please stay tuned. I hope to cover this in detail in a future article.
 
 ### Combining records from multiple indexes with `getMany()`
 
