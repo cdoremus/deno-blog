@@ -424,6 +424,9 @@ Paginating webapp results uses a lot of the previous code including `getIterator
 
 This is a tough thing to explain in black and white without example code (and in the process prolonging this already-too-long post), so I'll leave this as an exercise for the reader. However, please stay tuned. I hope to cover this in detail in a future article.
 
+> 💡 At this point, I'm prototyping a [Deno Deploy playground that demonstrates KV pagination](https://dash.deno.com/playground/kvpagination-playground), but it's quite not ready for prime time yet.
+
+
 ### Combining records from multiple indexes with `getMany()`
 
 The `getMany()` method provides the opportunity to do a number of `get()` calls to separate indexes in one operation. The method accepts an array of keys and returns an array of `Deno.KvEntryMaybe` records, objects that include a `key`, `value` and `timestamp` fields.
