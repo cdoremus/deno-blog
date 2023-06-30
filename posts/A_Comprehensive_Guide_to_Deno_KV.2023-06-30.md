@@ -420,12 +420,9 @@ while (cursor !== "") {
 
 #### Paginate KV results in a webapp
 
-If you want to paginate results in a webapp, you would do the following with this code using Deno Fresh as an example:
-- Pass the `cursor` and `pageNumber` between pages in `Request` params.
-- In each page handler, call the `getIterator` and `processIterator`.
-  - Pass `cursor` to `getIterator` and get the new `cursor` and next page data (`users`) from `processIterator`.
-- Send the new `cursor` to the next page as a request param.
-- Increment `pageNumber` and reset the request parameter of the same name.
+Paginating webapp results uses a lot of the previous code including `getIterator` and `processIterator`. You will also need to keep track of the `cursor` and `pageNumber` between requests, passing then into the next URL invocation via params in 'Next Page' and 'Previous Page' links.
+
+This is a tough thing to explain in black and white without example code (and in the process prolonging this already-too-long post), so I'll leave this an an exercise for the reader. However, please stay tuned. I hope to cover this in detail in a future blog post.
 
 ### Combining records from multiple indexes with `getMany()`
 
@@ -621,7 +618,7 @@ When you have secondary indexes, you need to create them in a transactional cont
 const userId = crypto.randomUUID();
 const user = {id: userId, name:"Joan Smith", email: "joan.smith@example.com"};
 const userKey = ["user", userId];
-const userEmailLookupKey = ["user_by_email", user.email, userId];
+const userEmailLookupKey = ["user_by_email", user.email];
 // Assumes kv is a Deno.Kv object
 const result = kv.atomic()
   .check({key: userKey, versionstamp: null})
@@ -636,14 +633,13 @@ if (!result.ok) {
 A `get()` call to "user_by_email" index returns the user's id. This will be used to find the record in the "user" primary index.
 ```ts
 // The "user_by_email" record's value is the userId (see previous code)
-const userByEmailRecord = await kv.get<User>(["user_by_email", <userEmail>]);
+const userByEmailRecord = await kv.get<User>(["user_by_email", userEmail]);
+// The value is the user Id
 const userByIdRecord = await kv.get<User>(["user", userByEmailRecord.value]);
 const user: User = userByIdRecord.value;
 ```
 When the data is updated or deleted, you need to do that for both primary and secondary indexes
-```ts
 
-```
 Secondary indexes can be created with multiple lookup criteria such name and id. In a case like this, you should include the id because multiple users could have the same name. Here's an example:
 ```ts
 // Assumes kv is a Deno.Kv object
@@ -729,7 +725,7 @@ for await (const user of iter) {
 
 ## Math operations: `sum`, `min` & `max`
 
-There are three aggregate operations that can be used to keep track of a sum, a minimum and a maximum of a series of values that are stored in another index. They there is a method for each one of the operations and a `mutate()` method that can alternatively used to collate those stats.
+There are three aggregate operations that can be used to keep track of a sum, a minimum and a maximum of a series of values that are stored in another index. A method exists for each one of the operations and a `mutate()` method that can alternatively used to collate those stats.
 
 > 💡 Working code that demonstrates the `min()`, `max()` and `sum()` methods can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/min-max-sum.ts).
 
@@ -867,7 +863,7 @@ Deno Deploy docs state that the full asynchronous replication of data should occ
 
 One issue with working with KV on Deno Deploy is how to seed the database before an app is started. The team recommends that you create an API route to handle the data loading and call the API route from a local command-line application sending the data with the command line calls.
 
-Loading of large amounts of data should be done using batch calls to the API to avoid overloading the system and minimize server CPU usage. In any case, you should make sure the API returns an OK (202) response if persistence succeeded or a failure response (500) enumerating which records were not persisted into KV.
+Loading of large data sets should be done using batch calls to the API to avoid overloading the system and minimize server CPU usage. In any case, you should make sure the API returns an OK (202) response if persistence succeeded or a failure response (500) enumerating which records were not persisted into KV.
 
 An alternative for a small amount of is to have the data loaded once when the application starts. This could be done in a `useEffect` hook with an empty array argument that would set an "is_loaded" index with a `true` value when the initial load is completed and have that value checked before loading to make sure that they are not loaded multiple times.
 ## Conclusions
@@ -913,7 +909,7 @@ _The author would like to thank members on the kv channel of the Deno Discord se
 - [kv-notepad](https://github.com/hashrock/kv-notepad) - multiversion of a classic notepad app built with Deno Fresh and KV.
 - [PixelPage](https://github.com/denoland/pixelpage) - a shared pixel art canvas build with Deno Fresh and KV.
 - [Todo List](https://github.com/denoland/showcase_todo) - collaborative todo list build with Deno Fresh and KV.
-- [fresh-kv-demo](https://github.com/denoland/fresh-kv-demo) - a sboilerplate that uses Fresh and Deno KV for persistence.
+- [fresh-kv-demo](https://github.com/denoland/fresh-kv-demo) - a boilerplate that uses Fresh and Deno KV for persistence.
 - [Multiplayer KV Beats](https://github.com/KevinBatdorf/beats-kv-demo) - a multi-player beat box machine using Deno KV.
 - [Reddino](https://github.com/Wave-Studio/Reddino) - A Reddit clone using Deno KV
 - [Stone, Bone, Cone](https://github.com/the-abe-train/stone-bone-cone) - a Deno KV powered take on the Rock, Paper, Scissors game
@@ -926,6 +922,6 @@ Deno KV is in its infancy, so there are no mature tools for working with it. The
 - [kv_api](https://github.com/denoland/kv_api) - a WIP demonstration of a REST-like API for invoking Deno KV operations.
 - [deno-kv-plus](https://github.com/Kycermann/deno-kv-plus) - for building safe atomic transactions (see https://mieszko.xyz/deno-kv-plus)
 - [kvdex](https://github.com/oliver-oloughlin/kvdex) - a database wrapper for the Deno KV store.
-- [Otama](https://github.com/lino-levan/otama) - exposes a simple KV API, but with a lot of syntactic sugar.
+- [Otama](https://github.com/lino-levan/otama) - exposes a simplified KV API.
 - [kv_entity](https://github.com/hugojosefson/deno-kv-entity) - a typed library for specifying and storing entities in a Deno.Kv database.
 - [graphql-denokv](https://github.com/vwkd/graphql-denokv) - GraphQL bindings for Deno KV.
