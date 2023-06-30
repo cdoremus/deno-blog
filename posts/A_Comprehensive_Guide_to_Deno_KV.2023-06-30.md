@@ -331,7 +331,7 @@ The `options` `list()` argument is an object with a collection of fields:
 
 The key to iterating a list in paged groups is the fact that `list()` returns a [`Deno.KvListIterator`](https://deno.land/api@v1.34.2?s=Deno.KvListIterator&unstable=). That iterator has a `cursor` field and a `next()` method, a consequence of that fact that it implements the [async iterator protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols).
 
-To paginate, you pass the cursor from one `list()` call to the next using the `cursor` property of the second `list()` argument like this:
+To paginate, you pass the cursor from one `list()` call to the next via the iterator result. That result's `iterator.cursor` value becomes the value of the `cursor` option in the next `list()` call. Here's how it looks:
 ```ts
 // Assumes kv is a Deno.Kv object
 // First call to list() returns iterator
@@ -341,7 +341,7 @@ iterator = kv.list<User>({ prefix: ["user_by_age"] }, {limit: 25, cursor: iterat
 ```
 When you don't know the number of items in an index you are querying with `list()` ("user_by_age" in this case), you can't just call until you get a null iterator, because `list()` always returns a `KvListIterator` object even if there are no results that can be obtained from the iterator.
 
-So, you need another ways to figure out when you have completed the `list()` calls. That's done by using `KvListIterator.next()` method's  `done` property. This is best shown with an example.
+Instead, you use the `KvListIterator.next()` method's `done` property. This is best shown with an example.
 
 First, start with a list of users:
 ```ts
@@ -353,59 +353,69 @@ interface User {
 }
 const users: User = [/* Multiple User objects here */];
 ```
-Next we'll create a function to get an iterator. It will be called each time we want to display another group of users on a page. The first call to this method will set the `cursor` argument to an empty string which is used to determine whether `cursor` will be part of the second `list()` argument.
+Next, we'll create a function to get an iterator. It will be called each time we want to display another group of users on a page. The first call to this method will set the `cursor` argument to an empty string which is used to determine whether `cursor` will be part of the second `list()` argument.
+
 ```ts
 // Obtain a new User iterator
-function getIterator(cursor: string, limit: number): Deno.KvListIterator<User> {
+function getIterator<T>(cursor: string, limit: number): Deno.KvListIterator<T> {
   const optionsArg = cursor !== "" ? { limit, cursor } : { limit };
   // Assumes kv is a Deno.Kv object
   const iterator = kv.list<User>({ prefix: ["user_by_age"] }, optionsArg);
   return iterator;
 }
 ```
-We are going to run this example from the command line and display results in the console.
+The `processIterator<User>()` function pulls out the iterated data (users in this case) and returns them with the cursor to be used in the next call to `getIterator()`:
 
 ```ts
-// Print out iterator values to the console
-async function processIterator(
-  iterator: Deno.KvListIterator<User>,
-  pageNumber: number,
-): Promise<{cursor: string, users: User}> {
+// Called with `User` generic param below (item=User; items=User{})
+async function processIterator<T>(
+  iterator: Deno.KvListIterator<T>,
+): Promise<{cursor: string, items: T[]}> {
   let cursor = "";
   let result = await iter.next();
-  const users = [];
+  const items = [];
   while (!result.done) {
     cursor = iterator.cursor;
     // result.value returns full KvEntry object
-    const user = result.value.value as User;
-    users.push(user);
+    const item = result.value.value as T;
+    items.push(item);
     result = await iter.next();
-  }
-  if (users.length > 0) {
-    // Print out array of users with page number
-    console.log(`Page ${pageNumber}`);
-    for (const u of users) {
-      console.log(`${u.name} ${u.age}`);
-    }
   }
   return {cursor, users};
 }
 ```
-
-Finally, initiate the pagination, printing out user data to console:
+While the previous functions are generic, `printUsers` is used to print out an array of `User` objects with the page number:
+```ts
+function printUsers(users: User[], pageNum: number) {
+  console.log(`Page ${pageNum}`);
+  for (const u of users) {
+    console.log(`${u.name} ${u.age}`);
+  }
+}
+```
+Finally, initiate the pagination, printing out user data to the console:
 ```ts
 // print out users in batches of USERS_PER_PAGE
 const USERS_PER_PAGE = 3; // aka page size
-let pageNumber = 1; // in a webapp. this will be a query param
-let cursor = ""; // in a webapp. this will be a query param
+let pageNumber = 1;
+let cursor = "";
 let iter = getIterator<User>(cursor, USERS_PER_PAGE);
 await processIterator(iter, pageNumber);
-pageNumber++; // in a webapp. increment this in the handler
-cursor = iter.cursor; // in a webapp, reset this in the handler
+printUsers(processedItems.items as User[], pageNum);
+pageNumber++;
+// point the cursor to the next batch of data
+cursor = iter.cursor;
+// stop iteration when cursor is empty
 while (cursor !== "") {
-  iter = getIterator<User>(cursor, USERS_PER_PAGE);
-  cursor = await printIterator(iter, pageNumber);
-  pageNumber++;
+  iter = getIterator<User>(cursor, USERS_PER_PAGE, keyPart);
+  const iterRet = await processIterator<User>(iter);
+  cursor = iterRet.cursor;
+  // cast items to User[]
+  const items: User[] = iterRet.items as User[];
+  if (items.length > 0) {
+    printUsers(items, pageNum);
+  }
+  pageNum++;
 }
 ```
 > 💡 The example snippets taken from code that demonstrates `list()` pagination can be found in the [repo affiliated with this blog](https://github.com/cdoremus/deno-blog-code/blob/main/deno-kv/pagination.ts).
@@ -828,7 +838,7 @@ Like the `atomic()` method, the `enqueue()` method returns a result that contain
 
 The Deno runtime has an implementation of Deno KV using sqlite for persistence. This implementation is compatible with the Deno Deploy KV database (based on [Foundation DB](https://www.foundationdb.org/)) so that code developed locally will seamlessly work when deployed to DD.
 
-If you do not have access to KV on Deno Deploy during it's beta period, you can request it [here](https://dash.deno.com/kv).
+If you do not have access to KV on Deno Deploy during its beta period, you can request it [here](https://dash.deno.com/kv).
 
 ### Deno Deploy Data Centers
 At this time Deno KV databases are replicated across at least 6 data centers, spanning 3 regions (US, Europe, and Asia).
