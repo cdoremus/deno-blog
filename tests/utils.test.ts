@@ -1,5 +1,5 @@
-import { assert } from "std/testing/asserts.ts";
-import { postDateSorter } from "./utils.ts";
+import { assert } from "std/assert/mod.ts";
+import { postDateSorter } from "../utils/utils.ts";
 
 Deno.test("test postDateSorter() after days", () => {
   // date1 after date2
