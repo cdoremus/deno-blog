@@ -9,7 +9,8 @@ import * as $3 from "./routes/_middleware.ts";
 import * as $4 from "./routes/about.tsx";
 import * as $5 from "./routes/credits.tsx";
 import * as $6 from "./routes/index.tsx";
-import * as $$0 from "./islands/MenuLink.tsx";
+import * as $$0 from "./islands/Counter.tsx";
+import * as $$1 from "./islands/MenuLink.tsx";
 
 const manifest = {
   routes: {
@@ -22,7 +23,8 @@ const manifest = {
     "./routes/index.tsx": $6,
   },
   islands: {
-    "./islands/MenuLink.tsx": $$0,
+    "./islands/Counter.tsx": $$0,
+    "./islands/MenuLink.tsx": $$1,
   },
   baseUrl: import.meta.url,
 };

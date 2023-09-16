@@ -1,6 +1,6 @@
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import PostList from "../components/PostList.tsx";
-import { postDateSorter } from "../utils/stringFcns.ts";
+import { postDateSorter } from "../utils/utils.ts";
 
 export const handler: Handlers = {
   async GET(_: Request, ctx: HandlerContext) {
