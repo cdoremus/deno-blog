@@ -4,7 +4,9 @@
 
 The [`fresh-testing-library`](https://deno.land/x/fresh_testing_library) is a new unit testing utility for Deno Fresh. Until now testing a Fresh application used the built-in Deno test runner with `std/testing` utilities for verifying low-level logic and the [Deno-Puppeteer](https://deno.land/x/puppeteer) or [Astral](https://astral.deno.dev/) libs for end-to-end testing. The `fresh-testing-library` fills the niche between the other options to allow isolated testing of fresh components, middleware and route handlers.
 
-`fresh-testing-library` is a thin wrapper around the [Preact Testing Library](https://preactjs.com/guide/v10/preact-testing-library/) which is inspired by the React Testing Library. All of them including `fresh-testing-library` share an API under the [Testing Library](https://testing-library.com/) moniker.
+`fresh-testing-library` creates a thin wrapper around the [Preact Testing Library](https://preactjs.com/guide/v10/preact-testing-library/) which is inspired by the React Testing Library. All of them including `fresh-testing-library` share an API under the [Testing Library](https://testing-library.com/) moniker.
+
+The `fresh-testing-library` also adds utilities for testing Fresh route handler's, route components and middleware. Those are under the `server.ts` module while the component testing library is under the `component.ts` module. Both can also be accessed via the library's `mod.ts` module.
 
 The Testing Library philosophy is to create tests that interact with the application the same way an app user would do. To do so, Testing Library tests hone in on verifying DOM elements.
 
@@ -12,11 +14,12 @@ Testing library also focusses on accessibility, offering a number of functions t
 
 The `fresh-testing-library` is registered as a Deno third party library under the URL "https://deno.land/x/fresh_testing_library". It's component testing feature is a thin wrapper around the Preact Testing Library.
 
+# Component testing with fresh-testing-library
 ## Setting up a fresh-testing-library component test
 
-Using `fresh-testing-library` for a component test requires the use of the Deno test runner and the `bdd.ts` submodule of the testing module of the Deno standard library. The `bdd` module adds functions that are familiar to testing in Node.js using libraries like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/). They include `describe`, `it`, `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
+Using `fresh-testing-library` for a component test requires the the Deno test runner and the `bdd.ts` submodule of the testing module of the Deno standard library. The `bdd` module adds functions that are familiar to testing in Node.js using libraries like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/). They include `describe`, `it`, `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
 
-Here is a simple example of a `fresh-testing-library` component test:
+Here is a simple annotated example of a `fresh-testing-library` component test:
 ```ts
 import { cleanup, fireEvent, render, setup } from "https://deno.land/x/fresh_testing_library";
 import { afterEach, beforeAll, describe, it } from "https://deno.land/std/testing/bdd.ts";
@@ -32,9 +35,9 @@ describe("Todo.tsx test", () => {
   it("should display todo...", () => {
     // assign the component's text content via a prop
     const text = "Foo";
-    // render a component's markup
+    // render a component's DOM markup
     const screen = render(<Todo text={text} index={1}/>);
-    // find an HTML element using the rendered text content
+    // find an HTML element using the rendered component's text content
     const textElement = screen.getByText(text);
     // verify element is found
     assertExists(textElement);
@@ -130,8 +133,14 @@ If you use an argument to a 'byRole' finder that is illegal, the error message w
 
 ## Testing state management
 
-## Testing Fresh route handlers
+## Component testing troubleshooting
+- Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
+## Fresh Middleware and Route Handler testing with fresh-testing library
 
-## Testing Fresh middleware
+### Testing middleware
+
+### Testing route handlers
+
+
 
 
