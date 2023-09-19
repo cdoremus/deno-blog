@@ -17,7 +17,7 @@ The `fresh-testing-library` is registered as a Deno third party library under th
 # Component testing with fresh-testing-library
 ## Setting up a fresh-testing-library component test
 
-Using `fresh-testing-library` for a component test requires the the Deno test runner and the `bdd.ts` submodule of the testing module of the Deno standard library. The `bdd` module adds functions that are familiar to testing in Node.js using libraries like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/). They include `describe`, `it`, `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
+Using `fresh-testing-library` for a component test requires that the Deno test runner and the `bdd.ts` submodule of the testing module of the Deno standard library. The `bdd` module adds functions that are familiar to testing in Node.js using libraries like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/). They include `describe`, `it`, `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
 
 Here is a simple annotated example of a `fresh-testing-library` component test:
 ```ts
@@ -99,6 +99,7 @@ All of the finder functions have the same first two arguments. The first one is 
 
 The second argument is used to match the the HTML element being searched for. It is either a string or regular expression except 'byRole' that only takes a string.
 
+Finder functions have an optional third argument which is an options object. The properties of that argument is specific to the finder.
 
 ???Note that most of the finder functions use accessibility-related attributes. This allows you to ensure the markup you create are accessible to screen readers and other non-visual methods.???
 
@@ -106,11 +107,15 @@ The second argument is used to match the the HTML element being searched for. It
 
 Kent C. Dodds, the creator of Testing Library, recommends that you should [prefer the use of the 'byRole' finder method to discover DOM nodes for test verification](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library#not-using-byrole-most-of-the-time).
 
-The 'byRole' finder takes a string which is a valid a WAI ARIA role (see this [list of WAI ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles)).
+A role used by Testing Library comes from the WAI ARIA accessibility standard. This is not well-documented in the library and takes a bit of a learning curve to master, so I'm going to delve into it for a bit.
 
-Certain HTML elements have [an implicit role](https://www.w3.org/TR/html-aria/#docconformance). Some of these elements have the same role name as the element name. They include `button`, `article` and `code`.
+The 'byRole' finder requires a string that is a valid WAI ARIA role name (see this [list of WAI ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles)).
+
+Certain HTML elements have [an implicit role](https://www.w3.org/TR/html-aria/#docconformance). Some of these elements have the same role name as the element name. They include `button`, `article`, `code` and `img`.
 
 Most of the HTML form elements also have implicit roles. This includes `input` elements with `type="text"` (`textbox` role), `type="radio"` (`radio` role), `type="range"` (`slider` role) and `type="number"` (`spinbutton` role).
+
+Do not set and element's `role` attribute when you want to use an implicit role. Sometimes you might have multiple elements with the same role; multiple buttons, for instance. In that case use the options argument. Each role has a different set of options properties. All of them have a `name` property, but the property's value depends on the role. For the `button` role, the `name` property is the button's value. For the `img` role, the `name` property is the value of the `alt` attribute of the `img` element.
 
 Roles for HTML elements without an implicit role must be specified using the `role` attribute. Many IDEs like Visual Studio Code support discovery of valid roles using autocompletion. Just type `getByRole("")` with your cursor within the quotes and a list of valid roles will appear. It will look something like this:
 
@@ -133,8 +138,17 @@ If you use an argument to a 'byRole' finder that is illegal, the error message w
 
 ## Testing state management
 
-## Component testing troubleshooting
+## Component testing troubleshooting tips
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
+- There are `debug` functions for printing out the DOM returned from calling `render` or any of the finder functions. The former prints out the DOM that was rendered and the latter prints out the returned DOM from a finder function call. Here's how to use them:
+```ts
+const screen = render(<MyComponent />);
+// print out the component's DOM element wrapped in a body element
+screen.debug();
+const element = screen.queryByRole("button");
+// prints out the element's DOM
+element.debug();
+```
 ## Fresh Middleware and Route Handler testing with fresh-testing library
 
 ### Testing middleware
