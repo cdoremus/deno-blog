@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start": "deno run -A --watch=static/,routes/ dev.ts",
+    "start": "DENO_DEPLOYMENT_ID=12345 deno run -A --watch=static/,routes/ dev.ts",
     "test": "deno test -A"
   },
   "compilerOptions": {

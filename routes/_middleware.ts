@@ -4,11 +4,16 @@ interface State {
   data: string;
 }
 
-export async function handler(
-  _: Request,
-  ctx: MiddlewareHandlerContext<State>,
+export function handler(
+  _req: Request,
+  _ctx: MiddlewareHandlerContext<State>,
 ) {
-  const resp = await ctx.next();
-  resp.headers.set("Cache-Control", "public, max-age=21600, immutable");
-  return resp;
+  return setCacheControlHeaders();
+}
+
+export function setCacheControlHeaders() {
+  return async (_req: Request, ctx: MiddlewareHandlerContext<State>) => {
+    const resp = await ctx.next();
+    resp.headers.set("Cache-Control", "public, max-age=21600, immutable");
+  }
 }
