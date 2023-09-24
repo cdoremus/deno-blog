@@ -154,6 +154,46 @@ element.debug();
 
 ### Testing middleware
 
+Testing middleware uses the `createMiddlewareHandlerContext` to mock out the `MiddlewareHandlerContext` used in a middleware handler. Here's what a test would look like for the middleware in this repo;
+```ts
+// _middleware.ts
+import { MiddlewareHandlerContext } from "$fresh/server.ts";
+
+export function handler(
+  _req: Request,
+  _ctx: MiddlewareHandlerContext,
+) {
+  return setCacheControlHeaders();
+}
+
+export function setCacheControlHeaders() {
+  return async (_req: Request, ctx: MiddlewareHandlerContext) => {
+    const resp = await ctx.next();
+    resp.headers.set("Cache-Control", "public, max-age=21600, immutable");
+  }
+}
+
+// middleware.test.ts
+import { assertEquals } from "std/assert/assert_equals.ts";
+import { createMiddlewareHandlerContext } from "$fresh-testing-library";
+import { setCacheControlHeaders } from "../../routes/_middleware.ts";
+import manifest from "../../fresh.gen.ts";
+
+Deno.test("should set Cache-Control header", async () => {
+  const middleware = setCacheControlHeaders();
+  const req = new Request(`http://localhost:3000/`);
+  // Ignore error due to a mis-typed Manifest interface
+  // @ts-ignore ignores "type ... is not assignable to type Manifest" error
+  const ctx = createMiddlewareHandlerContext(req, { manifest });
+  await middleware(req, ctx);
+  const resp = await ctx.next();
+  assertEquals(resp.headers.get('Cache-control'), "public, max-age=21600, immutable");
+});
+```
+You can use `Deno.test` in this case since a middleware test does not require setup or cleanup.
+
+The `Request` object can be used to find out the current URL or request method (GET, POST, etc) for middleware with logic that is more sophisticated than my simple example.
+
 ### Testing route handlers
 
 
