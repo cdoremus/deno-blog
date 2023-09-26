@@ -131,6 +131,10 @@ The function has optional string and `HTMLElement` arguments and return a boolea
     );
   });
 ```
+A finder function that takes a `TextMatch` can contain an options object with an `exact` or `normalization` property that affects the precision of the match. There is a [section in the Testing Library docs that explores these options in detail](https://testing-library.com/docs/queries/about/#precision), but here they are in a nutshell:
+- `exact` (`true` by default) determines whether the match is case-sensitive or not.
+- `normalization` This property can be set to override the behavior of collapsing whitespace using a function.
+
 
 ## Using ByRole finder functions
 
@@ -167,6 +171,58 @@ Many IDEs like Visual Studio Code support discovery of valid roles using autocom
 ![vscode role autocompletion](/img/blog/fresh-testing-library/getByRole_autocomplete.png)
 
 If you use an argument to a 'ByRole' finder that is illegal, the error message will point out the available implicit roles. Alternately, you can use the `fresh-testing-library` function `logRole` to find the implicit roles within your component-under-test.
+
+## Accessibility testing
+
+Testing Library emphasizes accessibility by having a number of finder functions that use accessibility attributes. The 'ByRole' finder is a big one, but 'ByPlaceholderText', 'ByAltText', 'ByLabel' and 'ByTitle' are the others.
+
+Here is an example of using the `title` attribute with the 'ByTitle' finder:
+```ts
+  it("should display background image", () => {
+    const screen = render(<Background title="background" />);
+    const bg = screen.getByTitle("background");
+    const style = bg.getAttribute("style");
+    assertEquals(style, "background-image: url(/gallery/grid.svg);");
+  });
+
+```
+
+## Firing events
+
+You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`. `fireEvent` has properties that are functions for triggering  common events. They include:
+- `fireEvent.click` - to invoke an `onClick` handler
+- `fireEvent.change` - to invoke an `onChange` handler
+- `fireEvent.submit` - to invoke an `onSubmit` handler
+- `fireEvent.keyDown` - to invoke an `onKeyDown` handler
+There are almost 90 different event types that are available. See the `EventType` TypeScript union type in the TS docs for the details.
+
+Each of the event type function properties takes an argument that is the `HTMLElement` event target.
+
+Here's an example of using a 'click' event to invoke a button click:
+```ts
+  it("should display count and increment/decrement it correctly", async () => {
+    const count = signal<number>(9);
+    const screen = render(<Counter count={count} />);
+    const plusOne = screen.getByRole("button", { name: "+1" });
+    assertExists(plusOne);
+    const minusOne = screen.getByRole("button", { name: "-1" });
+    assertExists(minusOne);
+
+    await fireEvent.click(plusOne);
+    assertFalse(screen.queryByText("9"));
+    assertExists(screen.queryByText("10"));
+
+    await fireEvent.click(minusOne);
+    assertExists(screen.queryByText("9"));
+    assertFalse(screen.queryByText("10"));
+  });
+
+```
+In this case, the event target is the button element.
+
+## Async Events and FindBy
+
+As apposed to the other finder function, 'FindBy' returns a promise. This is used
 
 ## getBy or getAllBy Examples
 
