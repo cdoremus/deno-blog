@@ -36,7 +36,7 @@ describe("Todo.tsx test", () => {
     // assign the component's text content via a prop
     const text = "Foo";
     // render a component's DOM markup
-    const screen = render(<Todo text={text} index={1}/>);
+    const { getByText } = render(<Todo text={text} index={1}/>);
     // find an HTML element using the rendered component's text content
     const textElement = screen.getByText(text);
     // verify element is found
@@ -60,6 +60,16 @@ import { render } from "https:/deno.land/x/fresh_testing_library";
 // renders component DOM wrapped inside a document.body
 const screen = render(<Counter />);
 ```
+
+The `render` function return returns an object that contains functions for verifying a component's content. Instead of returning that object ( `screen` in this case), you can destructure out the functions required to find the content. Here's an example of a text search:
+
+```ts
+import { render } from "https:/deno.land/x/fresh_testing_library";
+// renders component DOM wrapped inside a document.body
+const { getByText } = render(<Counter />);
+const text = getByText("Hello World!");
+```
+
 The `render` function has an optional second argument that is rarely used. For more information, see the [`RenderOptions` interface in the `preact-testing-library` type documentation](https://github.com/testing-library/preact-testing-library/blob/main/types/index.d.ts).
 
 ## Finding DOM Elements
@@ -111,23 +121,23 @@ Most finder functions take a [`TextMatch`](https://testing-library.com/docs/quer
 - a regex
 - a function
 
-The function has optional string and `HTMLElement` arguments and return a boolean (`true` for a match; `false` for no match). Here's an example of a test with functional matching:
+The `TextMatch` function has optional string and `HTMLElement` arguments and returns a boolean (`true` for a match; `false` for no match). Here's an example of a test with functional matching:
 ```ts
   it("should show source code", () => {
     const code = "console.log('Hello World')";
-    const screen = render(<CodeBox code={code} />);
+    const { getByRole, getByText } = render(<CodeBox code={code} />);
     // find code
-    const codeElement = screen.getByRole("code");
+    const codeElement = getByRole("code");
     const content = codeElement.textContent;
     // Prism library breaks up code for styling purposes
     assert(
-      screen.getByText((content) => content.includes("console")),
+      getByText((content) => content.includes("console")),
     );
     assert(
-      screen.getByText((content) => content.includes("log")),
+      getByText((content) => content.includes("log")),
     );
     assert(
-      screen.getByText((content) => content.includes("Hello World")),
+      getByText((content) => content.includes("Hello World")),
     );
   });
 ```
@@ -135,6 +145,35 @@ A finder function that takes a `TextMatch` can contain an options object with an
 - `exact` (`true` by default) determines whether the match is case-sensitive or not.
 - `normalization` This property can be set to override the behavior of collapsing whitespace using a function.
 
+## Uses of get*, query* and find* finders
+
+As shown above, the first part of a finder function name indicates what gets returned when you call the function. For that reasons, each one of them has a favored use
+
+- __get*__ - use to find elements to be able to verify their attributes or content. You will probably use this the most often in a component test.
+
+- __query*__ - should only be used to verify the existence or non-existence of an element. Otherwise, a 'get*' finder should be used.
+
+For example, I want to make sure that no `Todo` components will be shown. Each contains a `button` element. I use `queryAllByRole` to test for an empty array. If I used `getAllByRole`, an error would be thrown if nothing was returned.
+```ts
+  it("should not display list of todos...",  () => {
+    const todos = [] as string[];
+    state.todos.value = todos;
+    const { queryAllByRole } = render(
+      <AppState.Provider value={state}>
+        <TodoList/>
+      </AppState.Provider>
+    );
+    // queryAllBy returns an empty array; getAllBy just throws error
+    const buttons = queryAllByRole("button");
+    assertEquals(buttons.length, 0)
+  });
+
+```
+- __find*__ - use when an async operation or rendering delay would prevent an element or elements from appearing in the UI. Fetching remote data is an example.
+
+?????????????FOR EXAMPLE?????????????????
+
+`fresh-testing-library` has a `waitFor` function that is used for testing async operations. The 'find*' finder functions use `waitFor` internally, but that function is  part of the available API.
 
 ## Using ByRole finder functions
 
@@ -156,8 +195,8 @@ describe("components/gallery/Header.tsx", () => {
   afterEach(cleanup);
 
   it("should show 3 links", () => {
-    const screen = render(<Header active="" />);
-    const links = screen.getAllByRole("link");
+    const { getAllByRole } = render(<Header active="" />);
+    const links = getAllByRole("link");
     assertEquals(links.length, 3);
   });
 });
@@ -176,11 +215,11 @@ If you use an argument to a 'ByRole' finder that is illegal, the error message w
 
 Testing Library emphasizes accessibility by having a number of finder functions that use accessibility attributes. The 'ByRole' finder is a big one, but 'ByPlaceholderText', 'ByAltText', 'ByLabel' and 'ByTitle' are the others.
 
-Here is an example of using the `title` attribute with the 'ByTitle' finder:
+Here is an example of using the `title` attribute with the 'ByTitle' finder (REFERENCE????????????):
 ```ts
   it("should display background image", () => {
-    const screen = render(<Background title="background" />);
-    const bg = screen.getByTitle("background");
+    const { getByTitle } = render(<Background title="background" />);
+    const bg = getByTitle("background");
     const style = bg.getAttribute("style");
     assertEquals(style, "background-image: url(/gallery/grid.svg);");
   });
@@ -202,19 +241,19 @@ Here's an example of using a 'click' event to invoke a button click:
 ```ts
   it("should display count and increment/decrement it correctly", async () => {
     const count = signal<number>(9);
-    const screen = render(<Counter count={count} />);
-    const plusOne = screen.getByRole("button", { name: "+1" });
+    const { getByRole, queryByText } = render(<Counter count={count} />);
+    const plusOne = getByRole("button", { name: "+1" });
     assertExists(plusOne);
-    const minusOne = screen.getByRole("button", { name: "-1" });
+    const minusOne = getByRole("button", { name: "-1" });
     assertExists(minusOne);
 
     await fireEvent.click(plusOne);
-    assertFalse(screen.queryByText("9"));
-    assertExists(screen.queryByText("10"));
+    assertFalse(queryByText("9"));
+    assertExists(queryByText("10"));
 
     await fireEvent.click(minusOne);
-    assertExists(screen.queryByText("9"));
-    assertFalse(screen.queryByText("10"));
+    assertExists(queryByText("9"));
+    assertFalse(queryByText("10"));
   });
 
 ```
@@ -222,7 +261,7 @@ In this case, the event target is the button element.
 
 ## Async Events and FindBy
 
-As apposed to the other finder function, 'FindBy' returns a promise. This is used
+As opposed to the other finder function, 'FindBy' returns a `Promise`. The `Promise` is resolved if the element is found before the timeout which is 1000 milliseconds by default.
 
 ## getBy or getAllBy Examples
 
@@ -240,6 +279,16 @@ As apposed to the other finder function, 'FindBy' returns a promise. This is use
 ## Simulating user interactions
 
 ## Testing state management
+
+## Testing async route components
+
+It's usually best practice to focus component testing on the child or leaf nodes toward the end of the component tree. Otherwise you end up re-testing the child components tht are used by the parent. Route or page components use child components to render page sections .They are best tested using an end-to-end test.
+
+The `fresh-testing-library` does include functionality for testing async route components using the `createRouteContext` function with `render`.
+
+```ts
+
+```
 
 ## Component testing troubleshooting tips
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
