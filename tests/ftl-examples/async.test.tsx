@@ -109,9 +109,7 @@ describe("Async tests", () => {
     const { container, getByRole, getAllByRole } = render(<DisplayUsers/>);
     const button = getByRole("button", {name: "Fetch Users"});
     fireEvent.click(button);
-    // let list = [];
     await waitFor( () => getAllByRole("listitem"), {timeout:2000});
-    // const list = await screen.findAllByRole("listitem", {}, {timeout:1500});
     const list = getAllByRole("listitem");
     assertEquals(list.length, 10);
   });

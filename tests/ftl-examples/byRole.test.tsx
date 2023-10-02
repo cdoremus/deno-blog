@@ -1,5 +1,4 @@
-// import { assertExists, assertFalse } from "std/assert/mod.ts";
-import { cleanup, fireEvent, render, setup } from "$fresh-testing-library";
+import { cleanup, render, setup } from "$fresh-testing-library";
 import { afterEach, beforeAll, describe, it } from "std/testing/bdd.ts";
 import { assertStringIncludes, fail } from "std/assert/mod.ts";
 
@@ -9,7 +8,7 @@ describe("byRole tests", () => {
   afterEach(cleanup);
 
   it("should error due to bad role", () => {
-    const screen = render(
+    const {getByRole} = render(
       <div>
         <button>
           <span>
@@ -21,9 +20,9 @@ describe("byRole tests", () => {
         </button>
       </div>
     );
-    // screen.debug();
     try {
-      const element= screen.getByRole("buttonasdf");
+      // bogus role
+      const element= getByRole("buttonasdf");
       assertStringIncludes(element.textContent as string, "Hello");
       assertStringIncludes(element.textContent as string, "World");
       // should fail if gets here

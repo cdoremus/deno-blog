@@ -10,19 +10,19 @@ describe("islands/Counter.tsx", () => {
 
   it("should display count and increment/decrement it correctly", async () => {
     const count = signal<number>(9);
-    const screen = render(<Counter count={count} />);
-    const plusOne = screen.getByRole("button", { name: "+1" });
+    const {getByRole, queryByText} = render(<Counter count={count} />);
+    const plusOne = getByRole("button", { name: "+1" });
     assertExists(plusOne);
-    const minusOne = screen.getByRole("button", { name: "-1" });
+    const minusOne = getByRole("button", { name: "-1" });
     assertExists(minusOne);
 
     await fireEvent.click(plusOne);
-    assertFalse(screen.queryByText("9"));
-    assertExists(screen.queryByText("10"));
+    assertFalse(queryByText("9"));
+    assertExists(queryByText("10"));
 
     await fireEvent.click(minusOne);
-    assertExists(screen.queryByText("9"));
-    assertFalse(screen.queryByText("10"));
+    assertExists(queryByText("9"));
+    assertFalse(queryByText("10"));
 
   });
 });
