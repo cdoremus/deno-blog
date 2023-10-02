@@ -213,11 +213,12 @@ If you use an argument to a 'ByRole' finder that is illegal, the error message w
 
 ## Accessibility testing
 
-Testing Library emphasizes accessibility by having a number of finder functions that use accessibility attributes. The 'ByRole' finder is a big one, but 'ByPlaceholderText', 'ByAltText', 'ByLabel' and 'ByTitle' are the others.
+Testing Library emphasizes accessibility by having a number of finder functions that use accessibility attributes. The 'ByRole' finder is a big one, but 'ByPlaceholderText', 'ByAltText', 'ByLabel' and 'ByTitle' are others.
 
 Here is an example of using the `title` attribute with the 'ByTitle' finder (REFERENCE????????????):
 ```ts
   it("should display background image", () => {
+    // Background takes any number of native attributes or Preact props
     const { getByTitle } = render(<Background title="background" />);
     const bg = getByTitle("background");
     const style = bg.getAttribute("style");
@@ -226,9 +227,9 @@ Here is an example of using the `title` attribute with the 'ByTitle' finder (REF
 
 ```
 
-## Firing events
+## Firing user-generated events
 
-You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`. `fireEvent` has properties that are functions for triggering  common events. They include:
+You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`. `fireEvent` has functional properties for triggering  common events. They include:
 - `fireEvent.click` - to invoke an `onClick` handler
 - `fireEvent.change` - to invoke an `onChange` handler
 - `fireEvent.submit` - to invoke an `onSubmit` handler
@@ -259,9 +260,76 @@ Here's an example of using a 'click' event to invoke a button click:
 ```
 In this case, the event target is the button element.
 
-## Async Events and FindBy
 
-As opposed to the other finder function, 'FindBy' returns a `Promise`. The `Promise` is resolved if the element is found before the timeout which is 1000 milliseconds by default.
+# Testing component global state management
+
+Preact signals provide a means to do local and global state management with signals. A previous [Craig's Deno Diary post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) demonstrated how to use signals with Fresh.
+
+#### Testing local state management
+
+Compared to `useState`, the `signal` function only returns a single value, the signal. Updating that signal involves assigning the value property of the signal a new value.
+```ts
+  const count = signal<number>(0);
+  const newValue = count.value + 1;
+  count.value = newValue;
+```
+In a `fresh-testing-library` test, you would do something like fire an event and check to see if the UI changed to reflect the signal update.
+```ts
+  const [ getByRole, queryByText ] = render(<Counter/>);
+  const button = getByRole("button")
+  fireEvent.click(button);
+  assertExists(queryByText("Count: 1"));
+```
+
+#### Testing component state
+
+Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to components. I will not go over this in detail as you can refer the the Craig's Deno Diary post on how its done.
+
+Testing a component that uses global state requires that you wrap the component in a Preact context provider that passes the state into the component as a signal. The signal's value would be retrieved by the component using Preact's `useContext` hook. From there the component can update the signal's value like you would with local state. But unlike the local case, since the signals are global u=in nature,
+
+Here's a component that displays a list:
+```ts
+import { useContext } from "preact/hooks";
+import { AppState } from "./App.tsx";
+import Todo from "./Todo.tsx"
+
+export default function TodoList() {
+  const { todos } = useContext(AppState);
+  return (
+    <div className="todos">
+      {todos.value?.map((item: string, i: number) => {
+        return (
+          <Todo text={item} index={i}/>
+        );
+      })}
+    </div>
+  );
+}
+```
+Here's the test for that component:
+```ts
+  it("should display list of todos...", () => {
+    const todos = ["Foo", "Bar", "Baz"];
+    state.todos.value = todos;
+    const { getAllByRole, queryByText } = render(
+      <AppState.Provider value={state}>
+        <TodoList/>
+      </AppState.Provider>
+    );
+    // verify that all todos are displayed
+    for(let i = 0; i < todos.length; i++) {
+      assertExists(queryByText(todos[i]));
+    }
+    // Each todo has a delete button
+    const buttons = getAllByRole("button");
+    assertEquals(buttons.length, 3)
+  });
+```
+Notice that we externally change the state (todos) before we put them into the context via a context provider.
+
+The [code that illustrated the original blog post]() has now been updated with `fresh-testing-library` component tests.
+
+
 
 ## getBy or getAllBy Examples
 
@@ -275,10 +343,6 @@ As opposed to the other finder function, 'FindBy' returns a `Promise`. The `Prom
 ## Using findBy or findALlBy
 
 #### The waitFor function
-
-## Simulating user interactions
-
-## Testing state management
 
 ## Testing async route components
 
