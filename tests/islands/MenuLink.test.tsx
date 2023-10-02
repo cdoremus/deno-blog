@@ -10,8 +10,8 @@ describe("islands/MenuLink.tsx", () => {
   it("Show About link", async () => {
     // @ts-ignore Only mocking window.location.href here
     globalThis.window.location = {href: "/about"};
-    const screen = render(<MenuLink/>);
-    const page = await screen.findByText("Home")
+    const { findByText } = render(<MenuLink/>);
+    const page = await findByText("Home")
     const text = page.textContent;
     assertExists(text);
     assertNotEquals(text, "About");
@@ -20,8 +20,8 @@ describe("islands/MenuLink.tsx", () => {
   it("Show Home link", async () => {
     // @ts-ignore Only mocking window.location.href here
     globalThis.window.location = {href: "/"};
-    const screen = render(<MenuLink/>);
-    const page = await screen.findByText(/about/i)
+    const {findByText} = render(<MenuLink/>);
+    const page = await findByText(/about/i)
     const text = page.textContent;
     assertEquals(text, "About");
     assertNotEquals(text, "Home");
@@ -30,8 +30,8 @@ describe("islands/MenuLink.tsx", () => {
   it("Show bogus link", () => {
     // @ts-ignore Mocking window.location.href
     globalThis.window.location = {href: "/bogus"};
-    const screen = render(<MenuLink/>);
-    const element =  screen.queryByText("bogus");
+    const {queryByText} = render(<MenuLink/>);
+    const element =  queryByText("bogus");
     assert(element === null);
   });
 
