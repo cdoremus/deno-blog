@@ -1,6 +1,5 @@
 import { HandlerContext, Handlers, PageProps } from "$fresh/server.ts";
 import { CSS, render } from "gfm";
-import { IS_BROWSER } from "https://deno.land/x/fresh@1.0.1/runtime.ts";
 
 const markdownFile = "About.md";
 const baseUrl = Deno.env.get("IS_PROD")
