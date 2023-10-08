@@ -14,10 +14,13 @@ Testing library also focusses on accessibility, offering a number of functions t
 
 The `fresh-testing-library` is registered as a Deno third party library under the URL "https://deno.land/x/fresh_testing_library". It's component testing feature is a thin wrapper around the Preact Testing Library.
 
-This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places:
-- THe repo for this blog
-- The repo for the blog post I did on Fresh signals
-- The component gallery in the Fresh repo
+#### Example Code
+
+This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below:
+- THe repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests
+- The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests
+- The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery
+
 # Component testing
 ## Setting up a fresh-testing-library component test
 
@@ -42,7 +45,7 @@ describe("Todo.tsx test", () => {
     // render a component's DOM markup
     const { getByText } = render(<Todo text={text} index={1}/>);
     // find an HTML element using the rendered component's text content
-    const textElement = screen.getByText(text);
+    const textElement = getByText(text);
     // verify element is found
     assertExists(textElement);
     // verify element's text content
@@ -187,7 +190,9 @@ For example, I want to make sure that no `Todo` components will be shown. Each c
   });
 ```
 
-`fresh-testing-library` has a `waitFor` function that is used for testing async operations. The 'find*' finder functions use `waitFor` internally, but that function is  part of the available API. Here's how `waitFor` is used:
+- __waitFor__ While not strictly a finder nethod, `waitFor` is related especially to the __findBy*__ finder that uses `waitFor` under the covers.
+
+The `waitFor` function is used for verifying DOM elements that take a while to render. Therefore, it is an async operation. Here's how `waitFor` is used:
 ```ts
   await waitFor(() => {
     assertEquals(counter.textContent, count.value.toString());
@@ -286,13 +291,15 @@ Preact signals provide a means to do local and global state management with sign
 
 #### Testing local state management
 
-Compared to `useState`, the `signal` function only returns a single value, the signal. Updating that signal involves assigning the value property of the signal a new value.
+Compared to `useState`, the `signal` function only returns a single value, the signal. Instead of a setter function, updating the signal involves assigning the value property of the signal a new value.
 ```ts
   const count = signal<number>(0);
   const newValue = count.value + 1;
   count.value = newValue;
 ```
-In a `fresh-testing-library` test, you would do something like fire an event and check to see if the UI changed to reflect the signal update.
+
+??????TODO: REWRITE
+The local state often changes when an event gets fired which in turn updates the UI. In a `fresh-testing-library` test, the  `fireEvent` function would be used to trigger his kind of change.
 ```ts
   const [ getByRole, queryByText ] = render(<Counter/>);
   const button = getByRole("button")
@@ -302,11 +309,16 @@ In a `fresh-testing-library` test, you would do something like fire an event and
 
 #### Testing component state
 
-Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to components. I will not go over this in detail as you can refer the the Craig's Deno Diary post on how its done.
+Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to components. I will not go over how this is coded in detail as you can refer the the [Craig's Deno Diary post](https://deno-blog.com/Using_Preact_Signals_with_Fresh.2022-11-01) on how its done.
 
-Testing a component that uses global state requires that you wrap the component in a Preact context provider that passes the state into the component as a signal. The signal's value would be retrieved by the component using Preact's `useContext` hook. From there the component can update the signal's value like you would with local state. But unlike the local case, since the signals are global u=in nature,
+Testing a component that uses global state requires that you wrap the component in a Preact context provider that passes the state into the component as a signal. The context is created in the parent component using the `createContext` function:
 
-Here's a component that displays a list:
+```ts
+export const AppState = createContext<AppStateType>({} as AppStateType);
+```
+The `AppState` context has a provider field is used to pass the signal-created state to child components.
+
+The child components discover the state using the `useContext` hook. Here's a component that displays a list obtained from the context:
 ```ts
 import { useContext } from "preact/hooks";
 import { AppState } from "./App.tsx";
@@ -325,7 +337,7 @@ export default function TodoList() {
   );
 }
 ```
-Here's the test for that component:
+To test a component in isolation, you need to wrap it in a context provider so that the state can be passed to the child component. Here's what that kind of test looks like:
 ```ts
   it("should display list of todos...", () => {
     const todos = ["Foo", "Bar", "Baz"];
@@ -344,24 +356,9 @@ Here's the test for that component:
     assertEquals(buttons.length, 3)
   });
 ```
-Notice that we externally change the state (todos) before we add them to the context via a context provider.
+Notice in the test that we assign the state's `todos` value before we attached it to the `AppState.Provider` context provider.
 
-The [code that illustrated the original blog post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has now been updated with `fresh-testing-library` component tests.
-
-
-
-## getBy or getAllBy Examples
-
-```ts
-
-```
-
-
-## Using queryBy or queryAllBy
-
-## Using findBy or findALlBy
-
-#### The waitFor function
+The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has been updated with `fresh-testing-library` component tests.
 
 ## Testing async route components
 
@@ -377,14 +374,15 @@ The `fresh-testing-library` does include functionality for testing async route c
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
 - There are `debug` functions for printing out the DOM returned from calling `render` or any of the finder functions. The former prints out the DOM that was rendered and the latter prints out the returned DOM from a finder function call. Here's how to use them:
 ```ts
-const screen = render(<MyComponent />);
+const {debug, queryByRole} = render(<MyComponent />);
 // print out the component's DOM element wrapped in a body element
-screen.debug();
-const element = screen.queryByRole("button");
+debug();
+const element = queryByRole("button");
 // prints out the element's DOM
 element.debug();
 ```
 ## Fresh Middleware and Route Handler testing with fresh-testing library
+
 
 ### Testing middleware
 
@@ -426,13 +424,52 @@ Deno.test("should set Cache-Control header", async () => {
 ```
 You can use `Deno.test` in this case since a middleware test does not require setup or cleanup.
 
+
 The `Request` object can be used to find out the current URL or request method (GET, POST, etc) for middleware with logic that is more sophisticated than my simple example.
 
 ### Testing route handlers
 
 At this point, route testing using `fresh-testing-library` is confined to testing handler logic and not the handler's `Response` including verifying response markup.
 
+You use the `createHandlerContext` function in `fresh-testing-library` to test the handler function of a route component.
+
+```ts
+Deno.test("routes/About.tsx handler tests...", async (t) => {
+
+  await t.step("should respond to GET request in DEV...", async () => {
+    assert(handler.GET);
+    const req = new Request("http://localhost:8000/about");
+    // @ts-ignore manifest typing
+    const ctx = createHandlerContext(req, { manifest });
+
+    const res = await handler.GET(req, ctx);
+    assertEquals(res.status, 200);
+  });
+});
+```
+You do not need `startup` and `cleanup` functions for handler tests, so we use the `Deno.test` runner function here instead of the `bdd` module functions.
+
+
+Fresh includes the `createHandler` function for testing a route handler. Like that name, the `createHandler` function creates the handler function.
+
+
+####TODO###
+
+[Grouping routes](https://fresh.deno.dev/docs/concepts/routing#route-groups) was added in Fresh v1.4, Version 0.8.0, of the `fresh-testing-library` added support for testing route groups.
+
+### Testing async routes
+Docs: https://fresh.deno.dev/docs/concepts/routes#async-route-components
+
+Test: https://github.com/uki00a/fresh-testing-library/blob/main/async-route-components.test.tsx
+
+####TODO###
+
+### Testing route groups
+
+
 
 ## Conclusion
 
+Use the [example code given at the beginning of this blog post](#example-code) to guide you through the the core `fresh-testing-library` concepts introduced above.
 
+Also be aware that `fresh-testing-library` has not yet released version 1.0, so it evolving to include more features and bug fixes. In addition, I know by first-hand experience that the `fresh-testing-library` author is very responsive to questions and bug reports.
