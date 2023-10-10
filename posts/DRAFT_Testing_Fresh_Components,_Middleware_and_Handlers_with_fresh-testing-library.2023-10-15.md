@@ -2,6 +2,25 @@
 
 # Testing Fresh Components, Middleware and Handlers with fresh-testing-library
 
+## Table of contents
+  - [Introduction](#introduction)
+  - [Example Code](#example-code)
+  - [Component Testing](#component-testing)
+    - [Setting up a fresh-testing-library component test](#setting-up-a-fresh-testing-library-component-test)
+    - [Rendering components under test](#rendering-components)
+    - [Finding DOM Elements](#finding-dom-elements)
+      - [Finding text with ByText](#matching-text)
+      - [Using ByRole finder functions](#using-byrole-finder-functions)
+      - [Accessibility testing](#accessibility-testing)
+    - [Firing user-generated events](#firing-user-generated-events)
+    - [Testing global state management](#testing-global-state-management)
+    - [Component testing troubleshooting tips](#component-testing-troubleshooting-tips)
+  - [Fresh Middleware and Route Handler testing](#fresh-middleware-and-route-handler-testing-with-fresh-testing-library)
+    - [Testing middleware](#testing-middleware)
+    - [Testing route handlers](#testing-route-handlers)
+    - [Testing async route components](#testing-async-route-components)
+  - [Conclusion](#conclusion)
+# Introduction
 The [`fresh-testing-library`](https://deno.land/x/fresh_testing_library) is a new unit testing utility for Deno Fresh. Until now testing a Fresh application used the built-in Deno test runner with `Deno.test` and `std/testing` utilities for verifying low-level logic and the [Deno-Puppeteer](https://deno.land/x/puppeteer) or [Astral](https://astral.deno.dev/) libs for end-to-end testing. The `fresh-testing-library` fills the niche between the other options to allow isolated testing of fresh components, middleware and route handlers.
 
 `fresh-testing-library` creates a thin wrapper around the [Preact Testing Library](https://preactjs.com/guide/v10/preact-testing-library/) which is built upon the [DOM Testing Library](https://testing-library.com/docs/dom-testing-library/intro). All of them including `fresh-testing-library` share an API under the [Testing Library](https://testing-library.com/) moniker.
@@ -285,7 +304,7 @@ Here's an example of using a 'click' event to invoke a button click:
 In this case, the event target is the button element.
 
 
-# Testing component global state management
+## Testing global state management
 
 Preact signals provide a means to do local and global state management with signals. A previous [Craig's Deno Diary post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) demonstrated how to use signals with Fresh.
 
@@ -359,41 +378,6 @@ To test a component in isolation, you need to wrap it in a context provider so t
 Notice in the test that we assign the state's `todos` value before we attached it to the `AppState.Provider` context provider.
 
 The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has been updated with `fresh-testing-library` component tests.
-
-## Testing async route components
-
-[Fresh async route components](https://fresh.deno.dev/docs/concepts/routes#async-route-components) are components where an async route handler function is inlined into the route page component. In that case, the route page component is declared as asynchronous (using the `async` keyword). Here's what that look likes (take from the Fresh routes documentation):
-```ts
-export default async function MyPage(req: Request, ctx: RouteContext) {
-  const value = await loadFooValue();
-  return <p>foo is: {value}</p>;
-}
-```
-Fresh also ships with a [`defineRoutes`](https://fresh.deno.dev/docs/concepts/routes#define-helper) function to simplify the creation of async route components.
-
-A `fresh-testing-library` test of a async route component uses the `createRouteContext` function in the `server` module. Here's how it is used in an [`fresh-testing-library`](https://github.com/uki00a/fresh-testing-library#testing-async-route-components) example:
-```ts
-import { cleanup, getByText, render, setup} from "$fresh-testing-library/components.ts";
-import { createRouteContext } from "$fresh-testing-library/server.ts";
-import { assertExists } from "$std/assert/assert_exists.ts";
-import { afterEach, beforeAll, describe, it } from "$std/testing/bdd.ts";
-import { default as UserDetail } from "./demo/routes/users/[id].tsx";
-import { default as manifest } from "./demo/fresh.gen.ts";
-
-describe("routes/users/[id].tsx", () => {
-  beforeAll(setup);
-  afterEach(cleanup);
-
-  it("should work", async () => {
-    const req = new Request("http://localhost:8000/users/2");
-    const ctx = createRouteContext<void>(req, { manifest });
-    const screen = render(await UserDetail(req, ctx));
-    const group = screen.getByRole("group");
-    assertExists(getByText(group, "bar"));
-  });
-});
-```
-In this case, `UserDetails` is the async route component.
 
 ## Component testing troubleshooting tips
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
@@ -474,27 +458,52 @@ Deno.test("routes/About.tsx handler tests...", async (t) => {
 ```
 You do not need `startup` and `cleanup` functions for handler tests, so we use the `Deno.test` runner function here instead of the `bdd` module functions.
 
-
 Fresh includes the `createHandler` function for testing a route handler. Like that name, the `createHandler` function creates the handler function.
 
+[Grouping routes](https://fresh.deno.dev/docs/concepts/routing#route-groups) was added in Fresh v1.4, Version 0.8.0, of the `fresh-testing-library` added support for testing route groups. `fresh-testing-library` route handler tests transparently works if routes are grouped.
 
-####TODO###
+## Testing async route components
 
-[Grouping routes](https://fresh.deno.dev/docs/concepts/routing#route-groups) was added in Fresh v1.4, Version 0.8.0, of the `fresh-testing-library` added support for testing route groups.
+[Fresh async route components](https://fresh.deno.dev/docs/concepts/routes#async-route-components) are components where an async route handler function is inlined into the route page component. In that case, the route page component is declared as asynchronous (using the `async` keyword). Here's what that look likes (take from the Fresh routes documentation):
+```ts
+export default async function MyPage(req: Request, ctx: RouteContext) {
+  const value = await loadFooValue();
+  return <p>foo is: {value}</p>;
+}
+```
+Fresh also ships with a [`defineRoutes`](https://fresh.deno.dev/docs/concepts/routes#define-helper) function to simplify the creation of async route components.
 
-### Testing async routes
-Docs: https://fresh.deno.dev/docs/concepts/routes#async-route-components
+A `fresh-testing-library` test of a async route component uses the `createRouteContext` function in the `server` module. Here's how it is used in an [`fresh-testing-library`](https://github.com/uki00a/fresh-testing-library#testing-async-route-components) example:
+```ts
+import { cleanup, getByText, render, setup} from "$fresh-testing-library/components.ts";
+import { createRouteContext } from "$fresh-testing-library/server.ts";
+import { assertExists } from "$std/assert/assert_exists.ts";
+import { afterEach, beforeAll, describe, it } from "$std/testing/bdd.ts";
+import { default as UserDetail } from "./demo/routes/users/[id].tsx";
+import { default as manifest } from "./demo/fresh.gen.ts";
 
-Test: https://github.com/uki00a/fresh-testing-library/blob/main/async-route-components.test.tsx
+describe("routes/users/[id].tsx", () => {
+  beforeAll(setup);
+  afterEach(cleanup);
 
-####TODO###
-
-### Testing route groups
-
+  it("should work", async () => {
+    const req = new Request("http://localhost:8000/users/2");
+    const ctx = createRouteContext<void>(req, { manifest });
+    const screen = render(await UserDetail(req, ctx));
+    const group = screen.getByRole("group");
+    assertExists(getByText(group, "bar"));
+  });
+});
+```
+In this case, `UserDetails` is the async route component.
 
 
 ## Conclusion
 
 Use the [example code given at the beginning of this blog post](#example-code) to guide you through the the core `fresh-testing-library` concepts introduced above.
 
-Also be aware that `fresh-testing-library` has not yet released version 1.0, so it evolving to include more features and bug fixes. In addition, I know by first-hand experience that the `fresh-testing-library` author is very responsive to questions and bug reports.
+Also be aware that `fresh-testing-library` has not yet released version 1.0, so it will continue to evolve to include more features and bug fixes. In addition, I know by first-hand experience that the `fresh-testing-library` author is very responsive to questions and bug reports.
+
+### Acknowledgements
+
+Special thanks goes to Yuki Tanaka (@uki00a) for answering my many questions and promptly fixing `fresh-testing-library` bug reports that I submitted.
