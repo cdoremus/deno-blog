@@ -1,4 +1,4 @@
-#### 2023-09-20
+#### 2023-10-15
 
 # Testing Fresh Components, Middleware and Handlers with fresh-testing-library
 
@@ -16,8 +16,8 @@ The `fresh-testing-library` is registered as a Deno third party library under th
 
 #### Example Code
 
-This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below:
-- THe repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests
+This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below. They are:
+- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests
 - The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests
 - The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery
 
@@ -362,20 +362,45 @@ The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using
 
 ## Testing async route components
 
-It's usually best practice to focus component testing on the child or leaf nodes toward the end of the component tree. Otherwise you end up re-testing the child components tht are used by the parent. Route or page components use child components to render page sections .They are best tested using an end-to-end test.
-
-The `fresh-testing-library` does include functionality for testing async route components using the `createRouteContext` function with `render`.
-
+[Fresh async route components](https://fresh.deno.dev/docs/concepts/routes#async-route-components) are components where an async route handler function is inlined into the route page component. In that case, the route page component is declared as asynchronous (using the `async` keyword). Here's what that look likes (take from the Fresh routes documentation):
 ```ts
-
+export default async function MyPage(req: Request, ctx: RouteContext) {
+  const value = await loadFooValue();
+  return <p>foo is: {value}</p>;
+}
 ```
+Fresh also ships with a [`defineRoutes`](https://fresh.deno.dev/docs/concepts/routes#define-helper) function to simplify the creation of async route components.
+
+A `fresh-testing-library` test of a async route component uses the `createRouteContext` function in the `server` module. Here's how it is used in an [`fresh-testing-library`](https://github.com/uki00a/fresh-testing-library#testing-async-route-components) example:
+```ts
+import { cleanup, getByText, render, setup} from "$fresh-testing-library/components.ts";
+import { createRouteContext } from "$fresh-testing-library/server.ts";
+import { assertExists } from "$std/assert/assert_exists.ts";
+import { afterEach, beforeAll, describe, it } from "$std/testing/bdd.ts";
+import { default as UserDetail } from "./demo/routes/users/[id].tsx";
+import { default as manifest } from "./demo/fresh.gen.ts";
+
+describe("routes/users/[id].tsx", () => {
+  beforeAll(setup);
+  afterEach(cleanup);
+
+  it("should work", async () => {
+    const req = new Request("http://localhost:8000/users/2");
+    const ctx = createRouteContext<void>(req, { manifest });
+    const screen = render(await UserDetail(req, ctx));
+    const group = screen.getByRole("group");
+    assertExists(getByText(group, "bar"));
+  });
+});
+```
+In this case, `UserDetails` is the async route component.
 
 ## Component testing troubleshooting tips
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
 - There are `debug` functions for printing out the DOM returned from calling `render` or any of the finder functions. The former prints out the DOM that was rendered and the latter prints out the returned DOM from a finder function call. Here's how to use them:
 ```ts
 const {debug, queryByRole} = render(<MyComponent />);
-// print out the component's DOM element wrapped in a body element
+// print out all the component's DOM elements wrapped in a body element
 debug();
 const element = queryByRole("button");
 // prints out the element's DOM
