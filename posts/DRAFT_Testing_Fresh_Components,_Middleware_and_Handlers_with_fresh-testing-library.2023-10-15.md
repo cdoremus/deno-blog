@@ -7,7 +7,7 @@
   - [Example Code](#example-code)
   - [Component Testing](#component-testing)
     - [Setting up a fresh-testing-library component test](#setting-up-a-fresh-testing-library-component-test)
-    - [Rendering components under test](#rendering-components)
+    - [Rendering components under test](#rendering-components-under-test)
     - [Finding DOM Elements](#finding-dom-elements)
       - [Finding text with ByText](#matching-text)
       - [Using ByRole finder functions](#using-byrole-finder-functions)
@@ -31,14 +31,14 @@ The Testing Library philosophy is to create tests that interact with the applica
 
 Testing library also focusses on accessibility, offering a number of functions to find elements by accessible attributes.
 
-The `fresh-testing-library` is registered as a Deno third party library under the "https://deno.land/x/fresh_testing_library" URL. It's component testing feature is a thin wrapper around the Preact Testing Library.
+The `fresh-testing-library` is registered as a Deno third-party library under the "https://deno.land/x/fresh_testing_library" URL.
 
 #### Example Code
 
 This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below. They are:
-- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests (7 component tests)
-- The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 component tests)
-- The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery (12 component tests)
+- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests (7 test files)
+- The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 test files)
+- The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery (12 test files)
 
 # Component testing
 ## Setting up a fresh-testing-library component test
@@ -47,9 +47,11 @@ Using `fresh-testing-library` for a component test requires the Deno test runner
 
 Here is a simple annotated example of a `fresh-testing-library` component test that illustrates test setup and code:
 ```ts
+// Adapted from Todo.test.tsx in Fresh
+//   signals blog post repo
 import { cleanup, fireEvent, render, setup } from "https://deno.land/x/fresh_testing_library";
 import { afterEach, beforeAll, describe, it } from "https://deno.land/std/testing/bdd.ts";
-import { assertEquals, assertExists } from "https://deno.land/std/assert/mod.ts";
+import { assertEquals } from "https://deno.land/std/assert/mod.ts";
 import Todo from "../islands/Todo.tsx";
 
 describe("Todo.tsx test", () => {
@@ -65,8 +67,6 @@ describe("Todo.tsx test", () => {
     const { getByText } = render(<Todo text={text} index={1}/>);
     // find an HTML element using the rendered component's text content
     const textElement = getByText(text);
-    // verify element is found
-    assertExists(textElement);
     // verify element's text content
     assertEquals(textElement.textContent, text);
   });
@@ -74,12 +74,12 @@ describe("Todo.tsx test", () => {
 ```
 Run `fresh-testing-library` tests with this command line:
 ```bash
-deno test --allow-env
+deno test --allow-read --allow-env
 ```
-You might need to add other permission flags depending on the code you are testing.
-## Rendering components
+Both permission flags are required because the `jsdom` library is used internally in component tests. You might also need to add other permission flags depending on the code you are testing.
+## Rendering components under test
 
-The first thing you need in a `fresh-testing-library` test is a call to the `render` function. It is used to instantiate the component-under-test. Its first argument is required and is the JSX representation of a component including its props.
+The first thing you need in a `fresh-testing-library` test is a call the library's `render` function. It is used to instantiate the component-under-test. Its first argument is required and is the JSX representation of a component including its props.
 
 ```ts
 import { render } from "https:/deno.land/x/fresh_testing_library";
@@ -87,7 +87,7 @@ import { render } from "https:/deno.land/x/fresh_testing_library";
 const screen = render(<Counter />);
 ```
 
-The `render` function return returns an object that contains functions for verifying a component's content. Instead of returning that object ( `screen` in this case), you can destructure the functions required to find the content. Here's an example of a text search with `getByText` destructured from `render`:
+The `render` function returns an object that contains functions for verifying a component's content. Instead of returning that object ( `screen` in this case), you can destructure the functions required to find the content. Here's an example of a text search with `getByText` destructured from `render`:
 
 ```ts
 import { render } from "https:/deno.land/x/fresh_testing_library";
@@ -100,7 +100,7 @@ The `render` function has an optional second argument that is rarely used. For m
 
 ## Finding DOM Elements
 
-As stated previously, Testing Library libs including `fresh-testing-library` focusses on verifying DOM elements generated by the component-under-test. These element are ones a user sees or interacts with.
+As stated previously, Testing Library libs including `fresh-testing-library` focusses on verifying DOM elements generated by the component-under-test. These elements create the UI including interaction components.
 
 Finder functions are found on the `RenderResult` object that is returned from a call to `render`.
 ```ts
@@ -131,7 +131,7 @@ The full name of a finder function specifies how an element is located. Here's w
 - `getByDisplayValue` - finds an `input`, `textarea` or `select` element using the `value` attribute.
 - `getByLabelText` - finds the element using the `label` attribute. Obviously, this is mostly used to locate form elements
 - `getByPlaceholderText` - finds the element using the `placeholder` attribute found in a `text` or `textarea` element.
-- `getByRole` - finds the element by it's `role` attribute.
+- `getByRole` - finds the element by its `role` attribute or implicit role ([see below](#using-byrole-finder-functions)).
 - `getByTestId` - finds an element using the `data-testid` attribute
 - `getByTitle` - finds an element using the enclosed `title`element. This is best used with an svg graphic that contains a `title` child element.
 
@@ -155,6 +155,7 @@ The `TextMatch` function has optional string and `HTMLElement` arguments and ret
     const { getByRole, getByText } = render(<CodeBox code={code} />);
     // find code
     const codeElement = getByRole("code");
+    // get the text content
     const content = codeElement.textContent;
     // Prism library breaks up code for styling purposes
     assert(
@@ -170,7 +171,7 @@ The `TextMatch` function has optional string and `HTMLElement` arguments and ret
 ```
 A finder function that takes a `TextMatch` can contain an options object with an `exact` or `normalization` property that affects the precision of the match. There is a [section in the Testing Library docs that explores these options in detail](https://testing-library.com/docs/queries/about/#precision), but here they are in a nutshell:
 - `exact` (`true` by default) determines whether the match is case-sensitive or not.
-- `normalization` This property can be set to override the behavior of collapsing whitespace using a function.
+- `normalization` Whitespace is collapsed when doing a text match. This property can be set to override that behavior.
 
 ## Uses of get*, query* and find*
 
@@ -285,10 +286,10 @@ Here's an example of using a 'click' event to invoke a button click:
 ```ts
   it("should display count and increment/decrement it correctly", async () => {
     const count = signal<number>(9);
-    const { getByRole, queryByText } = render(<Counter count={count} />);
-    const plusOne = getByRole("button", { name: "+1" });
+    const { queryByRole, queryByText } = render(<Counter count={count} />);
+    const plusOne = queryByRole("button", { name: "+1" });
     assertExists(plusOne);
-    const minusOne = getByRole("button", { name: "-1" });
+    const minusOne = queryByRole("button", { name: "-1" });
     assertExists(minusOne);
 
     await fireEvent.click(plusOne);
@@ -486,7 +487,7 @@ describe("routes/users/[id].tsx", () => {
     const ctx = createRouteContext<void>(req, { manifest });
     const screen = render(await UserDetail(req, ctx));
     const group = screen.getByRole("group");
-    assertExists(getByText(group, "bar"));
+    assertExists(queryByText(group, "bar"));
   });
 });
 ```
