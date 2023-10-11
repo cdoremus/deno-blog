@@ -13,9 +13,9 @@
       - [Using ByRole finder functions](#using-byrole-finder-functions)
       - [Accessibility testing](#accessibility-testing)
     - [Firing user-generated events](#firing-user-generated-events)
-    - [Testing global state management](#testing-global-state-management)
+    - [Testing component state management](#testing-component-state-management)
     - [Component testing troubleshooting tips](#component-testing-troubleshooting-tips)
-  - [Fresh Middleware and Route Handler testing](#fresh-middleware-and-route-handler-testing-with-fresh-testing-library)
+  - [Middleware and Route Handler testing](#middleware-and-route-handler-testing)
     - [Testing middleware](#testing-middleware)
     - [Testing route handlers](#testing-route-handlers)
     - [Testing async route components](#testing-async-route-components)
@@ -25,20 +25,20 @@ The [`fresh-testing-library`](https://deno.land/x/fresh_testing_library) is a ne
 
 `fresh-testing-library` creates a thin wrapper around the [Preact Testing Library](https://preactjs.com/guide/v10/preact-testing-library/) which is built upon the [DOM Testing Library](https://testing-library.com/docs/dom-testing-library/intro). All of them including `fresh-testing-library` share an API under the [Testing Library](https://testing-library.com/) moniker.
 
-The `fresh-testing-library` also adds utilities for testing Fresh route handler's, route components and middleware. Those are under the `server.ts` module while the component testing library is under the `component.ts` module. Both can also be accessed via the library's `mod.ts` module.
+The `fresh-testing-library` also adds utilities for testing Fresh route handler's, route components and middleware. Those are under the `server.ts` module while the component testing library code is in the `component.ts` module. Both can also be accessed via the `mod.ts` module.
 
 The Testing Library philosophy is to create tests that interact with the application the same way an app user would do. To do so, Testing Library tests hone in on verifying DOM elements.
 
 Testing library also focusses on accessibility, offering a number of functions to find elements by accessible attributes.
 
-The `fresh-testing-library` is registered as a Deno third party library under the URL "https://deno.land/x/fresh_testing_library". It's component testing feature is a thin wrapper around the Preact Testing Library.
+The `fresh-testing-library` is registered as a Deno third party library under the "https://deno.land/x/fresh_testing_library" URL. It's component testing feature is a thin wrapper around the Preact Testing Library.
 
 #### Example Code
 
 This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below. They are:
-- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests
-- The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests
-- The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery
+- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests (7 component tests)
+- The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 component tests)
+- The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery (12 component tests)
 
 # Component testing
 ## Setting up a fresh-testing-library component test
@@ -304,21 +304,20 @@ Here's an example of using a 'click' event to invoke a button click:
 In this case, the event target is the button element.
 
 
-## Testing global state management
+## Testing component state management
 
 Preact signals provide a means to do local and global state management with signals. A previous [Craig's Deno Diary post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) demonstrated how to use signals with Fresh.
 
-#### Testing local state management
+#### Testing local state
 
-Compared to `useState`, the `signal` function only returns a single value, the signal. Instead of a setter function, updating the signal involves assigning the value property of the signal a new value.
+Compared to `useState`, the `signal` function only returns a value and does not include a setter function. Updating the signal involves assigning the value property of the signal a new value.
 ```ts
-  const count = signal<number>(0);
-  const newValue = count.value + 1;
-  count.value = newValue;
+const count = signal<number>(0);
+const newValue = count.value + 1;
+count.value = newValue;
 ```
 
-??????TODO: REWRITE
-The local state often changes when an event gets fired which in turn updates the UI. In a `fresh-testing-library` test, the  `fireEvent` function would be used to trigger his kind of change.
+The local state often changes when an event gets invoked which in turn updates the UI. In a `fresh-testing-library` test, the `fireEvent` function would trigger his kind of change.
 ```ts
   const [ getByRole, queryByText ] = render(<Counter/>);
   const button = getByRole("button")
@@ -326,9 +325,11 @@ The local state often changes when an event gets fired which in turn updates the
   assertExists(queryByText("Count: 1"));
 ```
 
-#### Testing component state
+#### Testing global state
 
-Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to components. I will not go over how this is coded in detail as you can refer the the [Craig's Deno Diary post](https://deno-blog.com/Using_Preact_Signals_with_Fresh.2022-11-01) on how its done.
+Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to child components. I will not go over how this is coded in detail as you can refer the the [Craig's Deno Diary post](https://deno-blog.com/Using_Preact_Signals_with_Fresh.2022-11-01) on how its done.
+
+The code used to illustrate this state management testing shown here is taken from the [signals blog post's repo](https://github.com/cdoremus/fresh-todo-signals) (tests folder).
 
 Testing a component that uses global state requires that you wrap the component in a Preact context provider that passes the state into the component as a signal. The context is created in the parent component using the `createContext` function:
 
@@ -380,37 +381,32 @@ Notice in the test that we assign the state's `todos` value before we attached i
 The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has been updated with `fresh-testing-library` component tests.
 
 ## Component testing troubleshooting tips
-- Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function with a valid `document` object. Therefore, testing `IS_BROWSER` cannot be done with `fresh-testing library.`
-- There are `debug` functions for printing out the DOM returned from calling `render` or any of the finder functions. The former prints out the DOM that was rendered and the latter prints out the returned DOM from a finder function call. Here's how to use them:
+- Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function without a valid `document` object. Therefore, testing code that uses `IS_BROWSER` cannot be done with `fresh-testing library.`
+- There are `debug` functions for printing out the DOM returned from calling `render` or any of the finder functions. The former prints out the complete DOM that was rendered and the latter prints out the returned DOM from a finder function call. Here's how to use them:
 ```ts
 const {debug, queryByRole} = render(<MyComponent />);
 // print out all the component's DOM elements wrapped in a body element
 debug();
 const element = queryByRole("button");
-// prints out the element's DOM
+// prints out the button element's DOM
 element.debug();
 ```
-## Fresh Middleware and Route Handler testing with fresh-testing library
-
+## Middleware and Route Handler testing
 
 ### Testing middleware
 
-Testing middleware uses the `createMiddlewareHandlerContext` to mock out the `MiddlewareHandlerContext` used in a middleware handler. Here's what a test would look like for the [middleware in this repo](https://github.com/cdoremus/deno-blog/blob/main/routes/_middleware.ts);
+Testing middleware employs the `createMiddlewareHandlerContext` function to mock out the `MiddlewareHandlerContext` used in a middleware handler. Here's what a test would look like for the [middleware in this repo](https://github.com/cdoremus/deno-blog/blob/main/routes/_middleware.ts);
 ```ts
 // _middleware.ts
 import { MiddlewareHandlerContext } from "$fresh/server.ts";
 
-export function handler(
-  _req: Request,
-  _ctx: MiddlewareHandlerContext,
-) {
-  return setCacheControlHeaders();
-}
+  export const handler = setCacheControlHeaders();
 
-export function setCacheControlHeaders() {
-  return async (_req: Request, ctx: MiddlewareHandlerContext) => {
+  export function setCacheControlHeaders() {
+    return async (_req: Request, ctx: MiddlewareHandlerContext) => {
     const resp = await ctx.next();
     resp.headers.set("Cache-Control", "public, max-age=21600, immutable");
+    return resp;
   }
 }
 
@@ -421,18 +417,17 @@ import { setCacheControlHeaders } from "../../routes/_middleware.ts";
 import manifest from "../../fresh.gen.ts";
 
 Deno.test("should set Cache-Control header", async () => {
-  const middleware = setCacheControlHeaders();
   const req = new Request(`http://localhost:3000/`);
-  // Ignore error due to a mis-typed Manifest interface
   // @ts-ignore ignores "type ... is not assignable to type Manifest" error
   const ctx = createMiddlewareHandlerContext(req, { manifest });
+  let resp = new Response();
+  const middleware = await setCacheControlHeaders();
   await middleware(req, ctx);
-  const resp = await ctx.next();
+  resp = await ctx.next();
   assertEquals(resp.headers.get('Cache-control'), "public, max-age=21600, immutable");
 });
 ```
 You can use `Deno.test` in this case since a middleware test does not require setup or cleanup.
-
 
 The `Request` object can be used to find out the current URL or request method (GET, POST, etc) for middleware with logic that is more sophisticated than my simple example.
 
@@ -500,10 +495,12 @@ In this case, `UserDetails` is the async route component.
 
 ## Conclusion
 
-Use the [example code given at the beginning of this blog post](#example-code) to guide you through the the core `fresh-testing-library` concepts introduced above.
+Use the [example code given at the beginning of this blog post](#example-code) to guide you through the the core `fresh-testing-library` concepts introduced above. There are over two dozen test files for you to peruse in those three repos.
 
-Also be aware that `fresh-testing-library` has not yet released version 1.0, so it will continue to evolve to include more features and bug fixes. In addition, I know by first-hand experience that the `fresh-testing-library` author is very responsive to questions and bug reports.
+Also be aware that `fresh-testing-library` has not yet released version 1.0, so it will continue to evolve to include more features and bug fixes. In addition, I know by first-hand experience that the `fresh-testing-library` author is very responsive to issues submitted to the library's repo.
+
+Finally, since the component testing feature of `fresh-testing-library` wraps the Preact Testing Library, you need to be familiar with that [library's documentation](https://testing-library.com/docs/preact-testing-library/intro). It provides a guide to the full component testing API.
 
 ### Acknowledgements
 
-Special thanks goes to Yuki Tanaka (@uki00a) for answering my many questions and promptly fixing `fresh-testing-library` bug reports that I submitted.
+Special thanks goes to `fresh-testing-library` author Yuki Tanaka (@uki00a) for answering my many questions and promptly fixing bug reports that I submitted.
