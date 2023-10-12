@@ -21,6 +21,7 @@
     - [Testing route handlers](#testing-route-handlers)
     - [Testing async route components](#testing-async-route-components)
   - [Conclusion](#conclusion)
+  - [Acknowledgements](#acknowledgements)
 # Introduction
 The [`fresh-testing-library`](https://deno.land/x/fresh_testing_library) is a new unit testing utility for Deno Fresh. Until now testing a Fresh application used the built-in Deno test runner with `Deno.test` and `std/testing` utilities for verifying low-level logic and the [Deno-Puppeteer](https://deno.land/x/puppeteer) or [Astral](https://astral.deno.dev/) libs for end-to-end testing. The `fresh-testing-library` fills the niche between the other options to allow isolated testing of fresh components, middleware and route handlers.
 
