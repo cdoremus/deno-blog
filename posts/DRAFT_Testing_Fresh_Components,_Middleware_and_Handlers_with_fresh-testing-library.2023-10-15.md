@@ -9,7 +9,8 @@
     - [Setting up a fresh-testing-library component test](#setting-up-a-fresh-testing-library-component-test)
     - [Rendering components under test](#rendering-components-under-test)
     - [Finding DOM Elements](#finding-dom-elements)
-      - [Finding text with ByText](#matching-text)
+      - [Text Argument Options](#text-argument-options)
+      - [Uses of get*, query* and find* Functions](#uses-of-get-query-and-find-functions)
       - [Using ByRole finder functions](#using-byrole-finder-functions)
       - [Accessibility testing](#accessibility-testing)
     - [Firing user-generated events](#firing-user-generated-events)
@@ -141,7 +142,7 @@ The second argument is used to match the the HTML element being searched for. It
 
 Finder functions have an optional third argument which is an options object. The properties of that argument is specific to the finder.
 
-### Matching text
+### Text Argument Options
 
 Most finder functions take a [`TextMatch`](https://testing-library.com/docs/queries/about/#textmatch) which can be:
 - a string
@@ -173,7 +174,7 @@ A finder function that takes a `TextMatch` can contain an options object with an
 - `exact` (`true` by default) determines whether the match is case-sensitive or not.
 - `normalization` Whitespace is collapsed when doing a text match. This property can be set to override that behavior.
 
-## Uses of get*, query* and find*
+## Uses of get*, query* and find* Functions
 
 As shown above, the first part of a finder function name indicates what gets returned when you call the function. For that reasons, each one of them has a favored use
 
@@ -181,8 +182,9 @@ As shown above, the first part of a finder function name indicates what gets ret
 
 - __query*__ - should only be used to verify the existence or non-existence of an element. Otherwise, a 'get*' finder should be used.
 
-For example, I want to make sure that no `Todo` components will be shown. Each contains a `button` element. I use `queryAllByRole` to test for an empty array. If I used `getAllByRole`, an error would be thrown if nothing was returned.
+For example, I have a test where I want to make sure that no `Todo` components will be shown. Each `Todo` contains a `button` element. I use `queryAllByRole` to test for an empty array. If I used `getAllByRole`, an error would be thrown if nothing was returned.
 ```ts
+  // TodoList.test.tsx in Fresh signals post code repo
   it("should not display list of todos...",  () => {
     const todos = [] as string[];
     state.todos.value = todos;
@@ -200,7 +202,9 @@ For example, I want to make sure that no `Todo` components will be shown. Each c
 - __find*__ - use when an async operation or rendering delay would prevent an element or elements from appearing in the UI. Fetching remote data is an example. Another example is when an action causes a rerender. Here's how `findBy` is used:
 
 ```ts
+  // MenuLink.test.tsx in this blog's repo
   it("Show About link", async () => {
+    // change the location, triggering a menu rerender
     globalThis.window.location = {href: "/about"};
     const { findByText } = render(<MenuLink/>);
     const page = await findByText("Home")
@@ -210,18 +214,18 @@ For example, I want to make sure that no `Todo` components will be shown. Each c
   });
 ```
 
-- __waitFor__ While not strictly a finder nethod, `waitFor` is related especially to the __findBy*__ finder that uses `waitFor` under the covers.
+- __waitFor__ While not strictly a finder function, `waitFor` is used under the covers by the __findBy*__ finder. However, it can be used standalone.
 
-The `waitFor` function is used for verifying DOM elements that take a while to render. Therefore, it is an async operation. Here's how `waitFor` is used:
+The [`waitFor` function](https://testing-library.com/docs/dom-testing-library/api-async/#waitfor) is used for verifying DOM elements that take a while to render due to an async operation. Here's how `waitFor` is used:
 ```ts
   await waitFor(() => {
     assertEquals(counter.textContent, count.value.toString());
   });
 ```
-
+As shown, `waitFor` is an async function that takes a function argument and optionally an options argument. This function runs until the waited-for operation succeeds or times out. The timeout is 1000ms by default, but that can be changed in the options argument's `timeout` property.
 ## Using ByRole finder functions
 
-Kent C. Dodds, the creator of Testing Library, recommends that you should [prefer the use of the 'ByRole' finder function to discover DOM nodes](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library#not-using-byrole-most-of-the-time).
+Kent C. Dodds, the creator of Testing Library, recommends to [prefer the use of the 'ByRole' finder function to discover DOM nodes](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library#not-using-byrole-most-of-the-time).
 
 A role used by Testing Library comes from the WAI ARIA accessibility standard. This is not well-documented in the library and takes a bit of a learning curve to figure out, so I'm going to delve into it for a bit.
 
@@ -234,6 +238,7 @@ Nearly all of the HTML form elements also have implicit roles. This includes `in
 Another handy implicit role to use is `link` for an HTML anchor (`a`), but the anchor must have a `href` attribute. Here's an example of a component test to verify 3 links:
 
 ```ts
+// Header.test.tsx in Fresh repo
 describe("components/gallery/Header.tsx", () => {
   beforeAll(setup);
   afterEach(cleanup);
@@ -245,22 +250,21 @@ describe("components/gallery/Header.tsx", () => {
   });
 });
 ```
-Do not set an element's `role` attribute when you want to use an implicit role. Sometimes you might have multiple elements with the same role; multiple buttons, for instance. In that case use the options argument.
+When you want to use an implicit role, do not set an element's `role` attribute. Sometimes you might have multiple elements with the same role; multiple buttons, for instance. In that case use the options argument.
 
-Each role has a different set of options properties. All of them have a `name` property, but the property's value depends on the role. For the `button` role, the `name` property is the button's value. For the `img` role, the `name` property is the value of the element's `alt` attribute. Roles for HTML elements without an implicit role must be specified using the `role` attribute.
+Each role has a different set of options. All of them have a `name` property, but the property's value depends on the role. For the `button` role, the `name` property is the button's value. For the `img` role, the `name` property is the value of the element's `alt` attribute. Roles for HTML elements without an implicit role must be specified using the `role` attribute.
 
-Many IDEs like Visual Studio Code support discovery of valid roles using autocompletion. Just type `getByRole("")` with your cursor within the quotes and a list of valid roles will appear. It will look something like this:
+Many IDEs like Visual Studio Code support discovery of valid roles using autocompletion. Just type `getByRole("")` putting your cursor within the quotes and a list of valid roles should appear.
 
-![vscode role autocompletion](/img/blog/fresh-testing-library/getByRole_autocomplete.png)
-
-If you use an argument to a 'ByRole' finder that is illegal, the error message will point out the available implicit roles. Alternately, you can use the `fresh-testing-library` function `logRole` to find the implicit roles within your component-under-test.
+If you use an argument to a 'ByRole' finder that is illegal, when the test is run the error message will point out the available implicit roles. Alternately, you can use the `fresh-testing-library` function `logRole` to find the implicit roles within your component-under-test.
 
 ## Accessibility testing
 
 Testing Library emphasizes accessibility by having a number of finder functions that use accessibility attributes. The 'ByRole' finder is a big one, but 'ByPlaceholderText', 'ByAltText', 'ByLabel' and 'ByTitle' are others.
 
-Here is an example of using the `title` attribute with the 'ByTitle' finder (REFERENCE????????????):
+Here is an example of using the `title` attribute with the 'ByTitle' finder:
 ```ts
+  // Background.test.tsx in Fresh repo
   it("should display background image", () => {
     // Background takes any number of native attributes or Preact props
     const { getByTitle } = render(<Background title="background" />);
@@ -268,12 +272,11 @@ Here is an example of using the `title` attribute with the 'ByTitle' finder (REF
     const style = bg.getAttribute("style");
     assertEquals(style, "background-image: url(/gallery/grid.svg);");
   });
-
 ```
 
-## Firing user-generated events
+## Firing User-Generated Events
 
-You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`. `fireEvent` has functional properties for triggering  common events. They include:
+You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`, `fireEvent` has function properties for triggering DOM events. They include:
 - `fireEvent.click` - to invoke an `onClick` handler
 - `fireEvent.change` - to invoke an `onChange` handler
 - `fireEvent.submit` - to invoke an `onSubmit` handler
@@ -302,8 +305,7 @@ Here's an example of using a 'click' event to invoke a button click:
   });
 
 ```
-In this case, the event target is the button element.
-
+In this case, the event target are two button elements.
 
 ## Testing component state management
 
