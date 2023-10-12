@@ -13,7 +13,7 @@
       - [Uses of get*, query* and find* Functions](#uses-of-get-query-and-find-functions)
       - [Using ByRole finder functions](#using-byrole-finder-functions)
       - [Accessibility testing](#accessibility-testing)
-    - [Firing user-generated events](#firing-user-generated-events)
+    - [Firing User-Generated Events](#firing-user-generated-events)
     - [Testing component state management](#testing-component-state-management)
     - [Component testing troubleshooting tips](#component-testing-troubleshooting-tips)
   - [Middleware and Route Handler testing](#middleware-and-route-handler-testing)
@@ -313,7 +313,7 @@ Preact signals provide a means to do local and global state management with sign
 
 #### Testing local state
 
-Compared to `useState`, the `signal` function only returns a value and does not include a setter function. Updating the signal involves assigning the value property of the signal a new value.
+Compared to `useState`, the `signal` function only returns a single value and not an array with a setter function. Updating the signal involves assigning the value property of the signal a new value.
 ```ts
 const count = signal<number>(0);
 const newValue = count.value + 1;
@@ -332,17 +332,19 @@ The local state often changes when an event gets invoked which in turn updates t
 
 Global state management with Preact signals requires a module that holds that state and using the Preact context to pass the state to child components. I will not go over how this is coded in detail as you can refer the the [Craig's Deno Diary post](https://deno-blog.com/Using_Preact_Signals_with_Fresh.2022-11-01) on how its done.
 
-The code used to illustrate this state management testing shown here is taken from the [signals blog post's repo](https://github.com/cdoremus/fresh-todo-signals) (tests folder).
+The code used to illustrate this state management testing shown here is taken from the [signals blog post's repo](https://github.com/cdoremus/fresh-todo-signals).
 
 Testing a component that uses global state requires that you wrap the component in a Preact context provider that passes the state into the component as a signal. The context is created in the parent component using the `createContext` function:
 
 ```ts
+// App.tsx
 export const AppState = createContext<AppStateType>({} as AppStateType);
 ```
-The `AppState` context has a provider field is used to pass the signal-created state to child components.
+The `AppState` context has a provider field used to pass the signal-created state to child components.
 
 The child components discover the state using the `useContext` hook. Here's a component that displays a list obtained from the context:
 ```ts
+// TodoList.tsx
 import { useContext } from "preact/hooks";
 import { AppState } from "./App.tsx";
 import Todo from "./Todo.tsx"
@@ -360,8 +362,9 @@ export default function TodoList() {
   );
 }
 ```
-To test a component in isolation, you need to wrap it in a context provider so that the state can be passed to the child component. Here's what that kind of test looks like:
+To test a component in isolation, you need to wrap it in a context provider so that state can be passed to the child component. Here's what that kind of test looks like:
 ```ts
+// TodoList.test.tsx
   it("should display list of todos...", () => {
     const todos = ["Foo", "Bar", "Baz"];
     state.todos.value = todos;
@@ -381,7 +384,7 @@ To test a component in isolation, you need to wrap it in a context provider so t
 ```
 Notice in the test that we assign the state's `todos` value before we attached it to the `AppState.Provider` context provider.
 
-The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has been updated with `fresh-testing-library` component tests.
+The [original blog post on Fresh signals](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) has been updated with `fresh-testing-library` component tests including the test used in this section.
 
 ## Component testing troubleshooting tips
 - Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but testing it can be problematic. In order to set `IS_BROWSER` to false, you need to set the `document` object to `undefined`. Doing that will cause a `fresh-testing-library` test to fail because the `jsdom` library cannot function without a valid `document` object. Therefore, testing code that uses `IS_BROWSER` cannot be done with `fresh-testing library.`
