@@ -3,3 +3,6 @@
 *.log
 /tmp/
 /static/gfm.css
+
+# Fresh build directory
+_fresh/
