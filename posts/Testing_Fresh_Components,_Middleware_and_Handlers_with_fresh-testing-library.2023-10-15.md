@@ -40,7 +40,7 @@ The `fresh-testing-library` is registered as a Deno third-party library under th
 #### Example Code
 
 This blog post will focus on how to use the `fresh-testing-library`. With that in mind, I have created example code in several places in addition to the code snippets shown below. They are:
-- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/fresh-testing-lib/tests (7 test files)
+- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/stage/tests (7 test files)
 - The repo for the blog post I did on using signals with Fresh: https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 test files)
 - The component gallery in the Fresh repo: https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery (12 test files)
 
