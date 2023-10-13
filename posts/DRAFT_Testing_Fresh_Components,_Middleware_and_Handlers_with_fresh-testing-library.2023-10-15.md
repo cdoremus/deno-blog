@@ -13,10 +13,12 @@
       - [Uses of get*, query* and find* Functions](#uses-of-get-query-and-find-functions)
       - [Using ByRole finder functions](#using-byrole-finder-functions)
       - [Accessibility testing](#accessibility-testing)
-    - [Firing User-Generated Events](#firing-user-generated-events)
+    - [Testing User Interactions](#testing-user-interactions)
+      - [Using `fireEvent`](#using-fireevent)
+      - [Using `userEvent`](#using-userEvent)
     - [Testing component state management](#testing-component-state-management)
     - [Component testing troubleshooting tips](#component-testing-troubleshooting-tips)
-  - [Middleware and Route Handler testing](#middleware-and-route-handler-testing)
+  - [Middleware and Route Handler testing](#mi  ddleware-and-route-handler-testing)
     - [Testing middleware](#testing-middleware)
     - [Testing route handlers](#testing-route-handlers)
     - [Testing async route components](#testing-async-route-components)
@@ -74,11 +76,14 @@ describe("Todo.tsx test", () => {
   });
 });
 ```
+While `fresh-testing-library` uses Preact Testing Library under the covers, be aware that when checking out Preact Testing Library examples, nearly all of them use `jest` and its `expect` verification function which is not available for `fresh-testing-library` tests. Instead you should use functions in the `assert` module of the Deno standard library.
+
 Run `fresh-testing-library` tests with this command line:
 ```bash
 deno test --allow-read --allow-env
 ```
 Both permission flags are required because the `jsdom` library is used internally in component tests. You might also need to add other permission flags depending on the code you are testing.
+
 ## Rendering components under test
 
 The first thing you need in a `fresh-testing-library` test is a call the library's `render` function. It is used to instantiate the component-under-test. Its first argument is required and is the JSX representation of a component including its props.
@@ -275,14 +280,20 @@ Here is an example of using the `title` attribute with the 'ByTitle' finder:
   });
 ```
 
-## Firing User-Generated Events
+## Testing User Interactions
 
-You can simulate user interactions in a Testing Library test using the `fireEvent` function. In the `fresh-testing-library`, `fireEvent` has function properties for triggering DOM events. They include:
+The `fresh-testing-library` contains two ways for simulating user interactions: `fireEvent` and `userEvent`.
+
+The `fireEvent` function is used for simple interactions with the UI, while `userEvent` simulated the subtile nature of UI interaction. For instance when a button is pressed, `fireEvent.click` would cover the DOM click event, but `userEvent.click` encompasses the focus, hover, keydown and keyup events in addition to the click event. In other words, `userEvent`
+
+### Using `fireEvent`
+
+The `fireEvent` object includes function properties for almost 90 DOM events They include:
 - `fireEvent.click` - to invoke an `onClick` handler
 - `fireEvent.change` - to invoke an `onChange` handler
 - `fireEvent.submit` - to invoke an `onSubmit` handler
 - `fireEvent.keyDown` - to invoke an `onKeyDown` handler
-There are almost 90 different event types that are available. See the `EventType` TypeScript union type in the TS docs for the details.
+See the `EventType` TypeScript union type in the TS docs for an enumeration of all events.
 
 Each of the event type function properties takes an argument that is the `HTMLElement` event target.
 
@@ -308,6 +319,37 @@ Here's an example of using a 'click' event to invoke a button click:
 ```
 In this case, the event target are two button elements.
 
+### Using `userEvent`
+
+The `userEvent` object has 16 function properties. They include `clear`, `click` `copy`, `cut`, `dblClick`, `deselectOptions`, `hover`, `keyboard`, `paste`, `pointer`, `selectOptions`, `tab`, `tripleClick`, `type`, `unhover` and `upload`. As you can surmise from the function names, these correspond to actual ways that the user interacts with the UI rather than strict DOM events.
+
+The arguments for these functions can be very different. Many take a DOM element like, `click`, `dblClick` and `hover`, while others have very different arguments.
+
+The `userEvent` object has a `setup` function that should be used to instantiate the object before it is used. Here's what that looks like:
+```ts
+const user = userEvent.setup();
+```
+The previous `fireEvent` example can be adapted to use `userEvent`. Here is what it looks like:
+```ts
+  it("should display count and increment/decrement it correctly", async () => {
+    const user = userEvent.setup();
+    const count = signal<number>(9);
+    const { queryByRole, queryByText } = render(<Counter count={count} />);
+    const plusOne = queryByRole("button", { name: "+1" });
+    assertExists(plusOne);
+    const minusOne = queryByRole("button", { name: "-1" });
+    assertExists(minusOne);
+
+    await user.click(plusOne);
+    assertFalse(queryByText("9"));
+    assertExists(queryByText("10"));
+
+    await user.click(minusOne);
+    assertExists(queryByText("9"));
+    assertFalse(queryByText("10"));
+  });
+```
+While `userEvent` seems like a more logical choice since it focuses on user interactions, `fireEvent` covers more event types so it needs to be used in certain circumstances. For instance, `fireEvent` has a `change` function for simulating an `onChange` event, while `userEvent` does not have a similar function.
 ## Testing component state management
 
 Preact signals provide a means to do local and global state management with signals. A previous [Craig's Deno Diary post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01) demonstrated how to use signals with Fresh.
