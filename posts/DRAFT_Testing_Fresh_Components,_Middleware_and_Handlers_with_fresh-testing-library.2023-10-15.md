@@ -284,7 +284,7 @@ Here is an example of using the `title` attribute with the 'ByTitle' finder:
 
 The `fresh-testing-library` contains two ways for simulating user interactions: `fireEvent` and `userEvent`.
 
-The `fireEvent` function is used for simple interactions with the UI, while `userEvent` simulated the subtile nature of UI interaction. For instance when a button is pressed, `fireEvent.click` would cover the DOM click event, but `userEvent.click` encompasses the focus, hover, keydown and keyup events in addition to the click event. In other words, `userEvent`
+The `fireEvent` function is used for simple interactions with the UI, while `userEvent` simulated the subtile nature of UI interaction. For instance when a button is pressed, `fireEvent.click` would cover the DOM click event, but `userEvent.click` encompasses the hover, keydown and keyup events in addition to the click event. In other words, `userEvent` more closely behaves the way users would ([see this article for more details](https://blog.mimacom.com/react-testing-library-fireevent-vs-userevent/)).
 
 ### Using `fireEvent`
 
@@ -293,7 +293,7 @@ The `fireEvent` object includes function properties for almost 90 DOM events The
 - `fireEvent.change` - to invoke an `onChange` handler
 - `fireEvent.submit` - to invoke an `onSubmit` handler
 - `fireEvent.keyDown` - to invoke an `onKeyDown` handler
-See the `EventType` TypeScript union type in the TS docs for an enumeration of all events.
+See the `EventType` TypeScript union type in the TS docs for an enumeration of all events (use Go to Definition in VSCode and other IDEs).
 
 Each of the event type function properties takes an argument that is the `HTMLElement` event target.
 
@@ -317,7 +317,7 @@ Here's an example of using a 'click' event to invoke a button click:
   });
 
 ```
-In this case, the event target are two button elements.
+In this case, the event target are two button elements, one for incrementing the count, the other for decrementing it.
 
 ### Using `userEvent`
 
@@ -349,6 +349,7 @@ The previous `fireEvent` example can be adapted to use `userEvent`. Here is what
     assertFalse(queryByText("10"));
   });
 ```
+
 While `userEvent` seems like a more logical choice since it focuses on user interactions, `fireEvent` covers more event types so it needs to be used in certain circumstances. For instance, `fireEvent` has a `change` function for simulating an `onChange` event, while `userEvent` does not have a similar function.
 ## Testing component state management
 
