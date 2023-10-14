@@ -457,9 +457,11 @@ They include:
 - `fireEvent.keyDown` - to invoke an `onKeyDown` handler
 
 See the `EventType` TypeScript union type in the TS docs for an enumeration of
-all events (use Go to Definition menu option in VSCode and other IDEs). | A
-selection of EventType options | |----------------------------------|
-|![EventType selection](/img/blog/fresh-testing-library/EventType-TS-types.png)|
+all events (use Go to Definition menu option in VSCode and other IDEs).
+
+|    A selection of EventType options |
+| :------------------------------------------: |
+| ![EventType selection](/img/blog/fresh-testing-library/EventType-TS-types.png) |
 
 Each of the event type function properties takes an argument that is the
 `HTMLElement` event target.
