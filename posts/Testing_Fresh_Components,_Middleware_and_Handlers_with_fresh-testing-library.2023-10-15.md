@@ -16,7 +16,7 @@
     - [Accessibility testing](#accessibility-testing)
   - [Testing User Interactions](#testing-user-interactions)
     - [Using `fireEvent`](#using-fireevent)
-    - [Using `userEvent`](#using-userEvent)
+    - [Using `userEvent`](#using-userevent)
   - [Testing component state management](#testing-component-state-management)
   - [Component testing troubleshooting tips](#component-testing-troubleshooting-tips)
 - [Middleware and Route Handler testing](#middleware-and-route-handler-testing)
