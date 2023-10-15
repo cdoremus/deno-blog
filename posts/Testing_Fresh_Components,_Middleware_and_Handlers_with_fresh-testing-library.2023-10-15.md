@@ -9,6 +9,7 @@
 - [Example Code](#example-code)
 - [Component Testing](#component-testing)
   - [Setting up a fresh-testing-library component test](#setting-up-a-fresh-testing-library-component-test)
+    - [Running tests](#running-tests)
   - [Rendering components under test](#rendering-components-under-test)
   - [Finding DOM Elements](#finding-dom-elements)
     - [Text Argument Options](#text-argument-options)
@@ -123,12 +124,33 @@ describe("Todo.tsx test", () => {
 });
 ```
 
-While `fresh-testing-library` uses Preact Testing Library under the covers, be
-aware that when checking out Preact Testing Library examples, nearly all of them
-use `jest` and its `expect` verification function which is not available for
-`fresh-testing-library` tests. Instead you should use functions in the `assert`
-module of the Deno standard library.
+You'll notice that I use the `assert` module of the Deno standard library for doing verifications. In version 0.10.0, `fresh-testing-library` the `expect` function was added to the `components.ts`. Like others, this function comes from Preact Testing Library.
 
+The `expect` function has a number of matcher functions attached to it that do the verification. They have a [Jasmine-like API](https://jasmine.github.io/api/edge/matchers.html). Some of them behave similarly to the Deno-native assert functions.
+
+Here's some examples of `expect` function matchers and their Deno-native equivalent (if there is one):
+
+| expect function matcher | Deno-native assert |
+| :--------: | :-----------: |
+| toBeInTheDocument() | assertExists()/assertEquals() |
+| toBe() | assertEquals() |
+| not.toBe() | assertNotEquals() |
+| toBeTruthy() | assert() |
+| toBeFalsy() | assertFalse() |
+| toBeEmptyDOMNode | [none] |
+| toBeRequired | [none] |
+
+The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). Those will not work with `fresh-testing-library` because they require a mock function that uses a custom loader (what Jest uses) not allowed in Deno. There is a `testing/mock.ts` module in the Deno standard library that can be used for mocking functions> It contains its own asserts (like `assertSpyCall`).
+
+Here's a simple example how to use `expect` with `fresh-testing-library`:
+```ts
+  import { expect } from "https://deno.land/x/fresh_testing_library/component.ts";
+  it("should find 'Hello World' text in document", () => {
+    const { getByText } = render(<div>Hello World</div>);
+    expect(getByText("Hello World")).toBeInTheDocument();
+  });
+```
+#### Running tests
 Run `fresh-testing-library` tests with this command line:
 
 ```bash
@@ -822,4 +844,4 @@ It provides a guide to the full component testing API.
 
 Special thanks goes to `fresh-testing-library` author Yuki Tanaka (@uki00a) for
 answering my many questions, promptly fixing bug reports that I submitted and
-reviewing a draft of this article.
+reviewing a draft of this article. I would also like to thank Kyle June (@kylejune) for his help with understanding the limitations of mocking with `expect`.
