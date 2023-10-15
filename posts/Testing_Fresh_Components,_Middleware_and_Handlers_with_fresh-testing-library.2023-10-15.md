@@ -1,3 +1,4 @@
+<!-- deno-fmt-ignore-file -->
 #### 2023-10-15
 
 # Testing Fresh Components, Middleware and Handlers with fresh-testing-library
@@ -59,17 +60,17 @@ to find elements by accessible attributes.
 The `fresh-testing-library` is registered as a Deno third-party library under
 the "https://deno.land/x/fresh_testing_library" URL.
 
-#### Example Code
+## Example Code
 
 This blog post will focus on how to use the `fresh-testing-library`. With that
 in mind, I have created example code in several places in addition to the code
 snippets shown below. They are:
 
-- The repo for this blog: https://github.com/cdoremus/deno-blog/tree/stage/tests
+* The repo for this blog: https://github.com/cdoremus/deno-blog/tree/main/tests
   (7 test files)
-- The repo for the blog post I did on using signals with Fresh:
+* The repo for the blog post I did on using signals with Fresh:
   https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 test files)
-- The component gallery in the Fresh repo:
+* The component gallery in the Fresh repo:
   https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery
   (12 test files)
 
@@ -141,7 +142,7 @@ depending on the code you are testing.
 
 ## Rendering components under test
 
-The first thing you need in a `fresh-testing-library` test is a call the
+The first thing you need in a `fresh-testing-library` test is a call to the
 library's `render` function. It is used to instantiate the component-under-test.
 Its first argument is required and is the JSX representation of a component
 including its props.
@@ -185,9 +186,9 @@ const text = screen.getByText("Hello World!");
 Discovering DOM elements in a `fresh-testing-library` test requires use of a
 finder. Finder function names have three parts:
 
-1. The finder mechanism: 'get', 'query' or 'find'
-2. Is the search for single or multiple nodes: 'By' or 'AllBy'
-3. How to find an element: 'AltText', 'DisplayValue', 'LabelText',
+* The finder mechanism: 'get', 'query' or 'find'
+* Is the search for single or multiple nodes: 'By' or 'AllBy'
+* How to find an element: 'AltText', 'DisplayValue', 'LabelText',
    'PlaceholderText', 'Role', 'TestId' or 'Title'
 
 Combined, the first two parts of a finder function name indicates what the
@@ -195,33 +196,35 @@ function returns. Here's how that works:
 
 | Finder function | Match Found returns | Match Not Found returns |
 | :-------------: | :-----------------: | :---------------------: |
-|     getBy*      |    matching node    |     throws an error     |
-|    getAllBy*    |    matching node    |     throws an error     |
-|    queryBy*     |    matching node    |          null           |
-|   queryAllBy*   |    matching node    |       empty array       |
-|     findBy*     |  resolved Promise   |    rejected Promise     |
-|   findAllBy*    |  resolved Promise   |    rejected Promise     |
+|     getBy*      |    matching element    |     throws an error     |
+|    getAllBy*    |    matching element array    |     throws an error     |
+|    queryBy*     |    matching element    |          null           |
+|   queryAllBy*   |    matching element array    |       empty array       |
+|     findBy*     |  resolved Promise  (element) |    rejected Promise     |
+|   findAllBy*    |  resolved Promise (element array)   |    rejected Promise     |
 
 Also note that if you are using the singular 'getBy', 'queryBy' or 'findBy'
 functions and more than one element is returned, then an error is thrown.
 Conversely, a getAllBy, queryAllBy and findAllBy function returns an array with
-a single element if only one matching element exists.
+a single element if only one matching item exists.
+
+I need to interject here that while the table -- and other documentation -- points out that an element (HTMLElement) gets returned, if the element has child elements (like an HTML form), then the whole node gets returned. However, most of the time you'll want to fashion the finder function to find a single element.
 
 The full name of a finder function specifies how an element is located. Here's
 what they are with a 'getBy' prefix (the same functions exist using 'queryBy' or
 'findBy'):
 
-- `getByAltText` - finds the element using the `alt` attribute
-- `getByDisplayValue` - finds an `input`, `textarea` or `select` element using
+* `getByAltText` - finds the element using the `alt` attribute
+* `getByDisplayValue` - finds an `input`, `textarea` or `select` element using
   the `value` attribute.
-- `getByLabelText` - finds the element using the `label` attribute. Obviously,
+* `getByLabelText` - finds the element using the `label` attribute. Obviously,
   this is mostly used to locate form elements
-- `getByPlaceholderText` - finds the element using the `placeholder` attribute
-  found in a `text` or `textarea` element.
-- `getByRole` - finds the element by its `role` attribute or implicit role
+* `getByPlaceholderText` - finds the element using the `placeholder` attribute
+  found in a `text` or `textarea` form element.
+* `getByRole` - finds the element by its `role` attribute or implicit role
   ([see below](#using-byrole-finder-functions)).
-- `getByTestId` - finds an element using the `data-testid` attribute
-- `getByTitle` - finds an element using the enclosed `title`element. This is
+* `getByTestId` - finds an element using the `data-testid` attribute
+* `getByTitle` - finds an element using the enclosed `title`element. This is
   best used with an svg graphic that contains a `title` child element.
 
 All of the finder functions have the same first two arguments. The first one is
@@ -242,9 +245,9 @@ Most finder functions take a
 [`TextMatch`](https://testing-library.com/docs/queries/about/#textmatch) which
 can be:
 
-- a string
-- a regex
-- a function
+* a string
+* a regex
+* a function
 
 The `TextMatch` function has optional string and `HTMLElement` arguments and
 returns a boolean (`true` for a match; `false` for no match). Here's an example
@@ -277,9 +280,9 @@ There is a
 [section in the Testing Library docs that explores these options in detail](https://testing-library.com/docs/queries/about/#precision),
 but here they are in a nutshell:
 
-- `exact` (`true` by default) determines whether the match is case-sensitive or
+* `exact` - (`true` by default) determines whether the match is case-sensitive or
   not.
-- `normalization` Whitespace is collapsed when doing a text match. This property
+* `normalization` - By default whitespace is collapsed when doing a text match. This property
   can be set to override that behavior.
 
 ## Uses of get*, query* and find* Functions
@@ -316,7 +319,7 @@ it("should not display list of todos...", () => {
 });
 ```
 
-- **find*** - use when an async operation or rendering delay would prevent an
+* **find*** - use when an async operation or rendering delay would prevent an
   element or elements from appearing in the UI. Fetching remote data is an
   example. Another example is when an action causes a rerender. Here's how
   `findBy` is used:
@@ -327,6 +330,7 @@ it("Show About link", async () => {
   // change the location, triggering a menu rerender
   globalThis.window.location = { href: "/about" };
   const { findByText } = render(<MenuLink />);
+  // findByText returns a Promise
   const page = await findByText("Home");
   const text = page.textContent;
   assertExists(text);
@@ -456,14 +460,10 @@ They include:
 - `fireEvent.submit` - to invoke an `onSubmit` handler
 - `fireEvent.keyDown` - to invoke an `onKeyDown` handler
 
-See the `EventType` TypeScript union type in the TS docs for an enumeration of
-all events (use Go to Definition menu option in VSCode and other IDEs).
+See the [`EventType` union type in the TypeScript docs](https://github.com/testing-library/dom-testing-library/blob/main/types/events.d.ts) for an enumeration of
+all events.
 
-|    A selection of EventType options |
-| :------------------------------------------: |
-| ![EventType selection](/img/blog/fresh-testing-library/EventType-TS-types.png) |
-
-Each of the event type function properties takes an argument that is the
+Each of the `fireEvent` function properties takes an argument that is the
 `HTMLElement` event target.
 
 Here's an example of using a 'click' event to invoke a button click:
@@ -492,7 +492,7 @@ count, the other for decrementing it.
 
 ### Using `userEvent`
 
-The `userEvent` object has 16 function properties. They include `clear`, `click`
+The `userEvent` object has 16 function properties. They include `clear`, `click`,
 `copy`, `cut`, `dblClick`, `deselectOptions`, `hover`, `keyboard`, `paste`,
 `pointer`, `selectOptions`, `tab`, `tripleClick`, `type`, `unhover` and
 `upload`. As you can surmise from the function names, these correspond to actual
@@ -545,7 +545,7 @@ signals. A previous
 [Craig's Deno Diary post](https://deno-blog-stage.deno.dev/Using_Preact_Signals_with_Fresh.2022-11-01)
 demonstrated how to use signals with Fresh.
 
-#### Testing local state
+### Testing local state
 
 Compared to `useState`, the `signal` function only returns a single value and
 not an array with a setter function. Updating the signal involves assigning the
@@ -568,15 +568,15 @@ fireEvent.click(button);
 assertExists(queryByText("Count: 1"));
 ```
 
-#### Testing global state
+### Testing global state
 
 Global state management with Preact signals requires a module that holds that
 state and using the Preact context to pass the state to child components. I will
 not go over how this is coded in detail as you can refer the the
 [Craig's Deno Diary post](https://deno-blog.com/Using_Preact_Signals_with_Fresh.2022-11-01)
-on how its done.
+on how it's done.
 
-The code used to illustrate this state management testing shown here is taken
+The code used to illustrate the state management testing shown here is taken
 from the
 [signals blog post's repo](https://github.com/cdoremus/fresh-todo-signals).
 
@@ -648,13 +648,13 @@ used in this section.
 
 ## Component testing troubleshooting tips
 
-- Testing `IS_BROWSER` - This constant is used a lot in Fresh app code, but
+* Manipulating `IS_BROWSER` - This constant is used a lot in Fresh app code, but
   testing it can be problematic. In order to set `IS_BROWSER` to false, you need
   to set the `document` object to `undefined`. Doing that will cause a
   `fresh-testing-library` test to fail because the `jsdom` library cannot
   function without a valid `document` object. Therefore, testing code that uses
-  `IS_BROWSER` cannot be done with `fresh-testing library.`
-- There are `debug` functions for printing out the DOM returned from calling
+  `IS_BROWSER` cannot be done with `fresh-testing library`.
+* `debug` functions - used for printing out the DOM returned from calling
   `render` or any of the finder functions. The former prints out the complete
   DOM that was rendered and the latter prints out the returned DOM from a finder
   function call. Here's how to use them:
@@ -678,7 +678,7 @@ code and a test would look like for the
 [middleware in this repo](https://github.com/cdoremus/deno-blog/blob/main/routes/_middleware.ts);
 
 ```ts
-// _middleware.ts
+// _middleware.ts in this blog's repo
 import { MiddlewareHandlerContext } from "$fresh/server.ts";
 
 export const handler = setCacheControlHeaders();
@@ -752,7 +752,7 @@ function.
 [See the Fresh docs for more details on using this function](https://fresh.deno.dev/docs/examples/writing-tests).
 
 [Grouping routes](https://fresh.deno.dev/docs/concepts/routing#route-groups) was
-added in Fresh v1.4, Version 0.8.0, of the `fresh-testing-library` added support
+added in Fresh v1.4. Version 0.8.0, of the `fresh-testing-library` added support
 for testing route groups. `fresh-testing-library` route handler tests
 transparently works if routes are grouped.
 
@@ -777,7 +777,7 @@ function to simplify the creation of async route components.
 
 A `fresh-testing-library` test of a async route component uses the
 `createRouteContext` function in the `server` module. Here's how it is used in
-as
+a
 [`fresh-testing-library`](https://github.com/uki00a/fresh-testing-library#testing-async-route-components)
 example:
 
@@ -817,7 +817,7 @@ to guide you through the the core `fresh-testing-library` concepts introduced
 above. There are over two dozen test files for you to peruse in those three
 repos.
 
-That are also examples in the
+There are also examples in the
 [`fresh-testing-library` repo](https://github.com/uki00a/fresh-testing-library).
 Check out the `components.test.tsx`, `server.test.tsx` and `routes.test.tsx`
 files used to test code in the `demo` folder.
