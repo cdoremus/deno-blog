@@ -124,7 +124,7 @@ describe("Todo.tsx test", () => {
 });
 ```
 
-You'll notice that I use the `assert` module of the Deno standard library for doing verifications. In version 0.10.0, `fresh-testing-library` the `expect` function was added to the `components.ts`. Like others, this function comes from Preact Testing Library.
+You'll notice that I use the `assert` module of the Deno standard library for doing verifications. In version 0.10.0 of the `fresh-testing-library` the `expect` function was added to `components.ts`. Like others, this function comes from Preact Testing Library.
 
 The `expect` function has a number of matcher functions attached to it that do the verification. They have a [Jasmine-like API](https://jasmine.github.io/api/edge/matchers.html). Some of them behave similarly to the Deno-native assert functions.
 
@@ -140,7 +140,7 @@ Here's some examples of `expect` function matchers and their Deno-native equival
 | toBeEmptyDOMNode | [none] |
 | toBeRequired | [none] |
 
-The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). Those will not work with `fresh-testing-library` because they require a mock function that uses a custom loader (what Jest uses) not allowed in Deno. There is a `testing/mock.ts` module in the Deno standard library that can be used for mocking functions> It contains its own asserts (like `assertSpyCall`).
+The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). Those will not work with `fresh-testing-library` because they require a mock function that uses a custom loader (what Jest uses) not allowed in Deno. There is a `testing/mock.ts` module in the Deno standard library that can be used for mocking functions. It contains its own asserts (like `assertSpyCall`).
 
 Here's a simple example how to use `expect` with `fresh-testing-library`:
 ```ts
