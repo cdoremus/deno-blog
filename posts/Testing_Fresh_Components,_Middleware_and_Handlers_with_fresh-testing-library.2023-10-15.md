@@ -9,6 +9,7 @@
 - [Example Code](#example-code)
 - [Component Testing](#component-testing)
   - [Setting up a fresh-testing-library component test](#setting-up-a-fresh-testing-library-component-test)
+    - [Using assertions for test verification](#using-assertions-for-test-verification)
     - [Running tests](#running-tests)
   - [Rendering components under test](#rendering-components-under-test)
   - [Finding DOM Elements](#finding-dom-elements)
@@ -123,12 +124,13 @@ describe("Todo.tsx test", () => {
   });
 });
 ```
+### Using assertions for test verification
 
-You'll notice that I use the `assert` module of the Deno standard library for doing verifications. In version 0.10.0 of the `fresh-testing-library` the `expect` function was added to `components.ts`. Like others, this function comes from Preact Testing Library.
+Functions in the [`assert`](https://deno.land/std/assert) module of the Deno standard library works for `fresh-testing-library` verifications. Anyone who has done any Deno testing will be familiar with them.  However, in version 0.10.0 of the `fresh-testing-library` the `expect` function was added to `components.ts`. Like others, this function comes from Preact Testing Library.
 
 The `expect` function has a number of matcher functions attached to it that do the verification. They have a [Jasmine-like API](https://jasmine.github.io/api/edge/matchers.html). Some of them behave similarly to the Deno-native assert functions.
 
-Here's some examples of `expect` function matchers and their Deno-native equivalent (if there is one):
+Here are some `expect` function matchers and their Deno-native equivalent (if there is one):
 
 | expect function matcher | Deno-native assert |
 | :--------: | :-----------: |
@@ -150,7 +152,7 @@ Here's a simple example how to use `expect` with `fresh-testing-library`:
     expect(getByText("Hello World")).toBeInTheDocument();
   });
 ```
-#### Running tests
+### Running tests
 Run `fresh-testing-library` tests with this command line:
 
 ```bash
