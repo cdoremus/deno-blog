@@ -67,7 +67,7 @@ This blog post will focus on how to use the `fresh-testing-library`. With that
 in mind, I have created example code in several repos. They are:
 
 * The repo for this blog: https://github.com/cdoremus/deno-blog/tree/main/tests
-  (7 test files)
+  (8 test files)
 * The repo for the blog post I did on using signals with Fresh:
   https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 test files)
 * The component gallery in the Fresh repo:
