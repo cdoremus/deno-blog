@@ -144,7 +144,7 @@ Here are some `expect` function matchers and their Deno-native equivalent (if th
 
 Here's a simple example how to use `expect` with `fresh-testing-library`:
 ```ts
-  import { expect } from "https://deno.land/x/fresh_testing_library/component.ts";
+  import { expect } from "https://deno.land/x/fresh_testing_library/expect.ts";
   it("should find 'Hello World' text in document", () => {
     const { queryByText } = render(<div>Hello World</div>);
     expect(queryByText("Hello World")).toBeInTheDocument();
@@ -152,15 +152,16 @@ Here's a simple example how to use `expect` with `fresh-testing-library`:
     expect(queryByText("foobar")).not.toBeInTheDocument();
   });
 ```
+Note that you can use the `not` matcher to negate a matcher that it calls.
 
-The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). To get them to work, you need to mock the functions using the `jest-mock` library. You can also use `jest-mock` to mock return values. Here's a simple example how that works:
+The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). To get them to work, you need to mock the functions. The `jest-mock` library was incorporated into the `fresh-testing-library` `expect.ts` module in v0.11.0 as the `fn` function. You can also use `fn` to mock return values. Here's a simple example how that works:
 
 ```ts
-import { fn } from "https://esm.sh/jest-mock@29.7.0?pin=v133"
-  it("should be able to use jest-mock lib", () => {
+  import { expect, fn } from "https://deno.land/x/fresh_testing_library/expect.ts";
+  it("should be able to use mock functions", () => {
     const add = (num1: number, num2: number): number => num1 + num2;
     expect(add(2,6)).toBe(8);
-    // mock add and return value
+    // mock add function and return value
     const mockAdd = fn(add).mockReturnValue(5);
     const sum = mockAdd(2, 2);
     expect(sum).toBe(5);
@@ -170,7 +171,7 @@ import { fn } from "https://esm.sh/jest-mock@29.7.0?pin=v133"
     expect(mockAdd).toBeCalledWith(3,5)
   });
 ```
-Note that you can use the `not` matcher to negate a matcher that it calls.
+There are also other functions from the `jest-mock` library incorporated into the `expect.ts` module. They include `mocked`, `replaceProperty`, and `spyOn`.
 
 ### Running tests
 Run `fresh-testing-library` tests with this command line:
