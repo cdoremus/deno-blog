@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "std/assert/mod.ts";
-import { cleanup, render, setup } from "$fresh-testing-library";
+import { cleanup, render, setup } from "$fresh-testing-library/components.ts";
 import { afterEach, beforeAll, describe, it } from "std/testing/bdd.ts";
 import PostList from "../../components/PostList.tsx"
 

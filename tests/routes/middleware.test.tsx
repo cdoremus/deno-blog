@@ -1,5 +1,5 @@
 import { assertEquals } from "std/assert/assert_equals.ts";
-import { createMiddlewareHandlerContext } from "$fresh-testing-library";
+import { createMiddlewareHandlerContext } from "$fresh-testing-library/server.ts";
 import { setCacheControlHeaders } from "../../routes/_middleware.ts";
 import manifest from "../../fresh.gen.ts";
 

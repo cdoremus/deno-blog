@@ -1,4 +1,6 @@
-import { cleanup, render, setup, expect } from "$fresh-testing-library";
+import { cleanup, render, setup } from "$fresh-testing-library/components.ts";
+import { expect } from "$fresh-testing-library/expect.ts";
+
 import { afterEach, beforeAll, describe, it } from "std/testing/bdd.ts";
 import { Button } from "../../components/Button.tsx";
 import { assertEquals } from "std/assert/mod.ts";

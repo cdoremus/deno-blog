@@ -1,4 +1,4 @@
-import { createHandlerContext } from "$fresh-testing-library";
+import { createHandlerContext } from "$fresh-testing-library/server.ts";
 import { handler} from "../../routes/about.tsx";
 import manifest from "../../fresh.gen.ts";
 import { assert, assertEquals, fail } from "std/assert/mod.ts";

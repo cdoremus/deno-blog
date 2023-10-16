@@ -1,7 +1,5 @@
-import { createHandlerContext } from "$fresh-testing-library";
-
+import { createHandlerContext } from "$fresh-testing-library/server.ts";
 import { assert, assertEquals, fail } from "std/assert/mod.ts";
-// import { describe, it } from "std/testing/bdd.ts";
 import { handler } from "../../routes/[name].tsx";
 
 import manifest from "../../fresh.gen.ts";
@@ -11,7 +9,6 @@ Deno.test("[name].tsx tests...", async (t) => {
 
   await t.step("should pass with status=200...", async () => {
     const req = new Request("https://localhost:8000/posts/How_I_made_this_blog.2022-08-07");
-    // const req = new Request("https://localhost:8000/posts/foobar");
     // @ts-ignore ignores "type ... is not assignable to type Manifest" error
     const ctx = createHandlerContext(req, { manifest });
     ctx.params['name'] = "How_I_made_this_blog.2022-08-07";
