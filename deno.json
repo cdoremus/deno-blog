@@ -17,8 +17,8 @@
     "std/": "https://deno.land/std@0.202.0/",
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.1",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.0",
-    "$fresh-testing-library": "https://deno.land/x/fresh_testing_library@0.10.1/mod.ts",
-    "$fresh-testing-library/": "https://deno.land/x/fresh_testing_library@0.10.1/"
+    "$fresh-testing-library": "https://deno.land/x/fresh_testing_library@0.11.0/mod.ts",
+    "$fresh-testing-library/": "https://deno.land/x/fresh_testing_library@0.11.0/"
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*"]

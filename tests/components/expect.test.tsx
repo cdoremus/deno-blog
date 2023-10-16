@@ -1,6 +1,6 @@
-import { cleanup, expect, render, setup } from "$fresh-testing-library";
+import { cleanup, render, setup } from "$fresh-testing-library/components.ts";
+import { expect, fn } from "$fresh-testing-library/expect.ts";
 import { afterEach, beforeAll, describe, it } from "std/testing/bdd.ts";
-import { fn } from "https://esm.sh/jest-mock@29.7.0?pin=v133"
 
 describe("Experiments using the fresh-testing-library expect function...",  () => {
   beforeAll(setup);
