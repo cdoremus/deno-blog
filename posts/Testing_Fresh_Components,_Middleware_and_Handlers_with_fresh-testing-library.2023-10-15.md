@@ -545,7 +545,7 @@ The previous `fireEvent` example can be adapted to use `userEvent`. Here is what
 it looks like:
 
 ```ts
-// Be sure to import fireEvent from FTL component.ts
+// Be sure to import userEvent from FTL component.ts
 it("should display count and increment/decrement it correctly", async () => {
   const user = userEvent.setup();
   const count = signal<number>(9);
