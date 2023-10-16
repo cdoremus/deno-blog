@@ -37,7 +37,7 @@ describe("Experiments using the fresh-testing-library expect function...",  () =
     expect(queryByText("foobar")).not.toBeInTheDocument();
   });
 
-  it("should be able to use jest-mock lib", () => {
+  it("should be able to use mock functions", () => {
     const add = (num1: number, num2: number): number => num1 + num2;
     expect(add(2,6)).toBe(8);
     // mock add and return value
