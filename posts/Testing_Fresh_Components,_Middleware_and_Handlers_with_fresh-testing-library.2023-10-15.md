@@ -154,7 +154,7 @@ Here's a simple example how to use `expect` with `fresh-testing-library`:
 ```
 Note that you can use the `not` matcher to negate a matcher that it calls.
 
-The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). To get them to work, you need to mock the functions. The `jest-mock` library was incorporated into the `fresh-testing-library` `expect.ts` module in v0.11.0 as the `fn` function. You can also use `fn` to mock return values. Here's a simple example how that works:
+The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). To get them to work, you need to mock the functions. The `jest-mock` library's `fn` function was incorporated into the `expect.ts` module in v0.11.0. You can also use `fn` to mock return values. Here's a simple example how that works:
 
 ```ts
   import { expect, fn } from "https://deno.land/x/fresh_testing_library/expect.ts";
