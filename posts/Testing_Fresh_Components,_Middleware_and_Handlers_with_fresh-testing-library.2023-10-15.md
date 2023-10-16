@@ -142,16 +142,36 @@ Here are some `expect` function matchers and their Deno-native equivalent (if th
 | toBeEmptyDOMNode | [none] |
 | toBeRequired | [none] |
 
-The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). Those will not work with `fresh-testing-library` because they require a mock function that uses a custom loader (what Jest uses) not allowed in Deno. There is a `testing/mock.ts` module in the Deno standard library that can be used for mocking functions. It contains its own asserts (like `assertSpyCall`).
-
 Here's a simple example how to use `expect` with `fresh-testing-library`:
 ```ts
   import { expect } from "https://deno.land/x/fresh_testing_library/component.ts";
   it("should find 'Hello World' text in document", () => {
-    const { getByText } = render(<div>Hello World</div>);
-    expect(getByText("Hello World")).toBeInTheDocument();
+    const { queryByText } = render(<div>Hello World</div>);
+    expect(queryByText("Hello World")).toBeInTheDocument();
+    // using getByText will error out before matchers are called
+    expect(queryByText("foobar")).not.toBeInTheDocument();
   });
 ```
+
+The `expect` function contains a number of matcher functions that check on function calls (like `expect(foo).toBeCalled()`). To get them to work, you need to mock the functions using the `jest-mock` library. You can also use `jest-mock` to mock return values. Here's a simple example how that works:
+
+```ts
+import { fn } from "https://esm.sh/jest-mock@29.7.0?pin=v133"
+  it("should be able to use jest-mock lib", () => {
+    const add = (num1: number, num2: number): number => num1 + num2;
+    expect(add(2,6)).toBe(8);
+    // mock add and return value
+    const mockAdd = fn(add).mockReturnValue(5);
+    const sum = mockAdd(2, 2);
+    expect(sum).toBe(5);
+    expect(mockAdd).toBeCalled();
+    expect(mockAdd).not.toBeCalledTimes(2);
+    expect(mockAdd(3,5)).toBe(5);
+    expect(mockAdd).toBeCalledWith(3,5)
+  });
+```
+Note that you can use the `not` matcher to negate a matcher that it calls.
+
 ### Running tests
 Run `fresh-testing-library` tests with this command line:
 
