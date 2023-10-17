@@ -71,9 +71,9 @@ in mind, I have created example code in several repos. They are:
   (8 test files)
 * The repo for the blog post I did on using signals with Fresh:
   https://github.com/cdoremus/fresh-todo-signals/tree/main/tests (6 test files)
-* The component gallery in the Fresh repo:
-  https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/components/gallery
-  (12 test files)
+* The web site components, middleware & route handling in the Fresh repo:
+  https://github.com/cdoremus/fresh/tree/fresh-testing-lib/tests/www/
+  (15 test files)
 
 # Component testing
 
@@ -161,16 +161,20 @@ The `expect` function contains a number of matcher functions that check on funct
   it("should be able to use mock functions", () => {
     const add = (num1: number, num2: number): number => num1 + num2;
     expect(add(2,6)).toBe(8);
-    // mock add function and return value
-    const mockAdd = fn(add).mockReturnValue(5);
+    // create mock impl of add
+    const mockAdd = fn(add).mockImplementation((num1, num2) => num1 * num2);
     const sum = mockAdd(2, 2);
-    expect(sum).toBe(5);
+    expect(sum).toBe(4);
     expect(mockAdd).toBeCalled();
     expect(mockAdd).not.toBeCalledTimes(2);
-    expect(mockAdd(3,5)).toBe(5);
-    expect(mockAdd).toBeCalledWith(3,5)
+    expect(mockAdd(3, 5)).toBe(15);
+    expect(mockAdd).toBeCalledWith(3, 5);
   });
 ```
+If you need to mock a function that is a dependency of the component-under-test, send the mock function into the component as a prop. The real (non-mock) dependency would be sent in from the parent component so the component will work correctly at runtime.
+
+The [`expect.test.tsx`](https://github.com/cdoremus/deno-blog/blob/main/tests/components/expect.test.tsx) file in this blog's repo has some examples of how to use `expect` and `fn`.
+
 There are also other functions from the `jest-mock` library incorporated into the `expect.ts` module. They include `mocked`, `replaceProperty`, and `spyOn`.
 
 ### Running tests
