@@ -93,10 +93,17 @@ export default function App({ Component }: AppProps) {
                 />
               </a>
               <a href="https://hachyderm.io/@cdoremus">
-                <img class="w-7 h-7 pl-2 inline"
+                <img
+                  class="w-7 h-7 pl-2 inline"
                   alt="Mastodon logo"
                   src="/img/mastodon_logo.svg"
                 />
+              </a>
+              <a
+                href="https://github.com/sponsors/cdoremus"
+                class="w-10 h-7 pl-2 text-sm font-semibold inline"
+              >
+                Sponsor Me
               </a>
             </div>
             <div class="flex flex-row text-sm text-right">
