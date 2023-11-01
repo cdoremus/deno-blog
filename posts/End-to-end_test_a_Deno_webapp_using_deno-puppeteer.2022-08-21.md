@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 ### 2022-08-21
+
+##### _7 min read_
 
 # End-to-end test a Deno webapp using deno-puppeteer
 

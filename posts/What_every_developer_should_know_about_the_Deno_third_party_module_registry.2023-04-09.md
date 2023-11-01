@@ -1,4 +1,7 @@
-## 2023-04-09
+<!-- deno-fmt-ignore-file -->
+#### 2023-04-09
+
+##### _10 min read_
 
 # What every developer should know about the Deno third party module registry
 

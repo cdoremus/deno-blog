@@ -1,3 +1,4 @@
+<!-- deno-fmt-ignore-file -->
 #### 2022-09-03
 
 # Displaying markdown in a Deno webapp

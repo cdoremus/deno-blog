@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 ### 2023-06-30
+
+##### _36 min read_
 
 # A Comprehensive Guide to Deno KV
 

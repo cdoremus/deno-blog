@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 #### 2022-09-20
+
+##### _7 min read_
 
 # Processing CSV files with Deno
 

@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 #### 2022-12-04
+
+##### _11 min read_
 
 # Building Fullstack React Apps with Ultra
 

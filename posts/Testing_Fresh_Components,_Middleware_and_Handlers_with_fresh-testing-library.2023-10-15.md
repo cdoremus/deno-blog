@@ -1,6 +1,8 @@
 <!-- deno-fmt-ignore-file -->
 #### 2023-10-15
 
+##### _22 min read_
+
 # Testing Fresh Components, Middleware and Handlers with fresh-testing-library
 
 ## Table of contents

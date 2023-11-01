@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 #### 2020-08-07
+
+##### _2 min read_
 
 # How I made this blog
 

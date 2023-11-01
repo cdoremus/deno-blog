@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 #### 2022-11-01
+
+##### _9 min read_
 
 # Using Preact Signals with Fresh
 

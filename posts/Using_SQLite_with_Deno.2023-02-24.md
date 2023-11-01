@@ -1,4 +1,7 @@
+<!-- deno-fmt-ignore-file -->
 #### 2023-02-24
+
+##### _9 min read_
 
 # Using the database SQLite with Deno
 
