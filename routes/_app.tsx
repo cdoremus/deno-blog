@@ -40,6 +40,17 @@ export default function App({ Component }: AppProps) {
           name="keywords"
           content="Deno, blog, JavaScript, TypeScript"
         />
+        <meta property="og:title" content="Craig's Deno Diary" />
+        <meta
+          property="og:description"
+          content="Craig's Deno Diary is a blog that covers the JavaScript and TypeScript runtime Deno and focuses on how to write Deno programs and use Deno libraries."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://deno-blog.com" />
+        <meta
+          property="og:image"
+          content="https://deno-blog.com/OG-image.png"
+        />
         <link rel="me" href="https://fosstodon.org/@deno_diary" />
       </Head>
       <body className="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
