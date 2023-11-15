@@ -49,7 +49,7 @@ export default function App({ Component }: AppProps) {
         <meta property="og:url" content="https://deno-blog.com" />
         <meta
           property="og:image"
-          content="https://deno-blog.com/OG-image.png"
+          content="https://deno-blog.com/OG-image.webp"
         />
         <link rel="me" href="https://fosstodon.org/@deno_diary" />
       </Head>
