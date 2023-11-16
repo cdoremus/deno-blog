@@ -43,7 +43,7 @@ export default function App({ Component }: AppProps) {
         <meta property="og:title" content="Craig's Deno Diary" />
         <meta
           property="og:description"
-          content="Craig's Deno Diary is a blog that covers the JavaScript and TypeScript runtime Deno and focuses on how to write Deno programs and use Deno libraries."
+          content="Craig's Deno Diary is a blog covering the JavaScript and TypeScript runtime Deno."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://deno-blog.com" />
