@@ -7,6 +7,8 @@ export default function App({ Component }: AppProps) {
   return (
     <html data-custom="data">
       <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Craig's Deno Diary</title>
         <link rel="stylesheet" href={asset("style.css")} />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
