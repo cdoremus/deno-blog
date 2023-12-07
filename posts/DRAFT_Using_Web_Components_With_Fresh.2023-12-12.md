@@ -1,7 +1,7 @@
 <!-- deno-fmt-ignore-file -->
 #### 2023-12-12
 
-# Using Web Components with Fresh
+# Using Web Components with Deno and Fresh
 
 Deno prides itself with its support of standards. It has embraced ECMAScript imports as the way to express dependencies, supports most standard web APIs and has championed server-side JavaScript standards through it's leadership in [WinterCG](https://wintercg.org/).
 
@@ -9,28 +9,13 @@ Web Components are a web standard way of creating reusable custom HTML elements.
 
 This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh.
 
-<code><pre>
-class HelloWC extends HTMLElement {
-  message;
-  constructor() {
-    super();
-    this.message = this.getAttribute("message") ?? "World";
-  }
-  connectedCallback() {
-    this.innerHTML =
-      ``<div style="border: 2px solid black; border-radius: 10px; margin: 10px 5px; padding: 5px 10px;">
-        <h4>Hello ${this.message}!!</h4>
-      </div>``;
-  }
-}
-customElements.define("hello-wc", HelloWC);
-export default HelloWC;
-
-</pre></code>
-
 ## What is a Web Component
-The Web Component standard is a means for creating custom HTML elements that includes encapsulation and templates. The encapsulation comes from the shadow DOM, a separate DOM tree under a web component while templates use the built-in HTML `<template>` tag to display web component content.
+The Web Component standard is a means for creating custom HTML elements that encapsulates CSS. The encapsulation comes from the shadow DOM, a separate DOM tree under a web component. A web component is created using a JavaScript/TypeScript class that extends `HTMLElement`.
 
+
+Web components also often use the built-in HTML `<template>` tag to hold content displayed by the component.
+
+### Serving a web component
 A web page containing web components can be served by any web server. I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this. You can also use `Deno.serve` to stream an HTML file containing web components [as is shown in this Deno Deploy Playground](https://dash.deno.com/login?redirect=/playground/shadowroot-streams)  (created by [Nathan Knowler](https://sunny.garden/@knowler/111466434753583873)).
 
 However, I am going to concentrate on how to use Web Components in a [Deno Fresh](https://fresh.deno.dev) app to allow you to focus on building and using web components without having to deal with server or routing issues. When used with Fresh, they will function like a island component.
