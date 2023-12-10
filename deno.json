@@ -18,7 +18,8 @@
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.1",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.0",
     "$fresh-testing-library": "https://deno.land/x/fresh_testing_library@0.11.0/mod.ts",
-    "$fresh-testing-library/": "https://deno.land/x/fresh_testing_library@0.11.0/"
+    "$fresh-testing-library/": "https://deno.land/x/fresh_testing_library@0.11.0/",
+    "feed": "https://esm.sh/feed@4.2.2"
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*"]

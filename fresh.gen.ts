@@ -8,7 +8,8 @@ import * as $2 from "./routes/_app.tsx";
 import * as $3 from "./routes/_middleware.ts";
 import * as $4 from "./routes/about.tsx";
 import * as $5 from "./routes/credits.tsx";
-import * as $6 from "./routes/index.tsx";
+import * as $6 from "./routes/feed.ts";
+import * as $7 from "./routes/index.tsx";
 import * as $$0 from "./islands/Counter.tsx";
 import * as $$1 from "./islands/MenuLink.tsx";
 
@@ -20,7 +21,8 @@ const manifest = {
     "./routes/_middleware.ts": $3,
     "./routes/about.tsx": $4,
     "./routes/credits.tsx": $5,
-    "./routes/index.tsx": $6,
+    "./routes/feed.ts": $6,
+    "./routes/index.tsx": $7,
   },
   islands: {
     "./islands/Counter.tsx": $$0,
