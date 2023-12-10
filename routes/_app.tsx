@@ -54,6 +54,24 @@ export default function App({ Component }: AppProps) {
           content="https://deno-blog.com/OG-image.webp"
         />
         <link rel="me" href="https://fosstodon.org/@deno_diary" />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="RSS feed for Craig's Deno Diary"
+          href="/feed"
+        />
+        <link
+          rel="alternate"
+          type="application/atom+xml"
+          title="Atom feed for Craig's Deno Diary"
+          href="/feed?format=atom"
+        />
+        <link
+          rel="alternate"
+          type="application/json"
+          title="JSON feed for Craig's Deno Diary"
+          href="/feed?format=json"
+        />
       </Head>
       <body className="m-x-5 md:m-x-50 m-y-0 pt-4 mx-auto max-w-screen-lg bg-blue-100">
         <header
