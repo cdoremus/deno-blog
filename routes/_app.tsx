@@ -116,11 +116,11 @@ export default function App({ Component }: AppProps) {
               <a href="/credits">Credits</a>
             </div>
             <div>
-              <a href="https://twitter.com/deno_diary">
+              <a href="/feed">
                 <img
-                  class="w-7 h-7 pr-2 inline"
-                  alt="Twitter logo"
-                  src="/img/twitter_logo.svg"
+                  class="w-7 h-5 inline"
+                  alt="RSS feed"
+                  src="/img/rss.png"
                 />
               </a>
               <a href="https://hachyderm.io/@cdoremus">
