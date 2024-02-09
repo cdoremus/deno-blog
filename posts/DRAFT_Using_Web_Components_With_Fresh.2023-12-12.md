@@ -54,7 +54,7 @@ Finally the web component can be placed on the page with a value of its `message
 ```html
 <hello-wc message="From a Web Component"></hello-wc>
 ```
-There are few lifecycle methods that a
+The custom element lifecycle methods include:
 
 | Function |Behavior|
 | ------- | ---------- |
@@ -71,17 +71,41 @@ The Web Component standard includes a concept called the Shadow DOM which isolat
 
 Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` buttons inside of your Web Component will not be part of the node collection result set.
 
-
 The shadow DOM has two modes:
-- open - where
+- open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
+- closed - where the Web Component's CSS, DOM and external JavaScript is isolated.
+
+You use the `attacheShadow` method to enable shadow DOM in a custom element. That method returns a handle (`shadowRoot` in the example) that can be used to add content to the shadow DOM with the `append` method:
+
+```javascript
+class MyShadowDomWC extends HTMLElement {
+  connectedCallback() {
+    const shadowRoot = this.attachShadow({ mode: "open" });
+    const h3 = document.createElement("h3");
+    h3.innerHTML = "Hello World from the Shadow DOM";
+    shadowRoot.append(h3);
+  }
+}
+customElements.define("my-shadow-dom", MyShadowDomWC);
+```
+If you look at the Elements tab in the Developer Tools, you'll see the shadow DOM denoted:
+
+| Shadow DOM visualized in the Chrome Developer Tools |
+|------|
+| ![Shadow DOM in Dev Tools](/img/blog/web-components/ShadowDom_DevelopersToolsView.png) |
+
+The Shadow DOM is bounded by a `#shadow-root (open)` delimiter. The [Shadow Root ](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
+
+To set the Shadow DOM mode to closed, just change the mode from "open" to "closed" in the `attacheShadow` call:
+```javascript
+    const shadowRoot = this.attachShadow({ mode: "closed" });
+```
+When this is done, the Developer Tools shadow root notation shows `closed`.
 
 
-To enable shadow DOM in your custom element, you need to
+### Styling the Shadow DOM
 
 
-
-
-## Styling the Shadow DOM
 
 ### Style Inheritance
 
