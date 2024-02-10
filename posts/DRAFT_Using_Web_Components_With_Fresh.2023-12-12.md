@@ -9,21 +9,23 @@ Web Components are a web standard way of creating reusable custom HTML elements.
 
 This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh.
 
+## What is a Web Component
+The Web Component standard is a means for creating custom HTML elements with structure, attributes and behavior like their native cousins. Technically, a Web Component encompasses two standards:
+- [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements): custom-made HTML tags
+- [The Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM): a means for isolating the custom element from the external document.
+
+A web component is created using a JavaScript class that extends `HTMLElement`, the parent of all HTML elements. The custom element can be associated with the shadow DOM when it's created.
+
 ## Why Web Components
 
-The first question that comes up in a Web Component discussion is why: why would I use Web Components when I've got a React, Preact, Vue, Svelte, Angular, etc. instead. Here's why:
+The first question that comes up in a Web Component discussion is why: why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular, etc. instead. Here's my take on that answer:
 
-1. They are lightweight and do not need any extra JavaScript/TypeScript libraries to work. Many  web frameworks are getting a lot of flack because of the amount of JS they send to the client. Web Component APIs are built into the browser.
-2. They are supported by all modern web browsers including ones on mobile phones. This only happened in the last few years.
-3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, you could use them on all of these sites.
-4. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. But knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
+1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack because of the amount of JS they send to the client.
+2. They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
+3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, you could use them on all of them.
+4. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
 
 I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes clunky ways to do things when you use a component created in a web framework.
-
-## What is a Web Component
-The Web Component standard is a means for creating custom HTML elements with structure, attributes and behavior like their native cousins. A web component is created using a JavaScript/TypeScript class that extends `HTMLElement`, the parent of all HTML elements.
-
-Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component.
 
 ## Web Component creation
 You create a web component custom element using a JavaScript class that extends the `HTMLElement` interface. The simplest 'Hello World' example looks like this:
@@ -43,7 +45,7 @@ customElements.define("hello-wc", HelloWC);
 ```
 As shown in the code, the component needs to be registered using the `define` function of the `customElements` window object.
 
-The code needs to be added to a `<script>` tag so that it can be used in an HTML page.
+To use a custom element in an HTML page, its code needs to be referenced in a `<script>` tag.
 
 ```html
   <!-- Add this to the document's head -->
@@ -64,6 +66,10 @@ The custom element lifecycle methods include:
 | `attributeChangedCallback(attrName, oldVal, newVal)` | Called when an observed attribute is changed. The arguments are the attribute name (attrName), the old value (oldVal) of the attribute and the attribute's new value (newVal) |
 |`adoptedCallback`| Called when an element is moved to a new document like a new window frame |
 
+### Templates and Slots
+Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere, which is most likely a custom element.
+
+A `<slot>` is an HTML element used inside a template container as a content placeholder. The content will be filled by JavaScript at runtime.
 
 ## Encapsulation with the Shadow DOM
 
@@ -88,6 +94,8 @@ class MyShadowDomWC extends HTMLElement {
 }
 customElements.define("my-shadow-dom", MyShadowDomWC);
 ```
+The `append` method is used to add elements to the shadow root.
+
 If you look at the Elements tab in the Developer Tools, you'll see the shadow DOM denoted:
 
 | Shadow DOM visualized in the Chrome Developer Tools |
@@ -104,7 +112,7 @@ When this is done, the Developer Tools shadow root notation shows `closed`.
 
 
 ### Styling the Shadow DOM
-
+You would style a Shadow DOM web component inside the custom element
 
 
 ### Style Inheritance
@@ -136,8 +144,6 @@ The **`dispatchEvent()`** method can be used to broadcast custom events to be pi
 const event
 ```
 
-
-### Templates and Slots
 
 
 ## Creating Web Components with Lit
