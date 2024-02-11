@@ -111,8 +111,38 @@ To set the Shadow DOM mode to closed, just change the mode from "open" to "close
 When this is done, the Developer Tools shadow root notation shows `closed`.
 
 
-### Styling the Shadow DOM
-You would style a Shadow DOM web component inside the custom element
+### Styling Web Components
+
+Styling a Web Component can be done in two ways
+- external - This is not allowed when using the Shadow DOM, but if you are not building the component with Shadow DOM, you can style with external stylesheet file.
+
+The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element.
+```js
+class LinkedExternalStyleSheetWC extends HTMLElement {
+
+
+  connectedCallback() {
+    // Get the value of the message attribute
+    this.message = this.getAttribute("message") ?? "World";
+    this.innerHTML =
+      `  <link rel="stylesheet" href="custom-element-styles.css">
+`;
+  };
+    this.innerHTML +=
+      `<h4>Hello World!!</h4>`;
+  };
+};
+
+```
+  - global stylesheet
+  - external custom element style sheet
+
+This can be a file specific to the custom element.
+
+This involves using an external styleshhet file. You could have the
+- internal
+  - string interpolation
+  - using `CSSStyleSheet` API
 
 
 ### Style Inheritance
