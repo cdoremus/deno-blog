@@ -115,37 +115,80 @@ When this is done, the Developer Tools shadow root notation shows `closed`.
 
 Styling a Web Component can be done in two ways
 - external - This is not allowed when using the Shadow DOM, but if you are not building the component with Shadow DOM, you can style with external stylesheet file.
+- internal - Used to add styles to the shadow DOM (see below).
 
-The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element.
+The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
 ```js
 class LinkedExternalStyleSheetWC extends HTMLElement {
-
-
   connectedCallback() {
-    // Get the value of the message attribute
-    this.message = this.getAttribute("message") ?? "World";
+    // link to an external CSS file
     this.innerHTML =
-      `  <link rel="stylesheet" href="custom-element-styles.css">
-`;
+      `<link rel="stylesheet" href="custom-element-styles.css">`;
   };
     this.innerHTML +=
-      `<h4>Hello World!!</h4>`;
+      `<h4>Hello World!!</h4>`; // styled by external CSS file
   };
 };
+```
+
+#### Adding internal styles using string interpolation
+
+  The simplest way to add CSS to a component is to add it to the `innerHTML` using string interpolation. Here's an example:
+
+  ```js
+  class CSSStyleTagWC extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: "open" });
+    let html = `<style>h4 {color:red}</style>`;
+    html += `<h4>Hello World in Red!!!</h4>`;
+    shadow.innerHTML = html;
+  }
+}
 
 ```
-  - global stylesheet
-  - external custom element style sheet
 
-This can be a file specific to the custom element.
+#### Using Constructable style sheets
 
-This involves using an external styleshhet file. You could have the
-- internal
-  - string interpolation
-  - using `CSSStyleSheet` API
+[Constructable style sheets](https://github.com/WICG/construct-stylesheets/blob/main/explainer.md) is a way to create a style sheet programmatically. It uses the [`CSSStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet) class supported by all browsers.
+
+To be used with a custom element, the `CSSStyleSheet` class needs to be instantiated outside of the component.
+
+```js
+const styleSheet = new CSSStyleSheet();
+// Apply a rule to the sheet
+styleSheet.replaceSync("h4 { color: green }");
+class ConstructableStyleSheetWC extends HTMLElement {
+  connectedCallback() {
+    const shadowRoot = this.attachShadow({ mode: "open" });
+    // Associate a constructed stylesheet to the shadow DOM
+    shadowRoot.adoptedStyleSheets = [styleSheet];
+    // Add another stylesheet rule
+    styleSheet.insertRule(".green-text {font-style: italic}");
+    shadowRoot.innerHTML =
+      `<h4>Styled using CSSStyleSheet that styles <span class="green-text">green text and italics</span></h4>`;
+  }
+}
+```
+As seen in the example above, there are two `CSSStyleSheet` methods that are commonly used with a custom element:
+- `replaceSync` which takes a stylesheet rule and applies it to the constructed stylesheet
+- `insertRule` which adds a new stylesheet rule to the constructed stylesheet.
+
+Also note that the shadow DOM has an `adoptedStyleSheet` function to associate one or more stylesheets to it.
 
 
-### Style Inheritance
+
+#### Tailwind
+Styling using tailwind requires that you annotate your markup with the tailwind helper classes and [use the tailwind CLI](https://tailwindcss.com/docs/installation) to build the tailwind classes into a CSS file.
+
+If you are displaying your web components in Deno Fresh, you will need to isolate those components from Fresh components, islands and routes since Fresh has a build-in Tailwind processing mechanism for those files. To avoid that complication, my examples use good old-fashioned native CSS.
+
+##### Style Inheritance
+
+As stated previously, web components created with a shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+
+#### CSS custom properties
+
+Like inherited properties, CSS custom properties leak through the shadow DOM. Many web component developers use this fact to allow customization of CSS in their custom elements.
 
 ## Declarative Shadow DOM
 
@@ -153,7 +196,7 @@ This involves using an external styleshhet file. You could have the
 
 Using the Shadow DOM brings advantages and disadvantages.
 
-The advantage is that Shadow DOM allows customization
+The advantage is that Shadow DOM allows customization NNNNNNNNNNNNNNNNNNNNNN.
 
 Web components created that do not include the Shadow DOM are called Light DOM Web Components
 
@@ -180,7 +223,18 @@ const event
 
 
 ## Using Third-party Web Components
-Using third-party web components requires that you either copy the element's source code into a server
+Using third-party web components requires that you either copy the element's source code into your server or use a full URL to import the component in a `script` tag.
+
+Here's an example how to do that:
+```html
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"
+  >
+  </script>
+```
+Many third-party web components are deployed to a specific CDN while others can be accessed using [unpkg](https://unpkg.com/) which serves components deployed to npm.
+
 
 
 
@@ -274,3 +328,5 @@ However, I am going to concentrate on how to use Web Components in a [Deno Fresh
 The Deno Fresh web framework uses Preact under the covers to serve web sites, a scaled-down version of React. While React requires a bit of juggling to use web components, Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
 
 Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
+
+- Using the Preact `ref`....
