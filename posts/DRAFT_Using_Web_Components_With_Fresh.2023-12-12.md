@@ -66,30 +66,29 @@ The custom element lifecycle methods include:
 | `attributeChangedCallback(attrName, oldVal, newVal)` | Called when an observed attribute is changed. The arguments are the attribute name (attrName), the old value (oldVal) of the attribute and the attribute's new value (newVal) |
 |`adoptedCallback`| Called when an element is moved to a new document like a new window frame |
 
-### Templates and Slots
-Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere, which is most likely a custom element.
+### Encapsulation with the Shadow DOM
 
-A `<slot>` is an HTML element used inside a template container as a content placeholder. The content will be filled by JavaScript at runtime.
+The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree encapsulates styles and DOM nodes inside a custom element.
 
-## Encapsulation with the Shadow DOM
-
-The Web Component standard includes a concept called the Shadow DOM which isolates component styles and DOM nodes inside a custom element. What this means is that styles outside of your component cannot influence elements inside your web component (outside of inherited CSS properties like `color` or `font-size`).
+What this means is that styles outside of your component cannot influence elements inside your web component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
 
 Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` buttons inside of your Web Component will not be part of the node collection result set.
 
 The shadow DOM has two modes:
 - open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
-- closed - where the Web Component's CSS, DOM and external JavaScript is isolated.
+- closed - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
 
-You use the `attacheShadow` method to enable shadow DOM in a custom element. That method returns a handle (`shadowRoot` in the example) that can be used to add content to the shadow DOM with the `append` method:
+You use the `attacheShadow` built-in custom element method to enable shadow DOM. Calling that method with an "open" mode enables a custom element property `shadowRoot` to be used to add content to the shadow DOM with the `append` method:
 
 ```javascript
 class MyShadowDomWC extends HTMLElement {
+  constructor() {
+    this.attachShadow({ mode: "open" });
+  }
   connectedCallback() {
-    const shadowRoot = this.attachShadow({ mode: "open" });
     const h3 = document.createElement("h3");
     h3.innerHTML = "Hello World from the Shadow DOM";
-    shadowRoot.append(h3);
+    this.shadowRoot.append(h3);
   }
 }
 customElements.define("my-shadow-dom", MyShadowDomWC);
@@ -109,6 +108,48 @@ To set the Shadow DOM mode to closed, just change the mode from "open" to "close
     const shadowRoot = this.attachShadow({ mode: "closed" });
 ```
 When this is done, the Developer Tools shadow root notation shows `closed`.
+
+## Light DOM Web Components
+
+Using the Shadow DOM brings advantages and disadvantages.
+
+The advantage is that Shadow DOM allows customization NNNNNNNNNNNNNNNNNNNNNN.
+
+Web components created that do not include the Shadow DOM are called Light DOM Web Components
+
+
+### Templates and Slots
+
+Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere including a custom element.
+
+A `<slot>` is an HTML element used inside a template container as a content placeholder. The content will be filled by JavaScript at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Here's what that would look like:
+```tsx
+    <templated-wc>
+      <template id="template-wc">
+        <slot></slot>
+        <slot name="slot2"></slot>
+        <slot name="slot3"></slot>
+      </template>
+      <div slot="slot3">Slotted content3</div>
+      <div slot="slot2">Slotted content2</div>
+      <div>Slotted content1</div>
+    </templated-wc>
+```
+Here's what that would look like in the browser:
+
+![Rendered custom element with a template and slots](/img/blog/web-components/RenderedTemplateWC_Screenshot.png)
+
+The component that uses the template will look like this:
+```ts
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: "open" });
+    const template = document.querySelector("#template-wc");
+    shadow.innerHTML = `<style>${this.css}</style>`;
+    shadow.appendChild(template!.content.cloneNode(true));
+  }
+}
+```
+The component locates the template using its id. Styles are then added (`this.css` is defined as a static property) to the shadow DOM's HTML content and then the template's content is added after its `Node` is cloned.
 
 
 ### Styling Web Components
@@ -176,15 +217,63 @@ As seen in the example above, there are two `CSSStyleSheet` methods that are com
 Also note that the shadow DOM has an `adoptedStyleSheet` function to associate one or more stylesheets to it.
 
 
+#### HTML Web Components
+Many Web Components encapsulate all the markup inside the component with customization confined to component attributes. This means that if the web component fails for some reason (like when HTML is turned off) the user does not see anything.
+
+Lately, there has been an advocacy for what is being called [HTML Web Components](https://adactio.com/journal/20618) that includes native child elements inside the web component markup.
+
+
+An HTML Web Component has a custom element wrap HTML content. This is most often done with a 'Light DOM' custom element.
+
+Here's an example of doing that with Fresh.
+```ts
+    <counter-wc> // a custom-element
+      <div class="flex gap-8 py-6">
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+          -1
+        </button>
+        <p id="counter-count" class="text-3xl">3</p>
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+          +1
+        </button>
+      </div>
+    </counter-wc>
+```
+
+Note that Tailwind is used here. Using Tailwind inside of a Fresh custom element is very difficult since the Fresh Tailwind build will not transform class attributes in a `.ts` or `.js` file.
+
+Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like:
+```ts
+    <counter-wc>
+      <WCWrappedCounter
+        initialCount={3}
+        attributes={{ title: "Preact-WC Counter button" }}
+      />
+    </counter-wc>
+```
+
+In order for an HTML component to work with Fresh, the component must not use the shadow DOM.
 
 #### Tailwind
+
+The build-in Tailwind processing supported by Fresh can be used with a web component by having the custom element wrap tailwind annotated Fresh markup. Here's an example:
+
+
 Styling using tailwind requires that you annotate your markup with the tailwind helper classes and [use the tailwind CLI](https://tailwindcss.com/docs/installation) to build the tailwind classes into a CSS file.
 
 If you are displaying your web components in Deno Fresh, you will need to isolate those components from Fresh components, islands and routes since Fresh has a build-in Tailwind processing mechanism for those files. To avoid that complication, my examples use good old-fashioned native CSS.
 
-##### Style Inheritance
+#### Style Inheritance
 
 As stated previously, web components created with a shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+
+You can use a CSS custom property to update an inherited property. For instance you might have a CSS rule in your component:
+```css
+  .myclass {
+    color: var(--myclass-color)
+  }
+```
+If the `--myclass-color` custom property is not set in a CSS file within a parent scope, then the color will fallback to the inherited color by default.
 
 #### CSS custom properties
 
@@ -192,20 +281,6 @@ Like inherited properties, CSS custom properties leak through the shadow DOM. Ma
 
 ## Declarative Shadow DOM
 
-## Light DOM Web Components
-
-Using the Shadow DOM brings advantages and disadvantages.
-
-The advantage is that Shadow DOM allows customization NNNNNNNNNNNNNNNNNNNNNN.
-
-Web components created that do not include the Shadow DOM are called Light DOM Web Components
-
-## HTML Web Components
-Many Web Components encapsulate all the markup inside the component with customization confined to component attributes. This means that if the web component fails for some reason (like when HTML is turned off) the user does not see anything.
-
-Lately, there has been an advocacy for what is being called [HTML Web Components](https://adactio.com/journal/20618) that includes native child elements inside the web component markup.
-
-The use of native
 
 ### Events
 Web components allow for you to listen to and create events.
@@ -217,6 +292,7 @@ The **`dispatchEvent()`** method can be used to broadcast custom events to be pi
 const event
 ```
 
+By dispatching a custom event in a web component you can send information to any component in the DOM tree that subscribes to that event using an event listener.
 
 
 ## Creating Web Components with Lit
@@ -330,3 +406,9 @@ The Deno Fresh web framework uses Preact under the covers to serve web sites, a 
 Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
 
 - Using the Preact `ref`....
+
+
+### Using TypeScript with a Custom Element in Fresh
+
+- Build required
+- Extending `JSX.IntrinsicElements` for custom element tags
