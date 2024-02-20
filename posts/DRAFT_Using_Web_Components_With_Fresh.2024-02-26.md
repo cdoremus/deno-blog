@@ -96,7 +96,7 @@ customElements.define("my-shadow-dom", MyShadowDomWC);
 ```
 The `append` method is used to add elements to the shadow root.
 
-If you look at the Elements tab in the Developer Tools, you'll see the shadow DOM denoted:
+If you look at the Elements tab in the Developer Tools, you'll see the shadow DOM:
 
 | Shadow DOM visualized in the Chrome Developer Tools |
 |------|
