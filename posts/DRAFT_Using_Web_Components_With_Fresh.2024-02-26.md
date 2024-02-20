@@ -1,5 +1,6 @@
 <!-- deno-fmt-ignore-file -->
-#### 2023-12-12
+#### 2024-02-26
+##### _21 min read_
 
 # Using Web Components with Deno and Fresh
 
@@ -171,7 +172,6 @@ class LinkedExternalStyleSheetWC extends HTMLElement {
   };
 };
 ```
-
 #### Adding internal styles using string interpolation
 
   The simplest way to add CSS to a component is to add it to the `innerHTML` using string interpolation. Here's an example:
@@ -275,9 +275,10 @@ You can use a CSS custom property to update an inherited property. For instance 
 ```
 If the `--myclass-color` custom property is not set in a CSS file within a parent scope, then the color will fallback to the inherited color by default.
 
-#### CSS custom properties
+This allows the use of custom properties to customization CSS in a web component.
 
-Like inherited properties, CSS custom properties leak through the shadow DOM. Many web component developers use this fact to allow customization of CSS in their custom elements.
+
+
 
 ## Declarative Shadow DOM
 
@@ -343,8 +344,7 @@ class MyNameInput extends HTMLElement {
   // Required static property indicating
   // this component is associated with a form
   static formAssociated = true;
-  // Additional lifecycle method called when component
-  //  is associated with a form
+  // Additional lifecycle method called when component is associated with a form
   formAssociatedCallback(form) {
     console.log('form associated:', form.id);
   }
@@ -358,7 +358,6 @@ class MyNameInput extends HTMLElement {
 
   // connect component
   connectedCallback() {
-
     const shadow = this.attachShadow({ mode: 'closed' });
     shadow.innerHTML = `
     <style>input { width: 4em; }</style>
@@ -380,7 +379,7 @@ class MyNameInput extends HTMLElement {
 }
 
 // register component
-customElements.define( 'my-name-input', MtNameInput );
+customElements.define( 'my-name-input', MyNameInput );
 
 }
 ```
