@@ -266,8 +266,6 @@ One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/jour
     </counter-wc>
 ```
 
-Note that Tailwind is used here. Using Tailwind inside of a Fresh custom element is very difficult since the Fresh Tailwind build will not transform class attributes in a `.ts` or `.js` file.
-
 Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like:
 ```ts
     <counter-wc>
@@ -366,6 +364,12 @@ Styling using tailwind requires that you annotate your markup with the tailwind 
 
 If you are displaying your web components in Deno Fresh, you will need to isolate those components from Fresh components, islands and routes since Fresh has a build-in Tailwind processing mechanism for those files. To avoid that complication, my examples use good old-fashioned native CSS.
 
+
+------------------------------
+THIS NEEDS EDITING
+Note that Tailwind is used here. Using Tailwind inside of a custom element is very difficult since the Fresh Tailwind build will not transform class attributes in a non-Fresh `.ts` or `.js` file into CSS styles because those elements are deployed in the static folder. Instead, you will need to process Tailwind classes in the custom elements using the Tailwind CLI prior to runtime. I did not try this because of the potential conflicts between the Fresh transformation of Tailwind classes and the transformation needed for the custom elements.
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+-------------------------------------------
 
 
 ## Custom Element Events
