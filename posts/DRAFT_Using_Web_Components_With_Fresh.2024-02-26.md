@@ -19,6 +19,7 @@
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
       - [Style Inheritance](#style-inheritance)
       - [Tailwind](#tailwind)
+    - [TypeScript](#typescript)
     - [Custom Element Events](#custom-element-events)
     - [Working with Forms](#working-with-forms)
     - [Web Components and Accessibility](#web-components-and-accessibility)
@@ -357,20 +358,54 @@ This allows the use of custom properties to customization CSS in a web component
 
 ### Tailwind
 
-The build-in Tailwind processing supported by Fresh can be used with a web component by having the custom element wrap tailwind annotated Fresh markup. Here's an example:
+Tailwind built into Fresh can be used in web components that run in a Fresh app. I've done that using the `tailwind` support added in Fresh v1.6.0 that replaces `twind`. To get tailwind working with web components you need to add a line pointing to the web components in the `static` folder to `tailwind.config.ts`:
+```ts
+  content: [
+    "{routes,islands,components}/**/*.{ts,tsx}",
+    "static/wc/*.js",
+  ],
+```
+The first line refer to Fresh components, while the second one refers to the web components. It's probably a good idea to put those files in a separate folder within `static`.
 
+Another option for using `tailwind` with web components in Fresh is to use JSX as the custom element's content. In this case, the content is annotated with the tailwind classes. Here's an example:
+```ts
+    <counter-wc>
+      <div class="flex gap-8 py-6">
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+          -1
+        </button>
+        <p id="counter-count" class="text-3xl">3</p>
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+          +1
+        </button>
+      </div>
+    </counter-wc>
+```
+## TypeScript
 
-Styling using tailwind requires that you annotate your markup with the tailwind helper classes and [use the tailwind CLI](https://tailwindcss.com/docs/installation) to build the tailwind classes into a CSS file.
+Custom Elements can be authored using TypeScript, but it requires that you have a way to transform TypeScript into JavaScript and putting the JS file in the `static` folder or subfolder.
 
-If you are displaying your web components in Deno Fresh, you will need to isolate those components from Fresh components, islands and routes since Fresh has a build-in Tailwind processing mechanism for those files. To avoid that complication, my examples use good old-fashioned native CSS.
+When I did this, I decided to have them compiled into a single file, so That I would only need on script tag in the page head to cover all web components. I used `esbuild` to do this:
+```ts
+  import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
+  import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.2/mod.ts";
 
+  await esbuild.build({
+    plugins: [...denoPlugins()],
+    entryPoints: ["./components/wc/mod.ts"],
+    outfile: "./static/wc/wc.esm.js",
+    bundle: true,
+    minify: false,
+    banner: { js: "// deno-lint-ignore-file" },
+    format: "esm",
+  });
+  esbuild.stop()
+```
+This build can handle both TypeScript and JavaScript files. The TS files would be transformed into JS files during the build.
 
-------------------------------
-THIS NEEDS EDITING
-Note that Tailwind is used here. Using Tailwind inside of a custom element is very difficult since the Fresh Tailwind build will not transform class attributes in a non-Fresh `.ts` or `.js` file into CSS styles because those elements are deployed in the static folder. Instead, you will need to process Tailwind classes in the custom elements using the Tailwind CLI prior to runtime. I did not try this because of the potential conflicts between the Fresh transformation of Tailwind classes and the transformation needed for the custom elements.
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
--------------------------------------------
+The `mod.ts` file exports all the web component files, both those written in TypeScript and JavaScript. In this case, that's all the files in the `components/wc` folder. The `esbuild` tool cannot handle transforming multiple files into a single bundle file without an entrypoint, so the `mod.ts` file is used as the entry point for all of them.
 
+The final bundle is contained in the `wc.esm.js` file.
 
 ## Custom Element Events
 Web component custom elements allow for you to listen to and create events.
@@ -621,4 +656,65 @@ Note that the `class` values are Tailwind helper classes. NNNNNNNNNNNNNNNNNNNNNN
 
 ## Creating Web Components with Lit
 
+There are a number of third party libraries that extend web components. They include [Stencil](https://github.com/ionic-team/stencil), [Lightning Web Components](https://github.com/salesforce/lwc), [WebC](https://github.com/salesforce/lwc) and [Enhance](https://enhance.dev/). But [Lit](https://lit.dev/) (formerly Polymer) is the granddaddy of them all and probably the most used lib, so that's the library I'm going to cover.
+
+Modern Lit uses decorators to define and register a Web Component. By doing this, they remove a lot of the boilerplate required to create a web component.
+
+Unfortunately, browsers do not support decorators at this point even though they are at Stage 3 in the TC-39 standardization process. In order for Lit decorators to work, you need to [transpile the Lit code](https://lit.dev/docs/tools/publishing/#publishing-modern-javascript).
+
+One way to do the transpilation is to [use Vite as is shown in this repo](https://github.com/bluwy/create-vite-extra/tree/master/template-deno-lit-ts). I really didn't want to get into another build process besides that one used by Fresh, so I decided to create a couple of Lit components without decorators.
+
+Here's an example of a counter component written in Lit:
+```js
+export class LitCounter extends LitElement {
+  static #INITIAL_COUNT = 3;
+  static properties = { count: 0 };
+
+  constructor() {
+    super();
+    this.count = LitCounter.#INITIAL_COUNT;
+  }
+
+  // Turn off shadow DOM
+  createRenderRoot() {
+    return this;
+  }
+
+  increment = () => {
+    this.count = this.count + 1;
+  };
+
+  decrement = () => {
+    this.count = this.count - 1;
+  };
+
+  render() {
+    return html`
+      <div class="flex gap-8 py-6">
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors"
+          @click=${this.decrement}>
+          -1
+        </button>
+        <p class="text-3xl">${this.count}</p>
+        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors"
+          @click=${this.increment}>
+          +1
+        </button>
+      </div>
+    `;
+  }
+}
+
+customElements.define(
+  "lit-counter",
+  LitCounter,
+);
+```
+
+The static `properties` class variable holds an object with members that are class properties that back component attributes. This are termed 'reactive properties' because any update of their value triggers a component re-render.
+
+The `render()` method is where the component's content is rendered with Lit-specific attributes corresponding to standard DOM event handlers (`@click` in the example corresponding to the `onclick` attribute).
+
+
+The standard Web Component lifecycle methods like `connectedCallback` and `attributeChangedCallback` is available with Lit, but Lit adds.......
 
