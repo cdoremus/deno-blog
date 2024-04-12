@@ -5,6 +5,7 @@ import { CSS, render } from "gfm";
 
 export const handler: Handlers = {
   async GET(req: Request, _ctx: HandlerContext) {
+    const currentYear = (new Date()).getFullYear();
     const feed = new Feed({
       title: "Craig's Deno Diary",
       description:
@@ -19,6 +20,7 @@ export const handler: Handlers = {
         atom: "https://deno-blog.com/feed?format=atom",
         rss: "https://deno-blog.com/feed",
       },
+      copyright: currentYear.toString(),
     });
 
     const files = (await Array.fromAsync(Deno.readDir("./posts")))
