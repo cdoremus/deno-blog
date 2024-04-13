@@ -22,10 +22,11 @@
     - [Working with Forms](#working-with-forms)
     - [Web Components and Accessibility](#web-components-and-accessibility)
   - [Using Web Components with Deno](#using-web-components-with-deno)
+    - [Using `Deno.serve`](#using-denoserve)
     - [Using Web Components with Deno Fresh](#using-a-web-component-with-deno-fresh)
       - [HTML Web Components in Fresh](#html-web-components-in-fresh)
-      - [Using TypeScript](#using-typescript)
-      - [Using Tailwind with Fresh](#Using_Tailwind_with_Fresh)
+      - [Using TypeScript with Fresh-deployed Custom Elements](#using-typescript-with-fresh-deployed-custom-elements)
+      - [Using Tailwind with Fresh](#using-tailwind-with-fresh)
 
   - [Creating Web Components with Lit](#creating-web-components-with-lit)
   - [Using Third-party Web Components](#using-third-party-web-components)
@@ -200,42 +201,42 @@ While JavaScript is not required when using DSD, JavaScript can be added inside 
 
 Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere including a custom element.
 
-A `<slot>` is an HTML element used inside a template container as a content placeholder. It is only available in a web component that uses the shadow DOM.
+A `<slot>` is an HTML element used inside a template container as a content placeholder. It is only available in a web component that uses the Shadow DOM.
 
-JavaScript is used to replace the `<slot>` tag with other content at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Here's what that would look like:
+JavaScript is used to replace the `<slot>` tag with other content at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Taken from the [demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main), here's what that would look like:
 ```tsx
-    <templated-wc>
-      <template id="template-wc">
-        <div class="container">
-          <span id="title">This is inside the template</span>
-          <slot></slot>
-          <slot name="slot2"></slot>
-          <slot name="slot3"></slot>
-        </div>
-      </template>
-      <div slot="slot3">Slotted content3</div>
-      <div slot="slot2">Slotted content2</div>
-      <div>Slotted content1</div>
-    </templated-wc>
+  <templated-wc>
+    <template id="template-wc">
+      <div class="container">
+        <span id="title">This is inside the template</span>
+        <slot></slot>
+        <slot name="slot2"></slot>
+        <slot name="slot3"></slot>
+      </div>
+    </template>
+    <div slot="slot3">Slotted content3</div>
+    <div slot="slot2">Slotted content2</div>
+    <div>Slotted content1</div>
+  </templated-wc>
 ```
-Here's what that would look like in the browser:
-
-![Rendered custom element with a template and slots](/img/blog/web-components/RenderedTemplateWC_Screenshot.png)
-
-Not that the first slot does not have a name attribute. That slot was replaced with content that dod not have a `slot` attribute. When only one slot is used in a template its `name` attribute is not needed.
-
-The component that uses this template shown above will look like this:
-
+The web component needed to declare that the component uses Shadow DOM with a `this.attachShadow` call. The `connectedCallback` method holds all the logic:
 ```ts
   connectedCallback() {
     const shadow = this.attachShadow({ mode: "open" });
     const template = document.querySelector("#template-wc");
+    // 'this.css' was defined earlier
     shadow.innerHTML = `<style>${this.css}</style>`;
+    // @ts-ignore bad error: "content does not exist on type element"
     shadow.appendChild(template!.content.cloneNode(true));
   }
-}
 ```
-The component locates the template using its id. Styles are then added (`this.css` is defined as a static property) to the shadow DOM's HTML content and then the template's content is added after its `Node` is cloned.
+A reference to the `<template>` tag is obtained and its content is cloned to add its content to the Shadow DOM.
+
+Here's what the component looks like when rendered in the browser:
+
+![Rendered custom element with a template and slots](/img/blog/web-components/RenderedTemplateWC_Screenshot.png)
+
+Note that the first slot does not have a name attribute. That slot was replaced with content that does not have a `slot` attribute. When only one slot is used in a template its `name` attribute is not needed.
 
 You could also define the template in JavaScript code using a string literal like this which is a drop-in replacement for the template defined within the component's markup:
 ```ts
@@ -258,27 +259,28 @@ Web components that do not use the Shadow DOM are called "Light DOM" Web Compone
 One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose content is wrapped inside the web component. Here's an example of doing that with Fresh:
 
 ```ts
-    <counter-wc> // a custom-element
-      <div class="flex gap-8 py-6">
-        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
-          -1
-        </button>
-        <p id="counter-count" class="text-3xl">3</p>
-        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
-          +1
-        </button>
-      </div>
-    </counter-wc>
+  <counter-wc> // a custom-element
+    <div class="flex gap-8 py-6">
+      <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+        -1
+      </button>
+      <p id="counter-count" class="text-3xl">3</p>
+      <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+        +1
+      </button>
+    </div>
+  </counter-wc>
 ```
 
-Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like:
+Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like taken from [a component in the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx):
+
 ```ts
-    <counter-wc>
-      <WCWrappedCounter
-        initialCount={3}
-        attributes={{ title: "Preact-WC Counter button" }}
-      />
-    </counter-wc>
+  <counter-wc>
+    <WCWrappedCounter
+      initialCount={3}
+      attributes={{ title: "Preact-WC Counter button" }}
+    />
+  </counter-wc>
 ```
 
 In order for an HTML component to work with Fresh, the component must not use the shadow DOM.
@@ -476,31 +478,31 @@ Accessibility issues are many and varied, but I am not an accessibility expert b
 
 # Using Web Components with Deno
 
-Any Deno web server can serve web components.
+Any web server can serve a Web Component used in a static HTML page including one that's built with Deno or one that works with the Deno runtime (like [Hono](https://hono.dev/)).
 
-I've created a [Code Sandbox](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fserver.ts%3A39%2C1) that renders a web component in a server that uses `Deno.serve()`. But most applications these days require server-side rendering. Fresh is one SSR option.
+Still, server-side routing is popular these days for it's performance boost and [Fresh](https://fresh.deno.dev) is the Deno-native SSR choice of most Deno devs these days. I have put together a Fresh app that serves a collections of web components. The [source code](https://github.com/cdoremus/fresh-webcomponents) is available as is the [deployed application](https://fresh-webcomponents.deno.dev).
 
-I have put together a Fresh app that serves a collections of web components. The [source code](https://github.com/cdoremus/fresh-webcomponents) is available as is the [deployed application](https://fresh-webcomponents.deno.dev).
-
-
+But before we get into that, let's look at how the built-in Deno server `Deno.serve` can be used to serve web components.
 
 ## Using `Deno.serve`
 
-A web page containing web components can be served by any web server including one built with `Deno.serve`. I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this. You can also use `Deno.serve` to stream an HTML file containing web components [as is shown in this Deno Deploy Playground](https://dash.deno.com/login?redirect=/playground/shadowroot-streams)  (created by [Nathan Knowler](https://sunny.garden/@knowler/111466434753583873)).
+If you want to serve static content containing a Web Component using a Deno-native server, then `Deno.serve` is a good option.
+
+I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this.
+
+You can also use `Deno.serve` to stream an HTML file containing web components [as is shown in this Deno Deploy Playground](https://dash.deno.com/login?redirect=/playground/shadowroot-streams)  (created by [Nathan Knowler](https://sunny.garden/@knowler/111466434753583873)).
 
 However, I am going to concentrate on how to use Web Components in a [Deno Fresh](https://fresh.deno.dev) app to allow you to focus on building and using web components without having to deal with server or routing issues. When used with Fresh, they will function like a island component.
 
 ## Using a Web Component with Deno Fresh
 
-The Deno Fresh web framework uses Preact under the covers to serve web sites, a scaled-down version of React. While React requires a bit of juggling to use web components, Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
+The [Deno Fresh](https://fresh.deno.dev) full-stack web framework uses [Preact](https://preactjs.com/) -- a scaled-down version of [React](https://react.dev/) -- under the covers to serve web sites and applications. While React requires a bit of juggling to use web components, Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
 
 Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
 
-- Using the Preact `ref`....
 
 The best way to integrate Web Components with Fresh is to use Fresh for server-side rendering and routing. Here's a simple web component that displays a message:
 ```ts
-
 class HelloWC extends HTMLElement {
   message;
   constructor() {
@@ -534,6 +536,21 @@ export default function CustomElementsPage(props) {
 ```
 As you know if you programmed in Fresh before, a page like this located inside the `routes` folder will define a route.
 
+If you need to access the instance of a web component that is part of the markup rendered by a Fresh/Preact component, you need to use a `ref`. Here's an example of how to do that [taken from the Preact documentation](https://preactjs.com/guide/v10/web-components/#accessing-instance-methods):
+```js
+function Foo() {
+  const myRef = useRef(null);
+
+  useEffect(() => {
+    if (myRef.current) {
+      myRef.current.doSomething();
+    }
+  }, []);
+
+  return <x-foo ref={myRef} />;
+}
+```
+
 ### HTML Web Components in Fresh
 
 As stated previously, HTML Web Components are components where all the content comes from child elements.
@@ -562,27 +579,29 @@ customElements.define("counter-wc", CounterWC);
 ```
 
 ```jsx
-    <counter-wc>
-      <div class="flex gap-8 py-6">
-        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
-          -1
-        </button>
-        <p id="counter-count" class="text-3xl">3</p>
-        <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
-          +1
-        </button>
-      </div>
-    </counter-wc>
+  <counter-wc>
+    <div class="flex gap-8 py-6">
+      <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+        -1
+      </button>
+      <p id="counter-count" class="text-3xl">3</p>
+      <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
+        +1
+      </button>
+    </div>
+  </counter-wc>
 ```
 All the functional logic -- button clicks -- are contained in the Web Component, while the child elements were responsible for layout in conjunction with external stylesheets.
 
-Note that the `class` values are Tailwind helper classes. NNNNNNNNNNNNNNNNNNNNNNNNNN
+Note that the `class` values are Tailwind helper classes (see [Tailwind section below](#using-tailwind-with-fresh)).
 
-## Using TypeScript
+NNNNNNNNNNNNNNNNNNNNNNNNNN
 
-Custom Elements can be authored using TypeScript, but it requires that you have a way to transform TypeScript into JavaScript and putting the JS file in the `static` folder or subfolder.
+## Using TypeScript with Fresh-deployed Custom Elements
 
-When I did this, I decided to have them compiled into a single file, so that I would only need on script tag in the page head to cover all web components. I used `esbuild` to do this:
+Custom Elements can be authored using TypeScript, but it requires that you have a way to transform TypeScript into JavaScript and put the JS file in Fresh's `static` folder or subfolder.
+
+When I did this for the [example app](https://fresh-webcomponents.deno.dev/), I decided to have them compiled into a single file, so that I would only need one script tag in the page head to cover all web components. I used `esbuild` to do this. A `build-wc.ts` file was created with this content:
 ```ts
   import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
   import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.2/mod.ts";
@@ -602,11 +621,15 @@ This build can handle both TypeScript and JavaScript files. The TS files would b
 
 The `mod.ts` file exports all the web component files, both those written in TypeScript and JavaScript. In this case, that's all the files in the `components/wc` folder. The `esbuild` tool cannot handle transforming multiple files into a single bundle file without an entrypoint, so the `mod.ts` file is used as the entry point for all of them.
 
+The `mod.ts` file could be created programmatically from a list of `components/wc` files, but I decided not to do that to simplify the build process.
+
 The final bundle is contained in the `wc.esm.js` file.
 
-WHen you use the custom element in a Fresh application, you'll notice that they will throw an error in the vscode (and probably other LSPs). In order to remove this error you have to register the TypeScript type of the custom element with the Fresh application.
+When you use a custom element in a Fresh application, you'll notice that they will throw an error in the vscode (and probably other LSPs too). In order to remove this error you have to register the TypeScript type of the custom element with the Fresh application.
 
-In order to do that you need to create records in a `types.ts` file that extends `JSX.IntrinsicElements` for custom element tags. Here's what that would look like:
+In order to do that you need to create records in a `types.ts` file that extends `JSX.IntrinsicElements` for custom element tags. In the [Fresh web component demo app](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts) that I created for this blog post.
+
+Here's what a simple custom element type definition would look like:
 ```ts
 interface HelloWCProps extends JSX.HTMLAttributes<HTMLElement> {
   message?: string;
@@ -621,6 +644,18 @@ declare module "preact" {
 }
 ```
 Note how the component's element/tag is added to the `JSX` namespace referencing the interface defining the component and it's attributes. This allows the use of the custom element's tag inside the Fresh JSX without any IDE errors. Otherwise, you need to add a `@ts-ignore` comment above the tag. This suppresses the LSP error and the custom element will still work in Fresh.
+
+If your custom element does not have any attributes, you can define it within the JSX namespace without the need for an interface:
+```ts
+declare module "preact" {
+  namespace JSX {
+    interface IntrinsicElements {
+      //  A custom elements without attributes
+      "two-up": JSX.HTMLAttributes<HTMLElement>;
+    }
+  }
+}
+```
 
 If you are using a `template` tag in your JSX like when you are using one or more `<slot>` tags in your custom element, you need to define the template in the `JSX` namespace like this:
 ```ts
