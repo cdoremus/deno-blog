@@ -34,7 +34,7 @@
 ## Introduction
 Deno prides itself with its support of standards. It has embraced ECMAScript imports as the way to express dependencies, supports most standard web APIs and has championed server-side JavaScript standards through it's leadership in [WinterCG](https://wintercg.org/).
 
-Web Components are a web standard way of creating reusable custom HTML elements. In essence they extend native HTML element functionality. They can be used with or without a web framework like Fresh or from a static HTML page served from a server like one that uses `Deno.serve`.
+Web Components are a web standard way of creating reusable custom HTML elements. In essence they extend native HTML element functionality. They can be used with or without a web framework like [Deno Fresh](https://fresh.deno.dev) or from a static HTML page served from a server like one that uses `Deno.serve`.
 
 This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section.
 
@@ -180,23 +180,6 @@ To set the Shadow DOM mode to closed, just change the mode from "open" to "close
     const shadowRoot = this.attachShadow({ mode: "closed" });
 ```
 When this is done, the Developer Tools shadow root notation shows `closed` in the Elements tab.
-
-### Declarative Shadow DOM
-
-Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. DSD is a way to create a Shadow DOM without JavaScript using a `shadowrootmode` attribute on the `<template>` tag. Like the `attachShadow` mode options, there are two possible values of `shadowrootmode`: "open" and "closed".
-
-The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element. Here's an example:
-
-```html
-<template shadowrootmode="open">
-  <style>
-    h3 {color: blue;}
-  </style>
-  <div>This will be blue, even if the color is set external to another value</div>
-</template>
-```
-While JavaScript is not required when using DSD, JavaScript can be added inside the `<template>` tag.
-
 ### Templates and Slots
 
 Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere including a custom element.
@@ -252,11 +235,70 @@ template!.innerHTML = `
 `;
 ```
 
+### Declarative Shadow DOM
+
+Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. DSD is a way to create a Shadow DOM without JavaScript using template and slot tags. You defined a DSD component using the `shadowrootmode` attribute on the `<template>` tag. Like the `attachShadow` mode options, there are two possible values of `shadowrootmode`: "open" and "closed".
+
+The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element. Here's an example:
+
+```html
+<body>
+  <template shadowrootmode="open">
+    <style>
+      :host {
+        margin: 0;
+        padding: 1rem;
+        display: grid;
+        gap: 1rem;
+        grid-template:
+          "header" max-content
+          "content" auto
+          "footer" max-content / 100%;
+      }
+
+      slot * {
+        background-color: hsl(0 0% 90%);
+      }
+
+      ::slotted(*) {
+        background-color: hsl(160 50% 90%);
+      }
+
+      slot *,
+      ::slotted(*) {
+        padding: 1rem;
+      }
+    </style>
+    <slot name="header" style="grid-area: header;">
+      <header>Header is loading</header>
+    </slot>
+    <slot name="content" style="grid-area: content;">
+      <main>
+        <div>Content is loading</div>
+      </main>
+    </slot>
+    <slot name="footer" style="grid-area: footer;">
+      <footer>Footer is loading</footer>
+    </slot>
+  </template>
+
+  <header slot="header">
+    <h2>Declarative Shadow DOM Example</h2>
+  </header>
+  <main slot="content">
+    <h4>Page content goes here</h4>
+  </main>
+  <footer slot="footer" style="font-style: italic;">This is the footer</footer>
+</body>
+```
+ This is what the component looks like when rendered in a browser:
+ ![Rendered Declarative Shadow DOM web component](/img/blog/web-components/DSD_Screenshot.png)
+
 ### HTML Web Components
 
 Web components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom elements has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
 
-One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose content is wrapped inside the web component. Here's an example of doing that with Fresh:
+One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose content is wrapped inside the web component. Here's an example of doing that with Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
 
 ```ts
   <counter-wc> // a custom-element
@@ -272,7 +314,7 @@ One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/jour
   </counter-wc>
 ```
 
-Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like taken from [a component in the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx):
+Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like taken from [a component in the demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx):
 
 ```ts
   <counter-wc>
@@ -349,7 +391,7 @@ Also note that the shadow DOM has an `adoptedStyleSheet` function to associate o
 
 ### Style Inheritance
 
-As stated previously, web components created with a shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+As noted previously, web components created with a shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
 
 You can use a CSS custom property to update an inherited property. For instance you might have a CSS rule in your component:
 ```css
@@ -370,6 +412,7 @@ The **`addEventListener()`** function can be attached to any web component. It t
 The **`dispatchEvent()`** method can be used to broadcast custom events to be picked up by event listeners listening to that specific event. Custom events can also have data attached to it in the `details` option.
 ```js
 const event
+NNNNNNNNNNNNNNNNNNNNNNNNN
 ```
 
 By dispatching a custom event in a web component you can send information to any component in the DOM tree that subscribes to that event using an event listener.
@@ -480,7 +523,7 @@ Accessibility issues are many and varied, but I am not an accessibility expert b
 
 Any web server can serve a Web Component used in a static HTML page including one that's built with Deno or one that works with the Deno runtime (like [Hono](https://hono.dev/)).
 
-Still, server-side routing is popular these days for it's performance boost and [Fresh](https://fresh.deno.dev) is the Deno-native SSR choice of most Deno devs these days. I have put together a Fresh app that serves a collections of web components. The [source code](https://github.com/cdoremus/fresh-webcomponents) is available as is the [deployed application](https://fresh-webcomponents.deno.dev).
+Still, server-side routing is popular these days for it's performance boost and [Fresh](https://fresh.deno.dev) is the Deno-native SSR choice of most Deno devs as it is supported by the Deno team. I have put together a Fresh app that serves a collections of web components. The [source code](https://github.com/cdoremus/fresh-webcomponents) is available as is the [deployed application](https://fresh-webcomponents.deno.dev).
 
 But before we get into that, let's look at how the built-in Deno server `Deno.serve` can be used to serve web components.
 
@@ -488,7 +531,7 @@ But before we get into that, let's look at how the built-in Deno server `Deno.se
 
 If you want to serve static content containing a Web Component using a Deno-native server, then `Deno.serve` is a good option.
 
-I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this.
+I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this. It displays two instances of a simple "Hello World" custom element on the app's home page.
 
 You can also use `Deno.serve` to stream an HTML file containing web components [as is shown in this Deno Deploy Playground](https://dash.deno.com/login?redirect=/playground/shadowroot-streams)  (created by [Nathan Knowler](https://sunny.garden/@knowler/111466434753583873)).
 
@@ -553,7 +596,7 @@ function Foo() {
 
 ### HTML Web Components in Fresh
 
-As stated previously, HTML Web Components are components where all the content comes from child elements.
+As stated [previously](#html-web-components), HTML Web Components are components where all the content comes from child elements.
 
 ```ts
 // CounterWC.ts
@@ -746,15 +789,14 @@ export class LitCounter extends LitElement {
   }
 }
 
-customElements.define(
-  "lit-counter",
-  LitCounter,
-);
+customElements.define("lit-counter",  LitCounter);
 ```
 
-The static `properties` class variable holds an object with members that are class properties that back component attributes. This are termed _reactive properties_ because any update of their value triggers a component re-render.
+The static `properties` class variable holds an object with members that are class properties that are bound to component attributes. This are termed _reactive properties_ because any update of their value triggers a component re-render.
 
 The `properties` object can contain members that are not linked to a component attribute. These are part of what is called [internal reactive state](https://lit.dev/docs/components/properties/#internal-reactive-state). They are also reactive properties. You can use the `{state: true}` property option to declare an internal reactive state property.
+
+TODO: Flesh out the diff between reactive, bound and unbound properties: NNNNNNNNNNNNNNNNN
 
 The `render()` method is where the component's content is rendered. It returns a `TemplateResult` type. with Lit-specific attributes corresponding to standard DOM event handlers (`@click` in the example corresponding to the `onclick` attribute).
 
