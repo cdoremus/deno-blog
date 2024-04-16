@@ -29,6 +29,7 @@
       - [Using Tailwind with Fresh](#using-tailwind-with-fresh)
 
   - [Creating Web Components with Lit](#creating-web-components-with-lit)
+    - [Lit and TypeScript](#lit-and-typescript)
   - [Using Third-party Web Components](#using-third-party-web-components)
 
 ## Introduction
@@ -640,7 +641,7 @@ Note that the `class` values are Tailwind helper classes (see [Tailwind section 
 
 NNNNNNNNNNNNNNNNNNNNNNNNNN
 
-## Using TypeScript with Fresh-deployed Custom Elements
+### Using TypeScript with Fresh-deployed Custom Elements
 
 Custom Elements can be authored using TypeScript, but it requires that you have a way to transform TypeScript into JavaScript and put the JS file in Fresh's `static` folder or subfolder.
 
@@ -672,7 +673,7 @@ When you use a custom element in a Fresh application, you'll notice that they wi
 
 In order to do that you need to create records in a `types.ts` file that extends `JSX.IntrinsicElements` for custom element tags. In the [Fresh web component demo app](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts) that I created for this blog post.
 
-Here's what a simple custom element type definition would look like:
+Here's what a simple custom element type definition would look like ([from this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts)):
 ```ts
 interface HelloWCProps extends JSX.HTMLAttributes<HTMLElement> {
   message?: string;
@@ -686,7 +687,7 @@ declare module "preact" {
   }
 }
 ```
-Note how the component's element/tag is added to the `JSX` namespace referencing the interface defining the component and it's attributes. This allows the use of the custom element's tag inside the Fresh JSX without any IDE errors. Otherwise, you need to add a `@ts-ignore` comment above the tag. This suppresses the LSP error and the custom element will still work in Fresh.
+Note how the component's element/tag is added to the `JSX` namespace referencing the interface defining the component and it's attributes and that the interface extends `JSX.HTMLAttributes` with an `HTMLElement` generic type parameter. This allows the use of the custom element's tag inside the Fresh JSX without any IDE errors. Otherwise, you need to add a `@ts-ignore` comment above the tag. This suppresses the LSP error and the custom element will still work in Fresh.
 
 If your custom element does not have any attributes, you can define it within the JSX namespace without the need for an interface:
 ```ts
@@ -711,10 +712,13 @@ declare module "preact" {
   }
 }
 ```
+As [show in the example code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts), the type definitions can be created for components created with JavaScript or Typescript for use in Fresh TS markup. [As seen below](#lit-and-typescript) this type definition can be used for components created with the [Lit](https://lit.dev/) web component framework.
 
 ### Using Tailwind with Fresh
 
-Tailwind built into Fresh can be used in web components that run in a Fresh app. I've done that using the `tailwind` support added in Fresh v1.6.0 that replaces `twind`. To get tailwind working with web components you need to add a line pointing to the web components in the `static` folder to `tailwind.config.ts`:
+The [Tailwind](https://tailwindcss.com/) helper CSS class transformation is built into the Fresh framework. As such, it can be used in web components that run in a Fresh app. The `tailwind` support added in Fresh v1.6.0 replaces `twind`, a separate tailwind transformation that uses Tailwind helper classes, but runs behind Tailwind in Tailwind's helper class support.
+
+To get native-Tailwind working with web components you need to add a line pointing to the web components in the `static` folder to `tailwind.config.ts`:
 ```ts
   content: [
     "{routes,islands,components}/**/*.{ts,tsx}",
@@ -724,6 +728,7 @@ Tailwind built into Fresh can be used in web components that run in a Fresh app.
 The first line refer to Fresh components, while the second one refers to the web components. It's probably a good idea to put those files in a separate folder within `static`.
 
 Another option for using `tailwind` with web components in Fresh is to use JSX as the custom element's content. In this case, the content is annotated with the tailwind classes. Here's an example:
+
 ```ts
     <counter-wc>
       <div class="flex gap-8 py-6">
@@ -738,13 +743,15 @@ Another option for using `tailwind` with web components in Fresh is to use JSX a
     </counter-wc>
 ```
 
+The element's `class` attribute in the example above is annotated with the names of Tailwind helper classes. The Tailwind transformation involves including Tailwind's helper classes (like `text-3xl` or `px-2`) in the app's deployed CSS.
+
 ## Creating Web Components with Lit
 
-There are a number of third party libraries that extend web components. They include [Stencil](https://github.com/ionic-team/stencil), [Lightning Web Components](https://github.com/salesforce/lwc), [WebC](https://github.com/salesforce/lwc) and [Enhance](https://enhance.dev/). But [Lit](https://lit.dev/) (formerly Polymer) is the granddaddy of them all and probably the most used lib, so that's the library I'm going to cover.
+There are a number of third party libraries that extend Web Components. They include [Stencil](https://github.com/ionic-team/stencil), [Lightning Web Components](https://github.com/salesforce/lwc), [WebC](https://github.com/salesforce/lwc) and [Enhance](https://enhance.dev/). But [Lit](https://lit.dev/) (formerly Polymer) is the granddaddy of them all and probably the most used lib, so that's the library I'm going to cover.
 
-Modern Lit uses decorators to define and register a Web Component. By doing this, they remove a lot of the boilerplate required to create a web component.
+Modern Lit uses decorators to define and register a Web Component. By doing this, they remove a lot of the boilerplate required to create a web component. The `customElement`, `property` and `properties` decorators are the most common [Lit decorators](https://lit.dev/docs/components/decorators/) used.
 
-Unfortunately, browsers do not support decorators at this point even though they are at Stage 3 in the TC-39 standardization process. In order for Lit decorators to work, you need to [transpile the Lit code](https://lit.dev/docs/tools/publishing/#publishing-modern-javascript).
+Unfortunately, browsers do not support decorators at this point even though they are at [Stage 3 in the TC-39 standardization process](https://github.com/tc39/proposal-decorators). In order for Lit decorators to work, you need to [transpile the Lit code](https://lit.dev/docs/tools/publishing/#publishing-modern-javascript).
 
 One way to do the transpilation is to [use Vite as is shown in this repo](https://github.com/bluwy/create-vite-extra/tree/master/template-deno-lit-ts). I really didn't want to get into another build process besides that one used by Fresh, so I decided to create a couple of Lit components without decorators.
 
@@ -804,17 +811,48 @@ The standard Web Component lifecycle methods like the `constructor`, `connectedC
 
 Lit has two useful [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates) `html` and `css` which is used to create HTML and CSS markup.
 
-## Lit and TypeScript
+### Lit and TypeScript
 
-When working with Deno and Lit using TypeScript in the vscode IDE you will get errors because the Deno lsp does not recognize `LitElement`. In order to avoid that you need to
+When working with Deno and Lit using TypeScript in the vscode IDE you will get errors because the Deno LSP does not recognize Lit properties as class-level variables. In order to avoid this error, you need to declare the variable and initialize it like `message` is done in this example ([source code here](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/MyLitMessage.ts)):
+```ts
+export class MyLitMessage extends LitElement {
+  // Needed for TypeScript since it does not recognize
+  //  TS properties as class-level variables
+  message = "";
+  static get properties() {
+    return {
+      message: { type: String },
+    };
+  }
+// ... more stuff here including constructor & render() impl
+}
+```
 
-If you want to use TypeScript
+As stated above, Lit decorators do not work in Deno because Deno does not transpile decorators to JS that run in a browser and browsers do not implement decorators as they recently entered [Stage 3 of the TC-39 standardization process](https://github.com/tc39/proposal-decorators).
+
+If you want to make the component usable in a Fresh app's `JSX` and not throw errors in VSCode or another IDE, you'll need to add an interface and reference to the `JSX` namespace in a `types.ts` file. Here's what that looks like for a Lit component ([from this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts)):
+
+```ts
+interface MyLitMessage extends JSX.HTMLAttributes<LitElement> {
+  message: string;
+}
+declare module "preact" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "my-lit-message": MyLitMessage;
+      // ... other components here
+    }
+  }
+}
+```
+Note that the interface extends `JSX.HTMLAttributes` with a `LitElement` generic type parameter. This allows the use of the custom Lit element's tag inside the Fresh `JSX` without any IDE errors.
 
 
+You can use the [esbuild bundling code shown above](#using-typescript-with-fresh-deployed-custom-elements) to build a a Lit component created without decorators in TypeScript or JavaScript. In order to do that make sure the `esbuild` entry point ([`mod.ts` in the example app](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/mod.ts)) contains an export for each Lit component.
 
 ## Using Third-party Web Components
 
-I should not up front that most third-party web components are setup to be used exclusively with Node.js. That does not mean you can't use all of those components, you just have to figure out how to do it.
+I should note up front that most third-party web components are setup to be used exclusively with Node.js. That does not mean you can't use all of those components, you just have to figure out how to do it.
 
 One way is to download the web component's source code and put it in a folder accessible by your web server. Still if there are a lot of CommonJS imports, you have a bit of work to convert them to ESM imports. This can be a big hassle, but using an `npm:` prefix in the import helps.
 
