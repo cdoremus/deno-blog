@@ -16,6 +16,7 @@
       - [Templates and Slots](#templates-and-slots)
       - [HTML Web Components](#html-web-components)
     - [Styling Web Components](#styling-web-components)
+      - [Using CSS Pseudoclasses with Web Components](#using-css-pseudoclasses-with-web-components)
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
       - [Style Inheritance](#style-inheritance)
     - [Using the JavaScript Custom Event API](#using-the-javascript-custom-event-api)
@@ -379,6 +380,13 @@ A non-Shadow DOM component will add the component's markup to the component's `i
   this.innerHTML = html;
 ```
 In this case, the `shadow` variable will not be created.
+
+### Using CSS Pseudoclasses with Web Components
+Standard CSS pseudoclasses can be used with Web Components. However, there are a few that are designed specifically for Web Components.
+- `:host` refers to the HTML element that hosts the web component.
+- `:slotted` is used to style `<slot>` elements.
+- `:parts` uses a `part` attribute on a custom element to target CSS styles.
+NNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 ### Using Constructable Stylesheets
 
