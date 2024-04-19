@@ -56,7 +56,8 @@ The first question that comes up in a Web Component discussion is why: why would
 1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack because of the amount of JS they send to the client.
 2. They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
 3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, you could use them on all of them.
-4. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
+4. Since Web Components are build into the browser, they will always be supported and backwardly compatible as opposed creating components with a framework that can introduce periodic breaking changes.
+5. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
 
 I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes clunky ways to do things when you use a component created in a web framework.
 
