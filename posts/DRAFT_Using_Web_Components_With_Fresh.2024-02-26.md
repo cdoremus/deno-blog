@@ -37,16 +37,18 @@ Deno prides itself with its support of standards. It has embraced ECMAScript imp
 
 Web Components are a web standard way of creating reusable custom HTML elements. In essence they extend native HTML element functionality. They can be used with or without a web framework like [Deno Fresh](https://fresh.deno.dev) or from a static HTML page served from a server like one that uses `Deno.serve`.
 
-This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section.
+This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. There is also a Fresh application that accompany's this blog post.
+
+But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section.
 
 
 # Developing a Web Component
 
 The Web Component standard is a means for creating custom HTML elements with structure, attributes and behavior like their native cousins. Technically, a Web Component encompasses two standards:
-- [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements): custom-made HTML tags
+- [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements): custom-made HTML tags.
 - [The Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM): a means for isolating the custom element from the external document.
 
-A web component is created using a JavaScript class that extends `HTMLElement`, the parent of all HTML elements. The custom element can be associated with the shadow DOM when it's created.
+A web component is created using a JavaScript class that extends `HTMLElement`, the parent of all HTML elements. The custom element can be associated with the Shadow DOM when it's created.
 
 ## Why Web Components
 
@@ -424,33 +426,35 @@ This allows the use of custom properties to customization CSS in a web component
 
 
 ## Using the JavaScript Custom Event API
-JavaScript events can be used in custom elements. This allows you to for you to create and listen to custom events.
+JavaScript events can be used in custom elements. This allows you to for you to create and listen to custom events (the `CustomEvent` class).
 
 Thee are two functions that can be used with JavaScript events:
 
 - **`addEventListener()`** can be attached to any web component. It takes an event name (click, change, submit, etc) and a a callback that gets called when the event is triggered/dispatched.
 
-- **`dispatchEvent()`** can be used to broadcast custom events to be picked up by event listeners listening to that specific event. Custom events can also have data attached to it in the `details` option.
+- **`dispatchEvent()`** can be used to broadcast custom events to be picked up by event listeners listening to that specific event.
+
 ```js
-// create event with a payload
-const customEvent = new CustomEvent("custom-event", {userId: 1, name: "John Doe"});
-// broadcast the event
-customElement.dispatchEvent(customEvent);
-// capture the custom event by another element
-anotherCustomElement.addEventListener("custom-event", (event) => {
-  // get the event detail
-  const user = event.detail;
-  // TODO: use the user detail in app logic
-})
+  // create event with a detail(data payload)
+  const customEvent = new CustomEvent("custom-event", {userId: 1, name: "John Doe"});
+  // broadcast the event
+  customElement.dispatchEvent(customEvent);
+  // capture the custom event by another element
+  anotherCustomElement.addEventListener("custom-event", (event) => {
+    // get the event detail containing the event's data
+    const user = event.detail;
+    const userId = user.userId;
+    // TODO: use the userId in application logic
+  })
 ```
 
-By dispatching a custom event in a web component you can send information to any component in the DOM tree that subscribes to that event using an event listener.
+By dispatching a custom event in a Web Component you can send information to any element in the DOM tree that subscribes to that event using an event listener. The `CustomEvent` class used to do that has a constructor that takes a `String` -- the event name -- and an object that contains data to be passed onto event listeners in its `detail` property.
 
 ## Working with Forms
 
-Custom elements can contain HTML forms and they will function normally.
+Custom elements can contain HTML forms and they will function normally. The [FormWC.ts](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/FormWC.ts) Web Component that is part of the application that accompanies this blog post is an example.
 
-But when one or more form elements are contained in a component with a form defined outside the Web Component interactions can be complicated.
+But when one or more form elements are contained in a component with a form defined outside the Web Component, interactions can be complicated.
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
@@ -458,7 +462,7 @@ But a custom element that uses the shadow DOM to encapsulate a `<text>`, `<texta
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
-However, a new Web Component standard interface called `ElementInternals` seamlessly integrates a shadow DOM created form elements into the enclosing form. All modern browsers support this standard.
+However, a new Web Component standard interface called `ElementInternals` seamlessly integrates a shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
 
 This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available `formAssociatedCallback(form)` which allows you to get form state at that time.
 
@@ -470,6 +474,7 @@ For instance, a HTML snippet using a form-associated custom element might look l
       Enter Name:
     </label>
     <div>
+      <!-- Defined in MyNameInput class shown below -->
       <my-name-input id="input-name"></my-name-input>
     </div>
     <div>
@@ -490,9 +495,7 @@ For instance, a HTML snippet using a form-associated custom element might look l
     });
   </script>
 ```
-Here we are listening to the form's submit value to get the value of the `<input>`
-that is created inside the Web Component. Normally, this value would be retrieved
-on the server.
+Here we are listening to the form's submit value to get the value of the `<input>`that is created inside the Web Component. Normally, this value would be retrieved on the server.
 
 The `my-name-input` component's code would look like this:
 
@@ -536,7 +539,7 @@ class MyNameInput extends HTMLElement {
 customElements.define( 'my-name-input', MyNameInput);
 }
 ```
-Note the use of `attachInternals()` to get a handle on some of the external form's properties. In addition, the value of the component's `id` is used to set the `id` of the component's `input` element. This makes the label's text available to the component, something that is not accessible without the `ElementInternals` reference. This relation between the label and it's associated input value is important for accessibility. `ElementInternals` also includes [many ARIA properties](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals#instance_properties_included_from_aria) that can be set.
+Note the use of `attachInternals()` to get a handle on some of the external form's properties. In addition, the value of the component's `id` is used to set the `id` of the component's `input` element. This makes the label's text available to the component, something that is not accessible without the `ElementInternals` reference. This relation between the label and it's associated input value is important for accessibility. `ElementInternals` also includes [many ARIA properties](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals#instance_properties_included_from_aria) that can be set on form elements.
 
 ## Web Components and Accessibility
 
