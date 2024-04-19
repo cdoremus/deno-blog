@@ -18,7 +18,7 @@
     - [Styling Web Components](#styling-web-components)
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
       - [Style Inheritance](#style-inheritance)
-    - [Custom Element Events](#custom-element-events)
+    - [Using the JavaScript Custom Event API](#using-the-javascript-custom-event-api)
     - [Working with Forms](#working-with-forms)
     - [Web Components and Accessibility](#web-components-and-accessibility)
   - [Using Web Components with Deno](#using-web-components-with-deno)
@@ -181,11 +181,12 @@ To set the Shadow DOM mode to closed, just change the mode from "open" to "close
     const shadowRoot = this.attachShadow({ mode: "closed" });
 ```
 When this is done, the Developer Tools shadow root notation shows `closed` in the Elements tab.
+
 ### Templates and Slots
 
 Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere including a custom element.
 
-A `<slot>` is an HTML element used inside a template container as a content placeholder. It is only available in a web component that uses the Shadow DOM.
+A `<slot>` is an HTML element used inside a template tag as a content placeholder. It is only available in a web component that uses the Shadow DOM.
 
 JavaScript is used to replace the `<slot>` tag with other content at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Taken from the [demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main), here's what that would look like:
 ```tsx
@@ -238,7 +239,7 @@ template!.innerHTML = `
 
 ### Declarative Shadow DOM
 
-Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. DSD is a way to create a Shadow DOM without JavaScript using template and slot tags. You defined a DSD component using the `shadowrootmode` attribute on the `<template>` tag. Like the `attachShadow` mode options, there are two possible values of `shadowrootmode`: "open" and "closed".
+Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. DSD is a way to create a Shadow DOM without JavaScript using template and slot tags. You defined a DSD component using the `shadowrootmode` attribute on the `<template>` tag. Like the `attachShadow` mode options, there are two possible values for the `shadowrootmode` attribute: "open" and "closed".
 
 The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element. Here's an example:
 
@@ -293,13 +294,16 @@ The Declarative Shadow DOM has the same level of encapsulation and rules as the 
 </body>
 ```
  This is what the component looks like when rendered in a browser:
+
  ![Rendered Declarative Shadow DOM web component](/img/blog/web-components/DSD_Screenshot.png)
 
 ### HTML Web Components
 
 Web components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom elements has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
 
-One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose content is wrapped inside the web component. Here's an example of doing that with Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
+The most obvious disadvantage is that with the Shadow DOM you do not have access to most global CSS styles ([for details see below](#style-inheritance)).
+
+One use of the "Light DOM" are in what has been called [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose markup and content is wrapped inside the web component. Here's an example how you do that with Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
 
 ```ts
   <counter-wc> // a custom-element
@@ -315,7 +319,7 @@ One use of the "Light DOM" are in [HTML Web Components](https://adactio.com/jour
   </counter-wc>
 ```
 
-Another alternative on this theme is to have the custom element's HTML content encapsulated in a Preact component. Here's what that would look like taken from [a component in the demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx):
+Another alternative on this theme in a Fresh app is to have the custom element's HTML content encapsulated in a Preact component. [The demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx) has an example:
 
 ```ts
   <counter-wc>
@@ -326,17 +330,18 @@ Another alternative on this theme is to have the custom element's HTML content e
   </counter-wc>
 ```
 
-In order for an HTML component to work with Fresh, the component must not use the shadow DOM.
+In order for an HTML Web Component to work with Fresh, the component must not use the Shadow DOM.
 
 ## Styling Web Components
 
-Styling a Web Component can be done in two ways
-- external - This is not allowed when using the Shadow DOM, but if you are not building the component with Shadow DOM, you can style with external stylesheet file.
-- internal - Used to add styles to the shadow DOM (see below).
+Styling a Web Component can be done with CSS in two ways
+- external - This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can style with an external stylesheet file.
+- internal - CSS styles encapsulated within a Shadow DOM configured Web Component.
 
 When using the shadow DOM class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
 
 The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
+
 ```js
 class LinkedExternalStyleSheetWC extends HTMLElement {
   connectedCallback() {
@@ -349,22 +354,35 @@ class LinkedExternalStyleSheetWC extends HTMLElement {
   };
 };
 ```
-The simplest way to add CSS to a component is to add it to the `innerHTML` using a string literal. Here's an example:
+The most common way to add CSS to a Web Component is to add it to the `innerHTML` using a string literal. This can be done in a component build with or without the Shadow DOM. Here's an example with a Shadow DOM component:
 
   ```js
   class CSSStyleTagWC extends HTMLElement {
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: "open" });
-    let html = `<style>h4 {color:red}</style>`;
-    html += `<h4>Hello World in Red!!!</h4>`;
-    shadow.innerHTML = html;
+    css = `
+      .title: {
+        font-size: 3rem;
+        font-weight: bolder;
+      }
+    `;
+    connectedCallback() {
+      // attach the Shadow DOM to this component
+      const shadow = this.attachShadow({ mode: "open" });
+      let html = `<style>${this.css}</style>`;
+      html += `<div class="title">Hello World in Red!!!</h4>`;
+      // Add the HTML to the shadow DOM
+      shadow.innerHTML = html;
+    }
   }
-}
 ```
+A non-Shadow DOM component will add the component's markup to the component's `innerHTML`, so the last line in the connectedCallback` method will be:
+```js
+  this.innerHTML = html;
+```
+In this case, the `shadow` variable will not be created.
 
 ### Using Constructable Stylesheets
 
-[Constructable Stylesheets](https://github.com/WICG/construct-stylesheets/blob/main/explainer.md) is a way to create a style sheet programmatically. It uses the [`CSSStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet) class supported by all browsers.
+[Constructable Stylesheets](https://github.com/WICG/construct-stylesheets/blob/main/explainer.md) is a way to create a style sheet programmatically. It uses the standard [`CSSStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet) class supported by all browsers.
 
 To be used with a custom element, the `CSSStyleSheet` class needs to be instantiated outside of the component.
 
@@ -385,14 +403,14 @@ class ConstructableStyleSheetWC extends HTMLElement {
 }
 ```
 As seen in the example above, there are two `CSSStyleSheet` methods that are commonly used with a custom element:
-- `replaceSync` which takes a stylesheet rule and applies it to the constructed stylesheet
+- `replaceSync` which takes a stylesheet rule and applies it to the constructed stylesheet.
 - `insertRule` which adds a new stylesheet rule to the constructed stylesheet.
 
 Also note that the shadow DOM has an `adoptedStyleSheet` function to associate one or more constructed stylesheets to it.
 
 ### Style Inheritance
 
-As noted previously, web components created with a shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+As noted previously, web components created with a Shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
 
 You can use a CSS custom property to update an inherited property. For instance you might have a CSS rule in your component:
 ```css
@@ -400,20 +418,30 @@ You can use a CSS custom property to update an inherited property. For instance 
     color: var(--myclass-color)
   }
 ```
-If the `--myclass-color` custom property is not set in a CSS file within a parent scope, then the color will fallback to the inherited color by default.
+The `--myclass-color` would be set outside the component using an external stylesheet. If the custom property is not set in an external CSS file, then the color will fallback to the inherited color by default.
 
 This allows the use of custom properties to customization CSS in a web component.
 
 
-## Custom Element Events
-Web component custom elements allow for you to listen to and create events.
+## Using the JavaScript Custom Event API
+JavaScript events can be used in custom elements. This allows you to for you to create and listen to custom events.
 
-The **`addEventListener()`** function can be attached to any web component. It takes an event name (click, change, submit, etc) and a a callback that gets called when the event is triggered.
+Thee are two functions that can be used with JavaScript events:
 
-The **`dispatchEvent()`** method can be used to broadcast custom events to be picked up by event listeners listening to that specific event. Custom events can also have data attached to it in the `details` option.
+- **`addEventListener()`** can be attached to any web component. It takes an event name (click, change, submit, etc) and a a callback that gets called when the event is triggered/dispatched.
+
+- **`dispatchEvent()`** can be used to broadcast custom events to be picked up by event listeners listening to that specific event. Custom events can also have data attached to it in the `details` option.
 ```js
-const event
-NNNNNNNNNNNNNNNNNNNNNNNNN
+// create event with a payload
+const customEvent = new CustomEvent("custom-event", {userId: 1, name: "John Doe"});
+// broadcast the event
+customElement.dispatchEvent(customEvent);
+// capture the custom event by another element
+anotherCustomElement.addEventListener("custom-event", (event) => {
+  // get the event detail
+  const user = event.detail;
+  // TODO: use the user detail in app logic
+})
 ```
 
 By dispatching a custom event in a web component you can send information to any component in the DOM tree that subscribes to that event using an event listener.

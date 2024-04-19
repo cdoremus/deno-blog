@@ -1016,6 +1016,7 @@
     "https://deno.land/x/fresh@1.3.1/versions.json": "4531024f957c885e371996f68ee25baff8d69cba4724ef3453a8517271ae7b59",
     "https://deno.land/x/fresh@1.5.1/dev.ts": "720dd3a64b62b852db7b6ae471c246c5c605cf4a3091c4cbc802790f36d43e4c",
     "https://deno.land/x/fresh@1.5.1/plugins/twind.ts": "b20ab6004318eb56538976c49b23c125560845650cf2b2d69b463c31b16da06f",
+    "https://deno.land/x/fresh@1.5.1/plugins/twind/main.ts": "ece82235c4daf791263456bf10e65ec9c3e9d535c2a87bcd449547126786407d",
     "https://deno.land/x/fresh@1.5.1/plugins/twind/shared.ts": "ad8ccde3874b305be13a996e6f1c774bb9f611505f98a0995f5f7be368c5949c",
     "https://deno.land/x/fresh@1.5.1/runtime.ts": "49f4f70c24d14c5d5e112a671ef0314e438e5cd83eacb4f75c6db2fbdc22b540",
     "https://deno.land/x/fresh@1.5.1/server.ts": "d5817615a3ac822d422627f2cd6f850a31e11f7e73b328a79807f722e6519bac",
