@@ -7,7 +7,7 @@
 ## Table of Contents
   - [Introduction](#introduction)
   - [Developing a Web Component](#developing-a-web-component)
-    - [Why Web Components](why-web-components)
+    - [Why Web Components](#why-web-components)
     - [Using Web Components with Deno](#using-web-components-with-deno)
     - [Creating a Web Component](#creating-a-web-component)
       - [Web Component Lifecycle](#web-component-lifecycle)
@@ -16,11 +16,11 @@
       - [Templates and Slots](#templates-and-slots)
       - [HTML Web Components](#html-web-components)
     - [Styling Web Components](#styling-web-components)
-      - [Using CSS Pseudoclasses with Web Components](#using-css-pseudoclasses-with-web-components)
+      - [Using CSS Pseudo-selectors with Web Components](#using-css-pseudo-selectors-with-web-components)
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
       - [Style Inheritance](#style-inheritance)
     - [Using the JavaScript Custom Event API](#using-the-javascript-custom-event-api)
-    - [Working with Forms](#working-with-forms)
+    - [Working with Forms and ElementInternals](#working-with-forms-and-elementinternals)
     - [Web Components and Accessibility](#web-components-and-accessibility)
   - [Using Web Components with Deno](#using-web-components-with-deno)
     - [Using `Deno.serve`](#using-denoserve)
@@ -38,9 +38,9 @@ Deno prides itself with its support of standards. It has embraced ECMAScript imp
 
 Web Components are a web standard way of creating reusable custom HTML elements. In essence they extend native HTML element functionality. They can be used with or without a web framework like [Deno Fresh](https://fresh.deno.dev) or from a static HTML page served from a server like one that uses `Deno.serve`.
 
-This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. There is also a Fresh application that accompany's this blog post.
+This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. There is also a [Fresh application that accompanies this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main).
 
-But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section.
+But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section. Still, there are a few recent additions to the Web Component standard like DEclarative Shadow DOM and Element Internals that you might want to take a look at if you haven't worked with Web Components in a while.
 
 
 # Developing a Web Component
@@ -58,7 +58,7 @@ The first question that comes up in a Web Component discussion is why: why would
 1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack because of the amount of JS they send to the client.
 2. They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
 3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, you could use them on all of them.
-4. Since Web Components are build into the browser, they will always be supported and backwardly compatible as opposed creating components with a framework that can introduce periodic breaking changes.
+4. Since Web Components are build into the browser, they will always be supported and backwardly compatible as opposed to creating components with a web framework that can introduce periodic breaking changes.
 5. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
 
 I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes clunky ways to do things when you use a component created in a web framework.
@@ -147,7 +147,7 @@ The Web Component standard includes a concept called the Shadow DOM, an isolated
 
 What this means is that styles outside of your component cannot influence elements inside your web component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
 
-Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the web component, buttons inside will not be part of the `button` collection result set.
+Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the web component, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's button element.
 
 The shadow DOM has two modes:
 - open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
@@ -168,11 +168,11 @@ class MyShadowDomWC extends HTMLElement {
 }
 customElements.define("my-shadow-dom", MyShadowDomWC);
 ```
-The `attachShadow` method can be also called inside `connectedCallback` to set a local shadow root reference.
+The `attachShadow` method can be also called inside `connectedCallback` to set a local `shadow root` reference. When the call is made in the constructor, the `this.shadowRoot` property is set.
 
 The `append` method is used to add elements to the shadow root.
 
-If you look at the Elements tab in the Developer Tools, you'll see the shadow root with its DOM tree.
+If you look at the Elements tab in the browser Developer Tools, you'll see the shadow root with its DOM tree.
 
 | Shadow DOM visualized in the Chrome Developer Tools |
 |------|
@@ -185,6 +185,8 @@ To set the Shadow DOM mode to closed, just change the mode from "open" to "close
     const shadowRoot = this.attachShadow({ mode: "closed" });
 ```
 When this is done, the Developer Tools shadow root notation shows `closed` in the Elements tab.
+
+Shadow DOM Web Components are often used as reusable components in a [Design System](https://www.designsystems.com/), a way to formalize a company's brand presence on the web. Besides allowing a company-standard UI, Web Components provide a way to make sure accessibility standards are met by the Design System development group rather than relying on individual development groups that may be working with different web frameworks.
 
 ### Templates and Slots
 
@@ -219,7 +221,9 @@ The web component needed to declare that the component uses Shadow DOM with a `t
     shadow.appendChild(template!.content.cloneNode(true));
   }
 ```
-A reference to the `<template>` tag is obtained and its content is cloned to add its content to the Shadow DOM.
+A reference to the `<template>` tag is obtained and its content is cloned to add its content to the Shadow DOM. Note that the `div`s with a `slot` attribute are added in the proper place in the template according to the `slot` element's name.
+
+Conversely, the `div` without a `slot` attribute is added to the `slot` element without a `name` attribute. An unnamed `slot` always takes the content without a `slot` attribute. There can only be one unnamed `slot` element in a template.
 
 Here's what the component looks like when rendered in the browser:
 
@@ -384,11 +388,60 @@ A non-Shadow DOM component will add the component's markup to the component's `i
 ```
 In this case, the `shadow` variable will not be created.
 
-### Using CSS Pseudoclasses with Web Components
-Standard CSS pseudoclasses can be used with Web Components. However, there are a few that are designed specifically for Web Components.
-- `:host` refers to the HTML element that hosts the web component.
-- `:slotted` is used to style `<slot>` elements.
-- `:parts` uses a `part` attribute on a custom element to target CSS styles.
+### Using CSS Pseudo-selectors with Web Components
+Standard CSS pseudo-selectors can be used with Web Components. However, there are a few that are designed specifically for Web Components.
+- `:host` a pseudo-class that refers to the HTML element that hosts the web component.
+- `::slotted()` is a pseudo-element function used to style `<slot>` elements. It's argument can be the wildcard (*) or a CSS selector.
+- `::part()` a pseudo-element function that uses a `part` attribute on a custom element to target CSS styles. It's argument can be the wildcard(*) or a CSS selector.
+
+Let's look at an example that shows how each pseudo-selector is used:
+
+```html
+<header>
+  <my-message></my-message>
+</header>
+```
+And the CSS in the `<my-message>` component includes the `:host` pseudo-class:
+
+```css
+```
+Then the background color for the header would be red.
+
+
+```js
+const css = `
+  <style>
+    :host {
+      background-color: red;
+    }
+    ::slotted(.title) {
+
+    }
+    ::slotted(.content) {
+
+    }
+    ::part()
+  </style>`;
+const template = `
+  <template>
+    <slot>
+      <div class=".title"></div>
+    </slot>
+    <slot>
+      <div class=".content"></div>
+    </slot>
+  </template>`;
+  class MyComponent extends HTMLElement {
+    connectedCallback() {
+    const shadowRoot = this.attachShadow({ mode: "open" });
+    let html =
+    }
+  }
+```
+And the CSS looks like:
+
+
+
 NNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
 ### Using Constructable Stylesheets
@@ -459,7 +512,7 @@ Thee are two functions that can be used with JavaScript events:
 
 By dispatching a custom event in a Web Component you can send information to any element in the DOM tree that subscribes to that event using an event listener. The `CustomEvent` class used to do that has a constructor that takes a `String` -- the event name -- and an object that contains data to be passed onto event listeners in its `detail` property.
 
-## Working with Forms
+## Working with Forms and ElementInternals
 
 Custom elements can contain HTML forms and they will function normally. The [FormWC.ts](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/FormWC.ts) Web Component that is part of the application that accompanies this blog post is an example.
 
@@ -467,11 +520,11 @@ But when one or more form elements are contained in a component with a form defi
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
-But a custom element that uses the shadow DOM to encapsulate a `<text>`, `<textarea>` and `<select>` are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
+But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<textarea>` and `<select>` are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
-However, a new Web Component standard interface called `ElementInternals` seamlessly integrates a shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
+A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates a shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
 
 This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available `formAssociatedCallback(form)` which allows you to get form state at that time.
 
@@ -677,7 +730,7 @@ customElements.define("counter-wc", CounterWC);
 ```
 All the functional logic -- button clicks -- are contained in the Web Component, while the child elements were responsible for layout in conjunction with external stylesheets.
 
-Note that the `class` values are Tailwind helper classes (see [Tailwind section below](#using-tailwind-with-fresh)).
+Note that the `class` values are Tailwind helper selectors (see [Tailwind section below](#using-tailwind-with-fresh)).
 
 NNNNNNNNNNNNNNNNNNNNNNNNNN
 
@@ -756,7 +809,7 @@ As [show in the example code](https://github.com/cdoremus/fresh-webcomponents/bl
 
 ### Using Tailwind with Fresh
 
-The [Tailwind](https://tailwindcss.com/) helper CSS class transformation is built into the Fresh framework. As such, it can be used in web components that run in a Fresh app. The `tailwind` support added in Fresh v1.6.0 replaces `twind`, a separate tailwind transformation that uses Tailwind helper classes, but runs behind Tailwind in Tailwind's helper class support.
+The [Tailwind](https://tailwindcss.com/) helper CSS class transformation is built into the Fresh framework. As such, it can be used in web components that run in a Fresh app. The `tailwind` support added in Fresh v1.6.0 replaces `twind`, a separate tailwind transformation that uses Tailwind helper selectors, but runs behind Tailwind in Tailwind's helper class support.
 
 To get native-Tailwind working with web components you need to add a line pointing to the web components in the `static` folder to `tailwind.config.ts`:
 ```ts
@@ -767,7 +820,7 @@ To get native-Tailwind working with web components you need to add a line pointi
 ```
 The first line refer to Fresh components, while the second one refers to the web components. It's probably a good idea to put those files in a separate folder within `static`.
 
-Another option for using `tailwind` with web components in Fresh is to use JSX as the custom element's content. In this case, the content is annotated with the tailwind classes. Here's an example:
+Another option for using `tailwind` with web components in Fresh is to use JSX as the custom element's content. In this case, the content is annotated with the tailwind selectors. Here's an example:
 
 ```ts
     <counter-wc>
@@ -783,7 +836,7 @@ Another option for using `tailwind` with web components in Fresh is to use JSX a
     </counter-wc>
 ```
 
-The element's `class` attribute in the example above is annotated with the names of Tailwind helper classes. The Tailwind transformation involves including Tailwind's helper classes (like `text-3xl` or `px-2`) in the app's deployed CSS.
+The element's `class` attribute in the example above is annotated with the names of Tailwind helper selectors. The Tailwind transformation involves including Tailwind's helper selectors (like `text-3xl` or `px-2`) in the app's deployed CSS.
 
 ## Creating Web Components with Lit
 
