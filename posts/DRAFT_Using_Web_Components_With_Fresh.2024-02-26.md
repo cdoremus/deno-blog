@@ -8,7 +8,6 @@
   - [Introduction](#introduction)
   - [Developing a Web Component](#developing-a-web-component)
     - [Why Web Components](#why-web-components)
-    - [Using Web Components with Deno](#using-web-components-with-deno)
     - [Creating a Web Component](#creating-a-web-component)
       - [Web Component Lifecycle](#web-component-lifecycle)
       - [Encapsulation with the Shadow DOM](#encapsulation-with-the-shadow-dom)
@@ -16,7 +15,7 @@
       - [Templates and Slots](#templates-and-slots)
       - [HTML Web Components](#html-web-components)
     - [Styling Web Components](#styling-web-components)
-      - [Using CSS Pseudo-selectors with Web Components](#using-css-pseudo-selectors-with-web-components)
+      - [Using CSS Pseudo-selectors](#using-css-pseudo-selectors)
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
       - [Style Inheritance](#style-inheritance)
     - [Using the JavaScript Custom Event API](#using-the-javascript-custom-event-api)
@@ -40,8 +39,9 @@ Web Components are a web standard way of creating reusable custom HTML elements.
 
 This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. There is also a [Fresh application that accompanies this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main).
 
-But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section. Still, there are a few recent additions to the Web Component standard like DEclarative Shadow DOM and Element Internals that you might want to take a look at if you haven't worked with Web Components in a while.
+But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section. Still, there are a few recent additions to the Web Component standard like Declarative Shadow DOM and Element Internals that you might want to take a look at if you haven't worked with Web Components in a while.
 
+These Web Components that we are going to start with can be deployed to any web server. I have put together a number of examples using a Deno web server. The [repo can be found here](https://github.com/cdoremus/web-component-demos).
 
 # Developing a Web Component
 
@@ -55,13 +55,13 @@ A web component is created using a JavaScript class that extends `HTMLElement`, 
 
 The first question that comes up in a Web Component discussion is why: why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular, etc. instead. Here's my take on that answer:
 
-1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack because of the amount of JS they send to the client.
+1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
 2. They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
-3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, you could use them on all of them.
-4. Since Web Components are build into the browser, they will always be supported and backwardly compatible as opposed to creating components with a web framework that can introduce periodic breaking changes.
-5. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers.
+3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, they can be used in all of them.
+4. Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to creating components with a web framework that will probably introduce periodic breaking changes as the framework evolves.
+5. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
 
-I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes clunky ways to do things when you use a component created in a web framework.
+I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes awkward ways to do things when you use a component created in a web framework.
 
 ## Creating a Web Component
 You create a web component custom element using a JavaScript class that extends the `HTMLElement` interface. The simplest 'Hello World' example looks like this:
@@ -346,7 +346,7 @@ Styling a Web Component can be done with CSS in two ways
 - external - This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can style with an external stylesheet file.
 - internal - CSS styles encapsulated within a Shadow DOM configured Web Component.
 
-When using the shadow DOM class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
+When using the shadow DOM, class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
 
 The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
 
@@ -388,61 +388,145 @@ A non-Shadow DOM component will add the component's markup to the component's `i
 ```
 In this case, the `shadow` variable will not be created.
 
-### Using CSS Pseudo-selectors with Web Components
-Standard CSS pseudo-selectors can be used with Web Components. However, there are a few that are designed specifically for Web Components.
-- `:host` a pseudo-class that refers to the HTML element that hosts the web component.
-- `::slotted()` is a pseudo-element function used to style `<slot>` elements. It's argument can be the wildcard (*) or a CSS selector.
-- `::part()` a pseudo-element function that uses a `part` attribute on a custom element to target CSS styles. It's argument can be the wildcard(*) or a CSS selector.
+### Using CSS Pseudo-selectors
+Standard CSS pseudo-selectors (pseudo-elements and pseudo-classes) can be used with Web Components. However, there are a few that are designed specifically for Web Components.
+- `:host` a pseudo-class that refers to the web component's custom element. This allows you to setup styles that will effect the internal markup and content of the custom element.
+You can also use the `:host()` function to focus your CSS styles to a specific custom element content area using a CSS selector as the argument.
+- `::slotted()` is a pseudo-element function used to style the content of  `<slot>` elements. Its argument can be the wildcard (*) or a CSS selector.
+- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on custom element content markup. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute strings.
 
-Let's look at an example that shows how each pseudo-selector is used:
+Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
 
 ```html
-<header>
-  <my-message></my-message>
-</header>
+<!-- From pseudo-selectors-quiz.html -->
+  <div class="container">
+    <div class="title">Web Component Demonstrating Pseudo-Selectors</div>
+    <div>
+      <quiz-page>
+        <div class="topic" slot="topic">Dev Question</div>
+        <div class="question" slot="question">Are you a developer? </div>
+      </quiz-page>
+    </div>
+  </div>
 ```
-And the CSS in the `<my-message>` component includes the `:host` pseudo-class:
+The code shows the <quiz-page> custom element containing two slots (`topic` and `question`) that is setup in the component.
 
-```css
-```
-Then the background color for the header would be red.
+The component's code -- `quiz-page.js` -- is setup with an open Shadow DOM. It also defines the internal CSS.
 
+And the CSS in the `<quiz-page>` component includes the Web Component specific pseudo-classes:
 
 ```js
+// quiz-page.js
 const css = `
   <style>
     :host {
-      background-color: red;
+      display:flex;
+      background-color: aquamarine;
+      border:3px solid black;
+      width:60%;
+      margin:0 auto;
     }
-    ::slotted(.title) {
-
+    ::slotted(*) {
+      display:flex;
     }
-    ::slotted(.content) {
-
+    ::slotted(.topic) {
+      font-size:2.5rem;
+      font-weight:900;
+      color: brown;
     }
-    ::part()
+    ::slotted(.question) {
+      font-size:2rem;
+      font-weight:900;
+      color:blue;
+    }
+    .quiz-container {
+      margin:1rem auto;
+    }
+    .button-group {
+      display:flex;
+      gap:2rem;
+      margin:1rem 0;ß
+    }
   </style>`;
-const template = `
-  <template>
-    <slot>
-      <div class=".title"></div>
-    </slot>
-    <slot>
-      <div class=".content"></div>
-    </slot>
-  </template>`;
-  class MyComponent extends HTMLElement {
-    connectedCallback() {
-    const shadowRoot = this.attachShadow({ mode: "open" });
-    let html =
-    }
+const template = document.createElement("template");
+template.innerHTML = `
+    ${css}
+    <div class="quiz-container">
+      <slot name="topic"></slot>
+      <slot name="question"></slot>
+      <div class="button-group">
+        <div part="answer default" role="button" tabindex="1">Yes</div>
+        <div part="answer" role="button" tabindex="2">No</div>
+        <div part="answer" role="button" tabindex="3">Maybe</div>
+      </div>
+    </div>`;
+class QuizPage extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    const buttons = this.shadowRoot.querySelectorAll("div[role='button']");
+    this.addListeners(Array.from(buttons));
+  }
+
+  /** Responds to Yes, No & Maybe button clicks and
+   * Enter key events when button is in focus */
+  addListeners(buttons) {
+    console.log("buttons: ", buttons);
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        alert(`${button.innerText} button clicked!`);
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          alert(`${button.innerText} button Enter key event invoked!`);
+        }
+      });
+    });
+  }
+}
+customElements.define("quiz-page", QuizPage);
+```
+In this case the `:host` selector defines the style for the whole custom element including the layout, margins and background color.
+
+The CSS rules defined with various `slotted` selectors defines styling rules for generic and specific template slots. The `::slotted(*)` rule uses the wildcard to include all slots in the custom element. The `::slotted(.topic)` and `::slotted(.question)` selector define rules for slots with `topic` or `question` CSS classes. Note here that the argument needs to be a CSS selector.
+
+An external stylesheet can use the `part` pseudo-element to create rules can be used to style markup inside the Shadow DOM. Here's what the code looks like in the quiz page example:
+```css
+/* pseudo-selectors-quiz.css */
+div.title {
+  margin:1rem auto;
+  font-size:2.5rem;
+  font-weight:900;
+}
+.container {
+    display:flex;
+    flex-direction:column;
+    width:90%;
+    margin:0 auto;
+  }
+  quiz-page::part(answer) {
+    color: red;
+    background-color:darkseagreen;
+    font-weight:900;
+    width: 5rem;
+    height:2rem;
+    text-align:center;
+    line-height:2rem;
+    border:2px solid black;
+    border-radius:25%;
+    cursor:pointer;
+  }
+  quiz-page::part(answer):focus {
+    color:white;
+    border: 4px solid red;
+  }
+  quiz-page::part(default) {
+    font-style:italic;
   }
 ```
-And the CSS looks like:
+The `part` pseudo-element selectors are declared on the `quiz-page` custom element. Note that the argument to the `part` pseudo-elements are the values of the name attribute, not selectors like is used for the `slotted` selector.
 
-
-
-NNNNNNNNNNNNNNNNNNNNNNNNNNNN
+Make sure you check out the quiz-page example [in the repo](https://github.com/cdoremus/web-component-demos/tree/main). The same repo contains a [page that displays a Web Component with multiple tabs](https://github.com/cdoremus/web-component-demos/blob/main/pseudo-selectors-tabs.html) that also uses custom element specific pseudo-selectors.
 
 ### Using Constructable Stylesheets
 
@@ -516,7 +600,7 @@ By dispatching a custom event in a Web Component you can send information to any
 
 Custom elements can contain HTML forms and they will function normally. The [FormWC.ts](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/FormWC.ts) Web Component that is part of the application that accompanies this blog post is an example.
 
-But when one or more form elements are contained in a component with a form defined outside the Web Component, interactions can be complicated.
+But when one or more form elements are contained in a component to be used with an external form, interactions can be complicated.
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
@@ -524,11 +608,11 @@ But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<texta
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
-A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates a shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
+A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
 
-This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available `formAssociatedCallback(form)` which allows you to get form state at that time.
+This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available, `formAssociatedCallback(form)`, which allows you to get form state at that time.
 
-For instance, a HTML snippet using a form-associated custom element might look like this:
+For instance, an HTML snippet using a an external form and a form-associated custom element might look like this:
 
 ```html
   <form id="name-form">
@@ -548,7 +632,6 @@ For instance, a HTML snippet using a form-associated custom element might look l
     // Listen to submit event and display the input's value
     const form = document.querySelector("#name-form");
     form.addEventListener("submit", (e) => {
-      console.log("Form submitted: ", e);
       // display the input value
       const output = document.getElementById("output");
       output.innerHTML = `Input value: ${e.target[0].value}`;
@@ -557,7 +640,7 @@ For instance, a HTML snippet using a form-associated custom element might look l
     });
   </script>
 ```
-Here we are listening to the form's submit value to get the value of the `<input>`that is created inside the Web Component. Normally, this value would be retrieved on the server.
+Here we are listening to the form's submit value to get the value of the `<input>`that is created inside the a Web Component. Normally, this value would be retrieved on the server.
 
 The `my-name-input` component's code would look like this:
 
@@ -587,9 +670,11 @@ class MyNameInput extends HTMLElement {
       this.setValue(e.target.value);
     });
   }
-  // Additional lifecycle method called when component is associated with a form
+  // Additional lifecycle method called when component is
+  // form associated
   formAssociatedCallback(form) {
-    console.log("form associated:", form["input"]); // "name-form" printed out
+    // Print "name-form" to console
+    console.log("form associated:", form["input"]);
   }
   // set form value
   setValue(v) {
@@ -601,13 +686,14 @@ class MyNameInput extends HTMLElement {
 customElements.define( 'my-name-input', MyNameInput);
 }
 ```
-Note the use of `attachInternals()` to get a handle on some of the external form's properties. In addition, the value of the component's `id` is used to set the `id` of the component's `input` element. This makes the label's text available to the component, something that is not accessible without the `ElementInternals` reference. This relation between the label and it's associated input value is important for accessibility. `ElementInternals` also includes [many ARIA properties](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals#instance_properties_included_from_aria) that can be set on form elements.
+Note the use of `attachInternals()` to get a handle on some of the external form's properties. In addition, the value of the component's `id` attribute is used to set the `id` of the component's `input` element. This makes the label's text available to the component, something that is not available without the `ElementInternals` reference. This relation between the label and it's associated input value is important for accessibility. `ElementInternals` also includes [many other ARIA properties](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals#instance_properties_included_from_aria) that can be set on form elements.
 
 ## Web Components and Accessibility
 
-The accessibility picture with web components is complicated. Some accessibility features work, but others do not, and others require a coding work-around.
+TODO: Better transition from previous section NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+While accessibility is good for form-associated Web Components, other accessibility features can be complicated. Some accessibility features work, but others do not, and others require a coding work-around.
 
-Accessibility issues are many and varied, but I am not an accessibility expert by any means, so instead of a long-winded exploration, I'm offering these links from people who actually know what they are talking about:
+Accessibility issues are many and varied, but I am not an accessibility expert by any means, so instead of a long-winded exploration of this subject, I'm offering these links from people who actually know what they are talking about:
 - [Accessibility for Web Components](https://developer.salesforce.com/blogs/2020/01/accessibility-for-web-components)
 - [A Guide to Accessible Web Components](https://www.erikkroes.nl/blog/accessibility/the-guide-to-accessible-web-components-draft/)
 - [Web Components Accessibility FAQ](https://www.matuzo.at/blog/2023/web-components-accessibility-faq)
@@ -633,7 +719,7 @@ However, I am going to concentrate on how to use Web Components in a [Deno Fresh
 
 ## Using a Web Component with Deno Fresh
 
-The [Deno Fresh](https://fresh.deno.dev) full-stack web framework uses [Preact](https://preactjs.com/) -- a scaled-down version of [React](https://react.dev/) -- under the covers to serve web sites and applications. While React requires a bit of juggling to use web components, Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
+The [Deno Fresh](https://fresh.deno.dev) full-stack web framework uses [Preact](https://preactjs.com/) -- a scaled-down version of [React](https://react.dev/) -- under the covers to serve web sites and applications. While React requires a bit of juggling to use web components (although that is [changing in React 19](https://react.dev/blog/2024/04/25/react-19#support-for-custom-elements)), Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
 
 Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
 
