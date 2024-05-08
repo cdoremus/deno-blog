@@ -57,17 +57,17 @@ The first question that comes up in a Web Component discussion is why. Why would
 
 - Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
 - They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
-- They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, they can be used in all of them.
-- Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to creating components with a web framework that will probably introduce periodic breaking changes as the framework evolves.
+- They can be used with most web frameworks. Web Components are often used as the basis for a [design system](https://www.invisionapp.com/inside-design/guide-to-design-systems/) since they can be used in web applications that may be build with different web frameworks in different parts of the enterprise.
+- Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to components created with a web framework that will probably introduce periodic breaking changes as the framework evolves.
 - They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
 
 I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes awkward ways to do things when you use a component created in a web framework.
 
 ## Creating a Web Component
-You create a web component custom element using a JavaScript class that extends the `HTMLElement` interface. The simplest 'Hello World' example looks like this:
+You create a Web Component custom element using a JavaScript class that extends the `HTMLElement` interface. The simplest 'Hello World' example looks like this:
 ```js
 class HelloWC extends HTMLElement {
-  // lifecycle method called  when the component is loaded into the DOMs
+  // lifecycle method called  when the component is loaded into the DOM
   connectedCallback() {
     // Get the value of the message attribute
     this.message = this.getAttribute("message") ?? "World";
@@ -93,6 +93,7 @@ Finally the web component can be placed on the page using the tag name with the 
 ```html
 <hello-wc message="From a Web Component"></hello-wc>
 ```
+According to the spec, the name of a custom element tag must be hyphenated to distinguish it from a built-in HTML element.
 
 ### Web Component Lifecycle
 
@@ -102,15 +103,16 @@ The custom element lifecycle methods include:
 | ------- | ---------- |
 | `constructor()` | Called when the component instance is created.|
 | `connectedCallback()` | Called when DOM is mounted. This is the place to get the initial the value of component attributes. |
-| `disconnectedCallback()` | Called when DOM is unmounted. Often used to cleanup something a resource like a timer with `clearInterval`. |
+| `disconnectedCallback()` | Called when DOM is unmounted. Often used to cleanup a resource like a timer with `clearInterval`. |
 | `attributeChangedCallback(attrName, oldVal, newVal)` | Called when an observed attribute is changed. The arguments are the attribute name (attrName), the old value (oldVal) of the attribute and the attribute's new value (newVal) |
 |`adoptedCallback`| Called when an element is moved to a new document like a new window frame |
 
-Most of the time a web component only needs the `constructor` and/or the `disconnectedCallback` method. Either can be used to setup the web component.
+Most of the time a Web Component only needs the `constructor` and/or the `connectedCallback` method. Either can be used to setup the web component, but the latter method should be used when retrieving something from the DOM like an attribute's value.
 
-The `attributeChangedCallback` method will be called when an attribute's value is configured as dynamic in the client and the value changes from direct or indirect user interaction. It also requires a `observedAttributes` static property that returns an
-array of attribute values.
+The `attributeChangedCallback` method will be called when an attribute's value is configured as dynamic in the client and the value changes from direct or indirect user interaction. It also requires a `observedAttributes` static property in the custom element class that returns an array of attribute names.
 
+
+TODO: CHECK THIS!!!
 ```js
 class AttributeChangedWC extends HTMLElement {
   // required for attributeChangedCallback to function
@@ -139,7 +141,7 @@ class AttributeChangedWC extends HTMLElement {
     }
   }
 ```
-The client app that displayed this Web Component would have a form that would update the component's `add` attribute that would invoke the `attributeChangedCallback` method.
+The client app that displayed this Web Component would have a form that would update the component's `add` attribute. WHen that value is changed, the `attributeChangedCallback` method is invoked.
 
 ### Encapsulation with the Shadow DOM
 
