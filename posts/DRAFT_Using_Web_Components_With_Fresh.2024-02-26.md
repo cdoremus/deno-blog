@@ -53,13 +53,13 @@ A web component is created using a JavaScript class that extends `HTMLElement`, 
 
 ## Why Web Components
 
-The first question that comes up in a Web Component discussion is why: why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular, etc. instead. Here's my take on that answer:
+The first question that comes up in a Web Component discussion is why. Why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular (etc.)? Here's my take on that answer:
 
-1. Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
-2. They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
-3. They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, they can be used in all of them.
-4. Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to creating components with a web framework that will probably introduce periodic breaking changes as the framework evolves.
-5. They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
+- Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
+- They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
+- They can be used with most web frameworks. So if your team or company uses different frameworks on different sites, they can be used in all of them.
+- Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to creating components with a web framework that will probably introduce periodic breaking changes as the framework evolves.
+- They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
 
 I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes awkward ways to do things when you use a component created in a web framework.
 
@@ -346,7 +346,7 @@ Styling a Web Component can be done with CSS in two ways
 - external - This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can style with an external stylesheet file.
 - internal - CSS styles encapsulated within a Shadow DOM configured Web Component.
 
-When using the shadow DOM, class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
+When using the Shadow DOM, class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
 
 The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
 
@@ -390,12 +390,12 @@ In this case, the `shadow` variable will not be created.
 
 ### Using CSS Pseudo-selectors
 Standard CSS pseudo-selectors (pseudo-elements and pseudo-classes) can be used with Web Components. However, there are a few that are designed specifically for Web Components.
-- `:host` a pseudo-class that refers to the web component's custom element. This allows you to setup styles that will effect the internal markup and content of the custom element.
+- `:host` a pseudo-class that refers to the web component's custom element. This allows you to create styles that will effect the complete  internal markup and content of the custom element.
 You can also use the `:host()` function to focus your CSS styles to a specific custom element content area using a CSS selector as the argument.
 - `::slotted()` is a pseudo-element function used to style the content of  `<slot>` elements. Its argument can be the wildcard (*) or a CSS selector.
-- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on custom element content markup. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute strings.
+- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element inside the Web Component. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute strings. Note that a CSS selector is not used here as an argument.
 
-Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
+Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [source code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
 
 ```html
 <!-- From pseudo-selectors-quiz.html -->
@@ -403,17 +403,15 @@ Let's look at an example that shows how each pseudo-selector is used. This examp
     <div class="title">Web Component Demonstrating Pseudo-Selectors</div>
     <div>
       <quiz-page>
-        <div class="topic" slot="topic">Dev Question</div>
-        <div class="question" slot="question">Are you a developer? </div>
+        <div slot="topic">Dev Question</div>
+        <div slot="question">Are you a developer? </div>
       </quiz-page>
     </div>
   </div>
 ```
-The code shows the <quiz-page> custom element containing two slots (`topic` and `question`) that is setup in the component.
+This HTML code shows the <quiz-page> custom element containing two slots (`topic` and `question`) that is configured in the component.
 
-The component's code -- `quiz-page.js` -- is setup with an open Shadow DOM. It also defines the internal CSS.
-
-And the CSS in the `<quiz-page>` component includes the Web Component specific pseudo-classes:
+The component's JavaScript code -- `quiz-page.js` -- is setup with an open Shadow DOM. It also defines the internal CSS that includes the Web Component specific pseudo-class `:host` and the pseudo-element `::slotted`:
 
 ```js
 // quiz-page.js
@@ -445,9 +443,10 @@ const css = `
     .button-group {
       display:flex;
       gap:2rem;
-      margin:1rem 0;ß
+      margin:1rem 0;
     }
   </style>`;
+// Define the template
 const template = document.createElement("template");
 template.innerHTML = `
     ${css}
@@ -464,24 +463,7 @@ class QuizPage extends HTMLElement {
   connectedCallback() {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.appendChild(template.content.cloneNode(true));
-    const buttons = this.shadowRoot.querySelectorAll("div[role='button']");
-    this.addListeners(Array.from(buttons));
-  }
-
-  /** Responds to Yes, No & Maybe button clicks and
-   * Enter key events when button is in focus */
-  addListeners(buttons) {
-    console.log("buttons: ", buttons);
-    buttons.forEach((button) => {
-      button.addEventListener("click", () => {
-        alert(`${button.innerText} button clicked!`);
-      });
-      button.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          alert(`${button.innerText} button Enter key event invoked!`);
-        }
-      });
-    });
+    // ...See the source code for the rest of the JS details
   }
 }
 customElements.define("quiz-page", QuizPage);
@@ -490,15 +472,15 @@ In this case the `:host` selector defines the style for the whole custom element
 
 The CSS rules defined with various `slotted` selectors defines styling rules for generic and specific template slots. The `::slotted(*)` rule uses the wildcard to include all slots in the custom element. The `::slotted(.topic)` and `::slotted(.question)` selector define rules for slots with `topic` or `question` CSS classes. Note here that the argument needs to be a CSS selector.
 
-An external stylesheet can use the `part` pseudo-element to create rules can be used to style markup inside the Shadow DOM. Here's what the code looks like in the quiz page example:
+The `::part` pseudo-element needs an external stylesheet to define the CSS rules for a `part` defined in the Web Component. Here's what the code looks like for the quiz page example:
 ```css
 /* pseudo-selectors-quiz.css */
-div.title {
-  margin:1rem auto;
-  font-size:2.5rem;
-  font-weight:900;
-}
-.container {
+  div.title {
+    margin:1rem auto;
+    font-size:2.5rem;
+    font-weight:900;
+  }
+  .container {
     display:flex;
     flex-direction:column;
     width:90%;
@@ -524,7 +506,7 @@ div.title {
     font-style:italic;
   }
 ```
-The `part` pseudo-element selectors are declared on the `quiz-page` custom element. Note that the argument to the `part` pseudo-elements are the values of the name attribute, not selectors like is used for the `slotted` selector.
+The `::part` pseudo-element selectors refer to Web Component elements that contain a `part` attribute. Note that the argument to the `::part` pseudo-elements are the values of the name attribute, not selectors like is used for the `slotted` selector.
 
 Make sure you check out the quiz-page example [in the repo](https://github.com/cdoremus/web-component-demos/tree/main). The same repo contains a [page that displays a Web Component with multiple tabs](https://github.com/cdoremus/web-component-demos/blob/main/pseudo-selectors-tabs.html) that also uses custom element specific pseudo-selectors.
 
