@@ -145,21 +145,22 @@ The client app that displayed this Web Component would have a form that would up
 
 ### Encapsulation with the Shadow DOM
 
-The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates styles and DOM nodes inside a custom element.
+The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates styles and DOM nodes inside a custom element. Shadow DOM is an optional feature of a Web Component. 
 
-What this means is that styles outside of your component cannot influence elements inside your web component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
+When the Shadow DOM is enabled in a Web Component, it means is that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
 
-Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the web component, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's button element.
+Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the web component, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
 
 The shadow DOM has two modes:
 - open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
 - closed - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
 
-You use the `attacheShadow` built-in custom element method to enable shadow DOM. Calling that method in the `constructor` with an "open" mode assigns the `shadowRoot` property that can be used to add content to the shadow DOM with the `append` method:
+You use the `attachShadow` built-in custom element method to enable shadow DOM. Calling that method in the `constructor` with an "open" mode assigns the `shadowRoot` property that can be used to add content to the shadow DOM with the `append` method:
 
 ```javascript
 class MyShadowDomWC extends HTMLElement {
   constructor() {
+    // Assigns a reference to this.shadowRoot in an 'open' Shadow DOM
     this.attachShadow({ mode: "open" });
   }
   connectedCallback() {
@@ -170,7 +171,7 @@ class MyShadowDomWC extends HTMLElement {
 }
 customElements.define("my-shadow-dom", MyShadowDomWC);
 ```
-The `attachShadow` method can be also called inside `connectedCallback` to set a local `shadow root` reference. When the call is made in the constructor, the `this.shadowRoot` property is set.
+The `attachShadow` method can be also called inside `connectedCallback` to set a local `shadow root` variable reference. When the call is made in the constructor, the `this.shadowRoot` property is set.
 
 The `append` method is used to add elements to the shadow root.
 
@@ -180,7 +181,7 @@ If you look at the Elements tab in the browser Developer Tools, you'll see the s
 |------|
 | ![Shadow DOM in Dev Tools](/img/blog/web-components/ShadowDom_DevelopersToolsView.png) |
 
-Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. The [Shadow Root ](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
+Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. TODO: CHECK The [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) interface is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
 
 To set the Shadow DOM mode to closed, just change the mode from "open" to "closed" in the `attacheShadow` call:
 ```javascript
