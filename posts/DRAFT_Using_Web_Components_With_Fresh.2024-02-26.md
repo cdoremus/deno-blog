@@ -109,58 +109,87 @@ The custom element lifecycle methods include:
 
 Most of the time a Web Component only needs the `constructor` and/or the `connectedCallback` method. Either can be used to setup the web component, but the latter method should be used when retrieving something from the DOM like an attribute's value.
 
-The `attributeChangedCallback` method will be called when an attribute's value is configured as dynamic in the client and the value changes from direct or indirect user interaction. It also requires a `observedAttributes` static property in the custom element class that returns an array of attribute names.
+The `attributeChangedCallback` method will be called when a component attribute's value is updated by the client from direct or indirect user interaction. It also requires a `observedAttributes` static property in the custom element class that returns an array of the names of attributes that might change.
 
-
-TODO: CHECK THIS!!!
 ```js
 class AttributeChangedWC extends HTMLElement {
-  // required for attributeChangedCallback to function
+  // required for attributeChangedCallback
   static get observedAttributes() {
     return ["add"];
   }
+
   connectedCallback() {
     this.add = this.getAttribute("add");
+    // define component markup
     this.innerHTML = `
-      <style>.sum { font-weight: bold; }</style>
-      <p>Sum: <span class="sum">0</span></p>
+      <style>#sum-title{ color: blue;} .sum { color: black; font-weight: bold; }</style>
+      <div>
+      <p id="old-value">Old Attr Value: <span class="old">0</span></p>
+      <p id="new-value">New Attr Value: <span class="new">0</span></p>
+      </div>
+      <p id="sum-title">Sum: <span class="sum">0</span></p>
     `;
   }
   attributeChangedCallback(attrName, oldValue, newValue) {
     if (attrName === "add") {
+      console.log(`Old add Value: ${oldValue}, New add Value: ${newValue}`);
       let sum = 1;
-      // get reference to the element to hold the sum
       const sumDisplay = this.querySelector(".sum");
-      if (oldValue !== null) {
+      const oldVal = this.querySelector(".old");
+      const newVal = this.querySelector(".new");
+      console.log("sumDisplay: ", sumDisplay);
+      if (oldValue) {
+        oldVal.innerHTML = oldValue;
+        newVal.innerHTML = newValue;
         sum = parseInt(oldValue) + parseInt(newValue);
       } else {
         sum = parseInt(newValue);
       }
-      // update the sum
-      sumDisplay.innerHTML = sum;
+      console.log("sum: ", sum);
+      if (sum !== null && sumDisplay !== null) {
+        sumDisplay.innerHTML = sum;
+      }
     }
   }
+}
+customElements.define("attribute-changed-wc", AttributeChangedWC);
 ```
-The client app that displayed this Web Component would have a form that would update the component's `add` attribute. WHen that value is changed, the `attributeChangedCallback` method is invoked.
+The client app that displayed this Web Component has code to update the component's `add` attribute value. When it changes, the `attributeChangedCallback` method is invoked. Here's what that code looks like:
+```js
+    // get reference to the web component
+    const component = document.querySelect("attribute-changed-wc");
+    // get reference to the button used to change the attribute
+    const button = document.querySelector("#update-add-button");
+    // update the attribute when the button is clicked
+    button.addEventListener("click", (e) => {
+      const addValue = component.getAttribute("add");
+      // Increment attribute to invoke attributeChangedCallback
+      const newAdd = parseInt(addValue) + 1;
+      component.setAttribute("add", newAdd.toString());
+    });
+```
+See the [source code](https://github.com/cdoremus/web-component-demos/blob/main/lifecycle.html) for this example for more details.
 
 ### Encapsulation with the Shadow DOM
 
-The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates styles and DOM nodes inside a custom element. Shadow DOM is an optional feature of a Web Component. 
+The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates CSS styles and DOM nodes inside a custom element. Shadow DOM is an optional feature of a Web Component.
 
 When the Shadow DOM is enabled in a Web Component, it means is that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
 
-Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the web component, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
+Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the custom element, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
 
 The shadow DOM has two modes:
 - open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
 - closed - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
 
-You use the `attachShadow` built-in custom element method to enable shadow DOM. Calling that method in the `constructor` with an "open" mode assigns the `shadowRoot` property that can be used to add content to the shadow DOM with the `append` method:
+You use the `attachShadow` built-in custom element method to enable shadow DOM. That method's argument is an options object with a required `mode` field whose value is either `open` or `closed`.
+
+Calling `attachShadow` assigns the `shadowRoot` component property that can be used to add content to the shadow DOM with its `append` (or `appendChild`) method. Here's what that looks like:
 
 ```javascript
 class MyShadowDomWC extends HTMLElement {
   constructor() {
-    // Assigns a reference to this.shadowRoot in an 'open' Shadow DOM
+    // Assigns a reference to this.shadowRoot in the Shadow DOM
     this.attachShadow({ mode: "open" });
   }
   connectedCallback() {
@@ -181,7 +210,7 @@ If you look at the Elements tab in the browser Developer Tools, you'll see the s
 |------|
 | ![Shadow DOM in Dev Tools](/img/blog/web-components/ShadowDom_DevelopersToolsView.png) |
 
-Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. TODO: CHECK The [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) interface is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
+Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. The [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) interface is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
 
 To set the Shadow DOM mode to closed, just change the mode from "open" to "closed" in the `attacheShadow` call:
 ```javascript
@@ -191,45 +220,84 @@ When this is done, the Developer Tools shadow root notation shows `closed` in th
 
 Shadow DOM Web Components are often used as reusable components in a [Design System](https://www.designsystems.com/), a way to formalize a company's brand presence on the web. Besides allowing a company-standard UI, Web Components provide a way to make sure accessibility standards are met by the Design System development group rather than relying on individual development groups that may be working with different web frameworks.
 
+The example repo accompanying this post contains [source code](https://github.com/cdoremus/web-component-demos/blob/main/shadow-dom.html) of a Web Component using the open and closed ShadowDOM.
+
 ### Templates and Slots
 
 Web components can also use the built-in HTML `<template>` and `<slot>` tags to hold content displayed by the component. The `<template>` tag is a container for DOM nodes. If it is used on a web page, the content is not visible, but it can be used as a container for markup to be used elsewhere including a custom element.
 
 A `<slot>` is an HTML element used inside a template tag as a content placeholder. It is only available in a web component that uses the Shadow DOM.
 
-JavaScript is used to replace the `<slot>` tag with other content at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Taken from the [demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main), here's what that would look like:
-```tsx
-  <templated-wc>
-    <template id="template-wc">
-      <div class="container">
-        <span id="title">This is inside the template</span>
-        <slot></slot>
-        <slot name="slot2"></slot>
-        <slot name="slot3"></slot>
+JavaScript is used to replace the `<slot>` tag with other content at runtime. A slot can be identified using the `name` attribute. In that case, the content needs to have a `slot` attribute corresponding to the name. Taken from the [source code](https://github.com/cdoremus/web-component-demos/blob/main/pseudo-selectors-tabs.html) in the demo app, here's what that would look like:
+```html
+  <template id="tabbed-custom-element">
+    <style>
+      <!-- ... styles covered in the styling section -->
+    </style>
+    <div class="container">
+      <div class="tab-group">
+        <div id="tab1" part="tab active" role="button" tabindex="1">Tab 1</div>
+        <div id="tab2" part="tab" role="button" tabindex="2">Tab 2</div>
+        <div id="tab3" part="tab" role="button" tabindex="3">Tab 3</div>
       </div>
-    </template>
-    <div slot="slot3">Slotted content3</div>
-    <div slot="slot2">Slotted content2</div>
-    <div>Slotted content1</div>
-  </templated-wc>
+      <div>
+        <slot id="slot-content" name="tab1"></slot>
+      </div>
+    </div>
+  </template>
+
+  <tabbed-custom-element>
+    <!--  Content for each tab  -->
+    <div slot="tab1">Slot 1 CONTENT</div>
+    <div slot="tab2">Slot 2 CONTENT</div>
+    <div slot="tab3">Slot 3 CONTENT</div>
+  </tabbed-custom-element>
 ```
 The web component needed to declare that the component uses Shadow DOM with a `this.attachShadow` call. The `connectedCallback` method holds all the logic:
-```ts
-  connectedCallback() {
-    const shadow = this.attachShadow({ mode: "open" });
-    const template = document.querySelector("#template-wc");
-    // 'this.css' was defined earlier
-    shadow.innerHTML = `<style>${this.css}</style>`;
-    // @ts-ignore bad error: "content does not exist on type element"
-    shadow.appendChild(template!.content.cloneNode(true));
+```js
+const template = document.querySelector("#tabbed-custom-element");
+
+class PseudoSelectorWC extends HTMLElement {
+  constructor() {
+    super();
+    // attach template content to the ShadowDOM
+    this.attachShadow({ mode: "open" }).append(template.content);
   }
+
+  connectedCallback() {
+    // Find all tabs as a NodeList and convert to array
+    const tabGroup = this.shadowRoot.querySelector(".tab-group");
+    const tabs = tabGroup.querySelectorAll("div");
+    const tabArray = Array.from(tabs);
+    // Get the slot
+    const contentElement = this.shadowRoot.querySelector("#slot-content");
+
+    this.shadowRoot.addEventListener("click", (e) => {
+      const tabName = e.target.id;
+      this.clickHandler(tabName, contentElement, tabArray);
+    });
+    this.shadowRoot.addEventListener("keydown", (e) => {
+      console.log("Keydown event: ", e);
+      if (e.key === "Enter") {
+        const tabName = e.target.id;
+        this.clickHandler(tabName, contentElement, tabArray);
+      }
+    });
+  }
+
+  clickHandler(tabName, contentElement, tabArray) {
+    // For details, see the source code ...
+  }
+}
 ```
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 A reference to the `<template>` tag is obtained and its content is cloned to add its content to the Shadow DOM. Note that the `div`s with a `slot` attribute are added in the proper place in the template according to the `slot` element's name.
 
 Conversely, the `div` without a `slot` attribute is added to the `slot` element without a `name` attribute. An unnamed `slot` always takes the content without a `slot` attribute. There can only be one unnamed `slot` element in a template.
 
 Here's what the component looks like when rendered in the browser:
 
+TODO: Redo based on new example
 ![Rendered custom element with a template and slots](/img/blog/web-components/RenderedTemplateWC_Screenshot.png)
 
 Note that the first slot does not have a name attribute. That slot was replaced with content that does not have a `slot` attribute. When only one slot is used in a template its `name` attribute is not needed.
