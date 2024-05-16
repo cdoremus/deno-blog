@@ -184,7 +184,7 @@ The shadow DOM has two modes:
 
 You use the `attachShadow` built-in custom element method to enable shadow DOM. That method's argument is an options object with a required `mode` field whose value is either `open` or `closed`.
 
-Calling `attachShadow` assigns the `shadowRoot` component property that can be used to add content to the shadow DOM with its `append` (or `appendChild`) method. Here's what that looks like:
+Calling `attachShadow` assigns the `shadowRoot` component property that can be used to add content to the shadow DOM with its `append` or `appendChild` method. Here's what that looks like:
 
 ```javascript
 class MyShadowDomWC extends HTMLElement {
@@ -258,54 +258,59 @@ The web component needed to declare that the component uses Shadow DOM with a `t
 const template = document.querySelector("#tabbed-custom-element");
 
 class PseudoSelectorWC extends HTMLElement {
-  constructor() {
+    constructor() {
     super();
-    // attach template content to the ShadowDOM
-    this.attachShadow({ mode: "open" }).append(template.content);
+    this.attachShadow({ mode: "open" });
   }
 
   connectedCallback() {
+    //  Add template to the Shadow DOM
+    this.shadowRoot.appendChild(template.content);
     // Find all tabs as a NodeList and convert to array
     const tabGroup = this.shadowRoot.querySelector(".tab-group");
     const tabs = tabGroup.querySelectorAll("div");
     const tabArray = Array.from(tabs);
-    // Get the slot
+    // Get the slot that will receive events
     const contentElement = this.shadowRoot.querySelector("#slot-content");
-
+    // Add click listener
     this.shadowRoot.addEventListener("click", (e) => {
       const tabName = e.target.id;
-      this.clickHandler(tabName, contentElement, tabArray);
+      this.eventHandler(tabName, contentElement, tabArray);
     });
+    // Add keydown listener to listen for the Enter key
     this.shadowRoot.addEventListener("keydown", (e) => {
-      console.log("Keydown event: ", e);
       if (e.key === "Enter") {
         const tabName = e.target.id;
-        this.clickHandler(tabName, contentElement, tabArray);
+        this.eventHandler(tabName, contentElement, tabArray);
       }
     });
   }
 
-  clickHandler(tabName, contentElement, tabArray) {
-    // For details, see the source code ...
+  eventHandler(tabName, contentElement, tabArray) {
+    // Change the slot name to the active tab, so
+    //  that the content will be switched
+    contentElement.name = tabName;
+    // Make clicked tab the active one
+    for (const tab of tabArray) {
+      if (tab.id === tabName) {
+        tab.part = "tab active";
+      } else {
+        tab.part = "tab";
+      }
+    }
   }
 }
 ```
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-A reference to the `<template>` tag is obtained and its content is cloned to add its content to the Shadow DOM. Note that the `div`s with a `slot` attribute are added in the proper place in the template according to the `slot` element's name.
+A reference to the `<template>` tag is obtained and its content is added to the Shadow DOM. Note that the tab's content is added using the `slot` attribute in the proper template place according to the `slot` element's name, so that, for instance in this example, the Slot 1 content is defined in the `div` whose `slot` attribute value is `tab1`.
 
-Conversely, the `div` without a `slot` attribute is added to the `slot` element without a `name` attribute. An unnamed `slot` always takes the content without a `slot` attribute. There can only be one unnamed `slot` element in a template.
+The `eventHandler` method is used to dynamically update the tab's content and add event listeners to each tab. When the tab is clicked (or when the Enter key is pressed for a tab in focus), that tab is set as the current tab via the `active` class. This allows the tab's content to be displayed.
 
-Here's what the component looks like when rendered in the browser:
+You could also define the `template` in JavaScript code using a string literal like this which is a drop-in replacement for the template defined within the component's markup in this example adapted from [this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/TemplatedWC.ts):
 
-TODO: Redo based on new example
-![Rendered custom element with a template and slots](/img/blog/web-components/RenderedTemplateWC_Screenshot.png)
-
-Note that the first slot does not have a name attribute. That slot was replaced with content that does not have a `slot` attribute. When only one slot is used in a template its `name` attribute is not needed.
-
-You could also define the template in JavaScript code using a string literal like this which is a drop-in replacement for the template defined within the component's markup:
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+TODO: Show how template is added to ShadowDOM
 ```ts
 const template = document.createElement("template");
-template.setAttribute("id", "template-wc");
 template!.innerHTML = `
   <div class="container">
     <span id="title">This is inside the template</span>
@@ -314,6 +319,21 @@ template!.innerHTML = `
     <slot name="slot3"></slot>
   </div>
 `;
+```
+Note that when a slot's `name` attribute is not defined, it would get the default content which is the content created without a `slot` attribute. That would be be the "Slotted content1" ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/custom-elements.tsx)):
+
+```html
+  <!-- Markup fragment -->
+  <templated-wc>
+    <template id="template-wc">
+      <slot></slot>
+      <slot name="slot2"></slot>
+      <slot name="slot3"></slot>
+    </template>
+    <div slot="slot3">Slotted content3</div>
+    <div slot="slot2">Slotted content2</div>
+    <div>Slotted content1</div>
+  </templated-wc>
 ```
 
 ### Declarative Shadow DOM
