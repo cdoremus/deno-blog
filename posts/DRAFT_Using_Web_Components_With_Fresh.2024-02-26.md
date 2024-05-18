@@ -11,8 +11,8 @@
     - [Creating a Web Component](#creating-a-web-component)
       - [Web Component Lifecycle](#web-component-lifecycle)
       - [Encapsulation with the Shadow DOM](#encapsulation-with-the-shadow-dom)
-      - [Declarative Shadow DOM](#declarative-shadow-dom)
       - [Templates and Slots](#templates-and-slots)
+      - [Declarative Shadow DOM](#declarative-shadow-dom)
       - [HTML Web Components](#html-web-components)
     - [Styling Web Components](#styling-web-components)
       - [Using CSS Pseudo-selectors](#using-css-pseudo-selectors)
@@ -232,7 +232,7 @@ JavaScript is used to replace the `<slot>` tag with other content at runtime. A 
 ```html
   <template id="tabbed-custom-element">
     <style>
-      <!-- ... styles covered in the styling section -->
+      <!-- see source code for CSS styles -->
     </style>
     <div class="container">
       <div class="tab-group">
@@ -307,94 +307,116 @@ The `eventHandler` method is used to dynamically update the tab's content and ad
 
 You could also define the `template` in JavaScript code using a string literal like this which is a drop-in replacement for the template defined within the component's markup in this example adapted from [this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/TemplatedWC.ts):
 
-NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 TODO: Show how template is added to ShadowDOM
-```ts
-const template = document.createElement("template");
-template!.innerHTML = `
-  <div class="container">
-    <span id="title">This is inside the template</span>
-    <slot></slot>
-    <slot name="slot2"></slot>
-    <slot name="slot3"></slot>
-  </div>
+```js
+  connectedCallback() {
+    const template = document.createElement("template");
+    template.innerHTML = `
+      <style>
+        .container {
+          width: 50%;
+          border: 2px solid black;
+        }
+        .title {
+          font-size:1.75rem;
+          font-weight:600;
+        }
+        slot {
+          font-size:1.25rem;
+          font-style:italic;
+        }
+      </style>
+      <div class="container">
+        <span class="title">This is inside the template JS code</span>
+        <slot></slot>
+        <slot name="slot2"></slot>
+        <slot name="slot3"></slot>
+      </div>
+    `;
+    // attachShadow() called in the constructor
+    this.shadowRoot.appendChild(template.content);
 `;
 ```
-Note that when a slot's `name` attribute is not defined, it would get the default content which is the content created without a `slot` attribute. That would be be the "Slotted content1" ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/custom-elements.tsx)):
+Note that when a slot's `name` attribute is not defined, it would get the default content which is the content created without a `slot` attribute. That would be be the "Default slot content" in this example ([source code](https://github.com/cdoremus/web-component-demos/blob/main/template.html)):
 
 ```html
   <!-- Markup fragment -->
-  <templated-wc>
-    <template id="template-wc">
-      <slot></slot>
-      <slot name="slot2"></slot>
-      <slot name="slot3"></slot>
-    </template>
-    <div slot="slot3">Slotted content3</div>
-    <div slot="slot2">Slotted content2</div>
-    <div>Slotted content1</div>
-  </templated-wc>
+  <template-wc>
+    <div>Default slot content</div>
+    <div slot="slot2">Slot 2 content</div>
+    <div slot="slot3">Slot 3 content</div>
+  </template-wc>
 ```
 
 ### Declarative Shadow DOM
 
-Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. DSD is a way to create a Shadow DOM without JavaScript using template and slot tags. You defined a DSD component using the `shadowrootmode` attribute on the `<template>` tag. Like the `attachShadow` mode options, there are two possible values for the `shadowrootmode` attribute: "open" and "closed".
+Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. While you can use DSD to create a Web Component without JavaScript, a better way to use it is with Server-Side Routing (SSR).
 
-The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element. Here's an example:
+The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` attribute set to "open" or "closed" (the same mode options in the `attachShadow` call). The markup to be rendered server-side would be put in the template. The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element.
+
+ Here's an example what the markup would look like ([source code](https://github.com/cdoremus/web-component-demos/blob/main/dsd-js.html)):
 
 ```html
-<body>
-  <template shadowrootmode="open">
-    <style>
-      :host {
-        margin: 0;
-        padding: 1rem;
-        display: grid;
-        gap: 1rem;
-        grid-template:
-          "header" max-content
-          "content" auto
-          "footer" max-content / 100%;
-      }
-
-      slot * {
-        background-color: hsl(0 0% 90%);
-      }
-
-      ::slotted(*) {
-        background-color: hsl(160 50% 90%);
-      }
-
-      slot *,
-      ::slotted(*) {
-        padding: 1rem;
-      }
-    </style>
-    <slot name="header" style="grid-area: header;">
-      <header>Header is loading</header>
-    </slot>
-    <slot name="content" style="grid-area: content;">
-      <main>
-        <div>Content is loading</div>
-      </main>
-    </slot>
-    <slot name="footer" style="grid-area: footer;">
-      <footer>Footer is loading</footer>
-    </slot>
-  </template>
-
-  <header slot="header">
-    <h2>Declarative Shadow DOM Example</h2>
-  </header>
-  <main slot="content">
-    <h4>Page content goes here</h4>
-  </main>
-  <footer slot="footer" style="font-style: italic;">This is the footer</footer>
-</body>
+<html>
+  <head>
+    <script src="dsd-js.js"/>
+  </head>
+  <body>
+    <header style="font-size:2rem;font-weight:900">Doing SSR with Declarative Shadow DOM</header>
+    <dsd-wc>
+    <template id="dsd-js" shadowrootmode="open">
+        <style>
+          div {
+            font-size: 1.0rem;
+            font-style: italic;
+          }
+        </style>
+        <span>Enter Something: </span>
+        <input />
+        <button>Enter</button>
+      </template>
+    </dsd-wc>
+    <hr/>
+    <footer style="font-style: italic;">This is the footer</footer>
+  </body>
+</html>
 ```
- This is what the component looks like when rendered in a browser:
+To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like used by [EJS](https://ejs.co/).
 
- ![Rendered Declarative Shadow DOM web component](/img/blog/web-components/DSD_Screenshot.png)
+A custom element would be created in a JavaScript file that is referenced in the markup. In the example, the `dsd-wc` element looks like this:
+```js
+// dsd-js.js
+class DeclarativeShadowDOMWC extends HTMLElement {
+  #internals;
+  constructor() {
+    super();
+    this.#internals = this.attachInternals();
+  }
+
+  connectedCallback() {
+    const shadowRoot = this.#internals.shadowRoot;
+    const input = shadowRoot.querySelector("input");
+    const button = shadowRoot.querySelector("button");
+    button.addEventListener("click", () => {
+      const text = input.value;
+      if (text.length > 200) {
+        alert("Too much text entered!!");
+      } else {
+        alert(`Text entered: ${text}`);
+      }
+    });
+  }
+}
+
+customElements.define(
+  "dsd-wc",
+  DeclarativeShadowDOMWC,
+);
+```
+As you can see in the example, the custom element is used to wire up events to make the component interactive.
+
+By using the DSD on the server side, you avoid the unsightly FOUC (Flash Of Unstyled Content) that occurs when a custom element is displayed on a web page because it takes some time before the JavaScript is downloaded before the custom element can be rendered.
+
 
 ### HTML Web Components
 
