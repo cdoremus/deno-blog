@@ -13,11 +13,11 @@
       - [Encapsulation with the Shadow DOM](#encapsulation-with-the-shadow-dom)
       - [Templates and Slots](#templates-and-slots)
       - [Declarative Shadow DOM](#declarative-shadow-dom)
-      - [HTML Web Components](#html-web-components)
+      - [Light DOM and HTML Web Components](#light-dom-and-html-web-components)
     - [Styling Web Components](#styling-web-components)
       - [Using CSS Pseudo-selectors](#using-css-pseudo-selectors)
       - [Using Constructable Stylesheets](#using-constructable-stylesheets)
-      - [Style Inheritance](#style-inheritance)
+      - [Style Inheritance and Custom Properties](#style-inheritance-and-custom-properties)
     - [Using the JavaScript Custom Event API](#using-the-javascript-custom-event-api)
     - [Working with Forms and ElementInternals](#working-with-forms-and-elementinternals)
     - [Web Components and Accessibility](#web-components-and-accessibility)
@@ -381,7 +381,7 @@ The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` att
   </body>
 </html>
 ```
-To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like used by [EJS](https://ejs.co/).
+To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like what is used by [EJS](https://ejs.co/) (or Deno-native [djs](https://github.com/syumai/dejs)).
 
 A custom element would be created in a JavaScript file that is referenced in the markup. In the example, the `dsd-wc` element looks like this:
 ```js
@@ -408,26 +408,23 @@ class DeclarativeShadowDOMWC extends HTMLElement {
   }
 }
 
-customElements.define(
-  "dsd-wc",
-  DeclarativeShadowDOMWC,
-);
+customElements.define(  "dsd-wc",  DeclarativeShadowDOMWC);
 ```
 As you can see in the example, the custom element is used to wire up events to make the component interactive.
 
-By using the DSD on the server side, you avoid the unsightly FOUC (Flash Of Unstyled Content) that occurs when a custom element is displayed on a web page because it takes some time before the JavaScript is downloaded before the custom element can be rendered.
+By using the DSD on the server side, you avoid the unsightly FOUC (Flash Of Unstyled Content) that occurs when a custom element is displayed on a web page because it takes some time before the JavaScript (and possibly CSS) is downloaded before the custom element can be rendered.
 
 
-### HTML Web Components
+### Light DOM and HTML Web Components
 
-Web components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom elements has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
+Web Components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom elements has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
 
 The most obvious disadvantage is that with the Shadow DOM you do not have access to most global CSS styles ([for details see below](#style-inheritance)).
 
-One use of the "Light DOM" are in what has been called [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose markup and content is wrapped inside the web component. Here's an example how you do that with Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
+One implementation of the "Light DOM" is what has been called [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose markup and content is wrapped inside the Web Component on the web page where it is used. Here's an example how you do that with Deno Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
 
-```ts
-  <counter-wc> // a custom-element
+```tsx
+  <counter-wc> // a custom element
     <div class="flex gap-8 py-6">
       <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
         -1
@@ -440,9 +437,10 @@ One use of the "Light DOM" are in what has been called [HTML Web Components](htt
   </counter-wc>
 ```
 
-Another alternative on this theme in a Fresh app is to have the custom element's HTML content encapsulated in a Preact component. [The demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx) has an example:
+Another alternative on this theme in a
+Fresh app is to have the custom element's HTML content encapsulated in a Preact component. [The demo app accompanying this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx) has an example:
 
-```ts
+```tsx
   <counter-wc>
     <WCWrappedCounter
       initialCount={3}
@@ -451,17 +449,17 @@ Another alternative on this theme in a Fresh app is to have the custom element's
   </counter-wc>
 ```
 
-In order for an HTML Web Component to work with Fresh, the component must not use the Shadow DOM.
+"Light DOM" and HTML Web Components can be used with any web server, not just Deno Fresh.
 
 ## Styling Web Components
 
 Styling a Web Component can be done with CSS in two ways
-- external - This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can style with an external stylesheet file.
-- internal - CSS styles encapsulated within a Shadow DOM configured Web Component.
+- external - Uses a stylesheet external to the Web Component. This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can use an external stylesheet file.
+- internal - CSS styles are encapsulated within a Shadow DOM configured Web Component.
 
 When using the Shadow DOM, class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
 
-The custom element's styles can be contained within the global stylesheet file or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
+In the case of "Light DOM" Web Components, the custom element's styles can be contained within the global stylesheet file, or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
 
 ```js
 class LinkedExternalStyleSheetWC extends HTMLElement {
@@ -492,21 +490,23 @@ The most common way to add CSS to a Web Component is to add it to the `innerHTML
       html += `<div class="title">Hello World in Red!!!</h4>`;
       // Add the HTML to the shadow DOM
       shadow.innerHTML = html;
+      shadow.append(html);
     }
   }
 ```
-A non-Shadow DOM component will add the component's markup to the component's `innerHTML`, so the last line in the connectedCallback` method will be:
+A non-Shadow DOM component will add the component's markup to the component's `innerHTML`, so the last line in the `connectedCallback` method would be:
 ```js
   this.innerHTML = html;
 ```
 In this case, the `shadow` variable will not be created.
 
 ### Using CSS Pseudo-selectors
+
 Standard CSS pseudo-selectors (pseudo-elements and pseudo-classes) can be used with Web Components. However, there are a few that are designed specifically for Web Components.
-- `:host` a pseudo-class that refers to the web component's custom element. This allows you to create styles that will effect the complete  internal markup and content of the custom element.
+- `:host` a pseudo-class that refers to the web component's custom element. This allows you to create styles that will effect the complete internal markup and content of the custom element.
 You can also use the `:host()` function to focus your CSS styles to a specific custom element content area using a CSS selector as the argument.
 - `::slotted()` is a pseudo-element function used to style the content of  `<slot>` elements. Its argument can be the wildcard (*) or a CSS selector.
-- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element inside the Web Component. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute strings. Note that a CSS selector is not used here as an argument.
+- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element inside the Web Component. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute's string values. Note that a CSS selector is not used here as an argument.
 
 Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [source code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
 
@@ -583,7 +583,7 @@ customElements.define("quiz-page", QuizPage);
 ```
 In this case the `:host` selector defines the style for the whole custom element including the layout, margins and background color.
 
-The CSS rules defined with various `slotted` selectors defines styling rules for generic and specific template slots. The `::slotted(*)` rule uses the wildcard to include all slots in the custom element. The `::slotted(.topic)` and `::slotted(.question)` selector define rules for slots with `topic` or `question` CSS classes. Note here that the argument needs to be a CSS selector.
+The CSS rules containing various `slotted` selectors defines styling for generic and specific template slots. The `::slotted(*)` rule uses the wildcard to include all slots in the custom element. The `::slotted(.topic)` and `::slotted(.question)` selector define rules for slots with `topic` or `question` CSS classes. Note here that the argument needs to be a CSS selector.
 
 The `::part` pseudo-element needs an external stylesheet to define the CSS rules for a `part` defined in the Web Component. Here's what the code looks like for the quiz page example:
 ```css
@@ -646,27 +646,46 @@ class ConstructableStyleSheetWC extends HTMLElement {
 }
 ```
 As seen in the example above, there are two `CSSStyleSheet` methods that are commonly used with a custom element:
-- `replaceSync` which takes a stylesheet rule and applies it to the constructed stylesheet.
-- `insertRule` which adds a new stylesheet rule to the constructed stylesheet.
+- [`replaceSync`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replaceSync) replaces stylesheet rules defined on a constructed stylesheet with the one's defined in the method's argument. There is an async version of this method ([`replace`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replace)) that you might want to use for large replacements.
+- [`insertRule`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/insertRule) which adds a new stylesheet rule to the constructed stylesheet.
 
-Also note that the shadow DOM has an `adoptedStyleSheet` function to associate one or more constructed stylesheets to it.
 
-### Style Inheritance
+There is also a [`deleteRule`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/deleteRule) method that uses a numeric index, requiring that you need to know the order of rules in the stylesheet. For instance, calling `deleteRule(0)` deletes the first rule in the constructed stylesheet.
 
-As noted previously, web components created with a Shadow DOM have an isolated CSS scope. One exception to this rule are CSS properties that are inherited. They include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+Also note in the example code that the shadow DOM has an [`adoptedStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/Document/adoptedStyleSheets) property to associate one or more constructed stylesheets to it.
 
-You can use a CSS custom property to update an inherited property. For instance you might have a CSS rule in your component:
+### Style Inheritance and Custom Properties
+
+As noted previously, web components created with a Shadow DOM have an isolated CSS scope. There are two exceptions to that rule, Style Inheritance and CSS Custom Properties.
+
+Inherited Styles are CSS property styles that are inherited down the DOM tree including the Shadow DOM. It means that a style property value that when it is set on a DOM element, subsequent child elements automatically express the same style property value.
+
+Inherited style properties include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+
+CSS Custom Properties set globally can also be used to override CSS properties set inside the Shadow DOM. This can also be used to update an inherited CSS property. For instance you might have a CSS rule set in a global stylesheet outside the Web Component:
 ```css
-  .myclass {
-    color: var(--myclass-color)
-  }
+:root {
+  ----my-background-color: red;
+}
 ```
-The `--myclass-color` would be set outside the component using an external stylesheet. If the custom property is not set in an external CSS file, then the color will fallback to the inherited color by default.
-
-This allows the use of custom properties to customization CSS in a web component.
-
+The Web Component sets the custom property value using the CSS function `var()`, whose first argument is the custom property name and the optional second argument is the value if the custom property has not been defined. Here's what that looks like:
+```js
+const css = `<style>
+  .myclass {
+    background-color: var(--my-background-color, green);
+  }
+</style>`;
+class HelloWorldWC extends HTMLElement {
+  connectedCallback() {
+      const shadow = this.attachShadow({ mode: "open" });
+      shadow.innerHTML = `${css}<div class="myclass">Hello World</div>`;
+  }
+}
+```
+CSS Properties give the Web Component author the ability for users of their component to customize the Web Component CSS.
 
 ## Using the JavaScript Custom Event API
+
 JavaScript events can be used in custom elements. This allows you to for you to create and listen to custom events (the `CustomEvent` class).
 
 Thee are two functions that can be used with JavaScript events:
