@@ -658,7 +658,7 @@ Also note in the example code that the shadow DOM has an [`adoptedStyleSheet`](h
 
 As noted previously, web components created with a Shadow DOM have an isolated CSS scope. There are two exceptions to that rule, Style Inheritance and CSS Custom Properties.
 
-Inherited Styles are CSS property styles that are inherited down the DOM tree including the Shadow DOM. It means that a style property value that when it is set on a DOM element, subsequent child elements automatically express the same style property value.
+Inherited Styles are CSS properties that are inherited down the DOM tree including the Shadow DOM. It means that a style property value when it is set on a DOM element, child elements automatically express the same style.
 
 Inherited style properties include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
 
@@ -668,10 +668,11 @@ CSS Custom Properties set globally can also be used to override CSS properties s
   ----my-background-color: red;
 }
 ```
-The Web Component sets the custom property value using the CSS function `var()`, whose first argument is the custom property name and the optional second argument is the value if the custom property has not been defined. Here's what that looks like:
+The Web Component sets the custom property value using the CSS function `var()`, whose first argument is the custom property name and optional second argument is the property value if the custom property has not been defined. Here's what that looks like:
 ```js
 const css = `<style>
   .myclass {
+    /* bg-color is green if custom prop is not set */
     background-color: var(--my-background-color, green);
   }
 </style>`;
@@ -682,7 +683,7 @@ class HelloWorldWC extends HTMLElement {
   }
 }
 ```
-CSS Properties give the Web Component author the ability for users of their component to customize the Web Component CSS.
+CSS Properties give the Web Component author the ability to allow component users to customize the Web Component CSS.
 
 ## Using the JavaScript Custom Event API
 
@@ -718,15 +719,15 @@ But when one or more form elements are contained in a component to be used with 
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
-But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<textarea>` and `<select>` are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
+But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<textarea>` and `<select>`, they are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
 A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
 
-This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available, `formAssociatedCallback(form)`, which allows you to get form state at that time.
+This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available, `formAssociatedCallback(form)`, which is called when the form elements inside the component are associated with the external form.
 
-For instance, an HTML snippet using a an external form and a form-associated custom element might look like this:
+For instance, HTML containing an external form and a form-associated custom element might look like this ([full source code](https://github.com/cdoremus/web-component-demos/blob/main/form.html)):
 
 ```html
   <form id="name-form">
@@ -749,14 +750,14 @@ For instance, an HTML snippet using a an external form and a form-associated cus
       // display the input value
       const output = document.getElementById("output");
       output.innerHTML = `Input value: ${e.target[0].value}`;
-      // do not refresh the page (the default form action)
+      // do not refresh the page (suppress the default form action)
       e.preventDefault();
     });
   </script>
 ```
 Here we are listening to the form's submit value to get the value of the `<input>`that is created inside the a Web Component. Normally, this value would be retrieved on the server.
 
-The `my-name-input` component's code would look like this:
+The `my-name-input` component's code would look like this ([full source code](https://github.com/cdoremus/web-component-demos/blob/main/form-wc.js)):
 
 ```js
 class MyNameInput extends HTMLElement {
@@ -776,7 +777,7 @@ class MyNameInput extends HTMLElement {
     shadow.innerHTML = `
     <style>input { width: 20%; }</style>
     <input type="text" id="${this.id}" name="${this.id}" placeholder="Enter name here"/>`;
-    // monitor input values
+    // monitor input values on change
     shadow.querySelector("input").addEventListener("change", (e) => {
       console.log("onchange value: ", e.target.value);
       // the label's text
@@ -787,8 +788,7 @@ class MyNameInput extends HTMLElement {
   // Additional lifecycle method called when component is
   // form associated
   formAssociatedCallback(form) {
-    // Print "name-form" to console
-    console.log("form associated:", form["input"]);
+    console.log("formAssociatedCallback called on form: ", form);
   }
   // set form value
   setValue(v) {
@@ -802,16 +802,26 @@ customElements.define( 'my-name-input', MyNameInput);
 ```
 Note the use of `attachInternals()` to get a handle on some of the external form's properties. In addition, the value of the component's `id` attribute is used to set the `id` of the component's `input` element. This makes the label's text available to the component, something that is not available without the `ElementInternals` reference. This relation between the label and it's associated input value is important for accessibility. `ElementInternals` also includes [many other ARIA properties](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals#instance_properties_included_from_aria) that can be set on form elements.
 
+The `ElementInternals` interface can also used to get a handle to the Declarative Shadow DOM declared on a `template` element. See [the DSD example for an example of how to do this](https://github.com/cdoremus/web-component-demos/blob/main/dsd-js.js).
+
 ## Web Components and Accessibility
 
-TODO: Better transition from previous section NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-While accessibility is good for form-associated Web Components, other accessibility features can be complicated. Some accessibility features work, but others do not, and others require a coding work-around.
+Creating accessible web applications is not an easy task. There is a lof of stuff to know. Rather than turning this section into a treatise on accessibility, I'm just going to give some links on where to get more information on the subject.
 
-Accessibility issues are many and varied, but I am not an accessibility expert by any means, so instead of a long-winded exploration of this subject, I'm offering these links from people who actually know what they are talking about:
+But before I unveil the links, I'd like to talk a bit about accessibility roles. They are probably the simplest accessibility feature to implement. It involves the use of a `role` attribute associated with each HTML element that expresses some functionality.
+
+Still, a lot of elements have intrinsic roles, which should be checked before you decide to add a `role` attribute to an element. You can ([do that here](https://www.w3.org/TR/html-aria/#document-conformance-requirements-for-use-of-aria-attributes-in-html)).
+
+
+But if you are going to use an element for a function that is normally not used you need to explicitly designate that role. For instance, on a `div` that is used as a button, you should give that element a button role. Check [this list of possible ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) for role options and select the one that is appropriate for each element.
+
+OK, back to the list of links. Since, I am not an accessibility expert, I offer these links from people who actually know what they are talking about:
 - [Accessibility for Web Components](https://developer.salesforce.com/blogs/2020/01/accessibility-for-web-components)
 - [A Guide to Accessible Web Components](https://www.erikkroes.nl/blog/accessibility/the-guide-to-accessible-web-components-draft/)
 - [Web Components Accessibility FAQ](https://www.matuzo.at/blog/2023/web-components-accessibility-faq)
 - [Accessibility Object Model](https://github.com/WICG/aom?tab=readme-ov-file)
+
+Before I close out this section, I should mention that a company that has a reusable suite of Web Components with accessibility baked into each custom element, will make their web developer's job a lot easier.
 
 # Using Web Components with Deno
 
