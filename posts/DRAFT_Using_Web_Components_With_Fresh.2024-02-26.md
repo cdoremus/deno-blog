@@ -35,13 +35,17 @@
 ## Introduction
 Deno prides itself with its support of standards. It has embraced ECMAScript imports as the way to express dependencies, supports most standard web APIs and has championed server-side JavaScript standards through it's leadership in [WinterCG](https://wintercg.org/).
 
-Web Components are a web standard way of creating reusable custom HTML elements. In essence they extend native HTML element functionality. They can be used with or without a web framework like [Deno Fresh](https://fresh.deno.dev) or from a static HTML page served from a server like one that uses `Deno.serve`.
+Deno allows you to write simple JavaScript without the need for compilers, bundlers and code transformers. It is code that can run on the command line, on a server or in modern browsers. The term "batteries included" encapsulates this thinking.
 
-This blog post will focus on how to use web components in Deno with special emphasis on using them with Fresh. There is also a [Fresh application that accompanies this blog post](https://github.com/cdoremus/fresh-webcomponents/tree/main).
+Web Components is a "batteries included" web framework that allows you to write reusable custom elements. In essence, custom elements extend native HTML element functionality. Those elements can be easily associated with an HTML page served by any web server (including a [Deno](https://deno.com) web server).
 
-But before we talk about Deno and Fresh, you need to know about how Web Components work and how to use them. If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section. Still, there are a few recent additions to the Web Component standard like Declarative Shadow DOM and Element Internals that you might want to take a look at if you haven't worked with Web Components in a while.
+They can also be used with a web framework like [Deno Fresh](https://fresh.deno.dev).
 
-These Web Components that we are going to start with can be deployed to any web server. I have put together a number of examples using a Deno web server. The [repo can be found here](https://github.com/cdoremus/web-component-demos).
+Before we talk about Deno and Fresh, you need to be familiar with how Web Components work and how to create and use them.
+
+If you already have an understanding of Web Components, you can skip to the [Using Web Components with Deno](#using-web-components-with-deno) section. Still, there are a few recent additions to the Web Component standard like Declarative Shadow DOM, Element Internals and specialized CSS selectors that you might want to take a look at if you haven't worked with Web Components in a while.
+
+The Web Components that we are going to start with use a basic Deno web server implemented with [`Deno.serve()`](https://deno.land/api@v1.43.5?s=Deno.serve). The [example repo can be found here](https://github.com/cdoremus/web-component-demos). Use these simple examples to guide your learning and modify the code to reinforce it.
 
 # Developing a Web Component
 
@@ -53,11 +57,11 @@ A web component is created using a JavaScript class that extends `HTMLElement`, 
 
 ## Why Web Components
 
-The first question that comes up in a Web Component discussion is why. Why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular (etc.)? Here's my take on that answer:
+The first question that comes up in a Web Component discussion is why. Why would I use Web Components when I've got Fresh, React, Preact, Vue, Svelte, Angular (et al.)? Here's my take on that answer:
 
-- Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many  web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
+- Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
 - They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
-- They can be used with most web frameworks. Web Components are often used as the basis for a [design system](https://www.invisionapp.com/inside-design/guide-to-design-systems/) since they can be used in web applications that may be build with different web frameworks in different parts of the enterprise.
+- They can be used with most web frameworks. Web Components are often used as the basis for a [design system](https://www.invisionapp.com/inside-design/guide-to-design-systems/) since they are framework agnostic. This allows then to be used throughout the enterprise.
 - Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to components created with a web framework that will probably introduce periodic breaking changes as the framework evolves.
 - They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
 
@@ -102,14 +106,14 @@ The custom element lifecycle methods include:
 | Function |Behavior|
 | ------- | ---------- |
 | `constructor()` | Called when the component instance is created.|
-| `connectedCallback()` | Called when DOM is mounted. This is the place to get the initial the value of component attributes. |
-| `disconnectedCallback()` | Called when DOM is unmounted. Often used to cleanup a resource like a timer with `clearInterval`. |
+| `connectedCallback()` | Called when the component's DOM is mounted. This is the place to get the initial the value of component attributes. |
+| `disconnectedCallback()` | Called when the component's DOM is unmounted. Often used to cleanup a resource like a timer with `clearInterval`. |
 | `attributeChangedCallback(attrName, oldVal, newVal)` | Called when an observed attribute is changed. The arguments are the attribute name (attrName), the old value (oldVal) of the attribute and the attribute's new value (newVal) |
 |`adoptedCallback`| Called when an element is moved to a new document like a new window frame |
 
 Most of the time a Web Component only needs the `constructor` and/or the `connectedCallback` method. Either can be used to setup the web component, but the latter method should be used when retrieving something from the DOM like an attribute's value.
 
-The `attributeChangedCallback` method will be called when a component attribute's value is updated by the client from direct or indirect user interaction. It also requires a `observedAttributes` static property in the custom element class that returns an array of the names of attributes that might change.
+The `attributeChangedCallback` method will be called when a component attribute's value is updated by the client from direct or indirect user interaction. It also requires a `observedAttributes` static property in the custom element class that returns an array of the names of attributes that might change ([example code](https://github.com/cdoremus/web-component-demos/blob/main/lifecycle-wc.js)).
 
 ```js
 class AttributeChangedWC extends HTMLElement {
@@ -156,37 +160,38 @@ customElements.define("attribute-changed-wc", AttributeChangedWC);
 ```
 The client app that displayed this Web Component has code to update the component's `add` attribute value. When it changes, the `attributeChangedCallback` method is invoked. Here's what that code looks like:
 ```js
-    // get reference to the web component
-    const component = document.querySelect("attribute-changed-wc");
-    // get reference to the button used to change the attribute
-    const button = document.querySelector("#update-add-button");
-    // update the attribute when the button is clicked
-    button.addEventListener("click", (e) => {
-      const addValue = component.getAttribute("add");
-      // Increment attribute to invoke attributeChangedCallback
-      const newAdd = parseInt(addValue) + 1;
-      component.setAttribute("add", newAdd.toString());
-    });
+  /* Embedded script in lifecycle.html */
+  // get reference to the web component
+  const component = document.querySelect("attribute-changed-wc");
+  // get reference to the button used to change the attribute
+  const button = document.querySelector("#update-add-button");
+  // update the attribute when the button is clicked
+  button.addEventListener("click", (e) => {
+    const addValue = component.getAttribute("add");
+    // Increment attribute to invoke attributeChangedCallback
+    const newAdd = parseInt(addValue) + 1;
+    component.setAttribute("add", newAdd.toString());
+  });
 ```
-See the [source code](https://github.com/cdoremus/web-component-demos/blob/main/lifecycle.html) for this example for more details.
+See the [source code](https://github.com/cdoremus/web-component-demos/blob/main/lifecycle.html) for more details on this example.
 
 ### Encapsulation with the Shadow DOM
 
 The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates CSS styles and DOM nodes inside a custom element. Shadow DOM is an optional feature of a Web Component.
 
-When the Shadow DOM is enabled in a Web Component, it means is that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties).
+When the Shadow DOM is enabled in a Web Component, it means is that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties - [see below](#style-inheritance-and-custom-properties)).
 
 Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the custom element, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
 
 The shadow DOM has two modes:
-- open - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
-- closed - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
+- **open** - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
+- **closed** - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
 
 You use the `attachShadow` built-in custom element method to enable shadow DOM. That method's argument is an options object with a required `mode` field whose value is either `open` or `closed`.
 
-Calling `attachShadow` assigns the `shadowRoot` component property that can be used to add content to the shadow DOM with its `append` or `appendChild` method. Here's what that looks like:
+Calling `attachShadow` assigns the `shadowRoot` component property that can be used to add content to the shadow DOM with its `append` or `appendChild` method. Here's what that looks like ([source code](https://github.com/cdoremus/web-component-demos/blob/main/shadow-dom.js)):
 
-```javascript
+```js
 class MyShadowDomWC extends HTMLElement {
   constructor() {
     // Assigns a reference to this.shadowRoot in the Shadow DOM
@@ -210,7 +215,7 @@ If you look at the Elements tab in the browser Developer Tools, you'll see the s
 |------|
 | ![Shadow DOM in Dev Tools](/img/blog/web-components/ShadowDom_DevelopersToolsView.png) |
 
-Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. The [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) interface is the root node of the Shadow DOM. It has it's own properties and an event. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
+Inside the Developer Tools, the Shadow DOM is bounded by a `#shadow-root (open)` delimiter. The [Shadow Root](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) interface is the root node of the Shadow DOM. It has it's own properties and methods. See [the MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot) for more details.
 
 To set the Shadow DOM mode to closed, just change the mode from "open" to "closed" in the `attacheShadow` call:
 ```javascript
@@ -307,7 +312,6 @@ The `eventHandler` method is used to dynamically update the tab's content and ad
 
 You could also define the `template` in JavaScript code using a string literal like this which is a drop-in replacement for the template defined within the component's markup in this example adapted from [this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/TemplatedWC.ts):
 
-TODO: Show how template is added to ShadowDOM
 ```js
   connectedCallback() {
     const template = document.createElement("template");
@@ -333,20 +337,22 @@ TODO: Show how template is added to ShadowDOM
         <slot name="slot3"></slot>
       </div>
     `;
-    // attachShadow() called in the constructor
+    // append the template's content to the ShadowRoot
     this.shadowRoot.appendChild(template.content);
 `;
 ```
 Note that when a slot's `name` attribute is not defined, it would get the default content which is the content created without a `slot` attribute. That would be be the "Default slot content" in this example ([source code](https://github.com/cdoremus/web-component-demos/blob/main/template.html)):
 
 ```html
-  <!-- Markup fragment -->
+  <!-- template.html markup fragment -->
   <template-wc>
     <div>Default slot content</div>
     <div slot="slot2">Slot 2 content</div>
     <div slot="slot3">Slot 3 content</div>
   </template-wc>
 ```
+
+Also not that when a `template` is used with slots, the `ShadowRoot` can dispatch a `slotchange` event that can be picked up by an event listener.
 
 ### Declarative Shadow DOM
 
