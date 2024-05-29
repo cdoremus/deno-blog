@@ -3,6 +3,7 @@
   "editor.defaultFormatter": "denoland.vscode-deno",
 
   "cSpell.words": [
+    "asterix",
     "deno",
     "Hono",
     "Preact",

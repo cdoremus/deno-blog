@@ -841,7 +841,7 @@ But before we get into that, let's look at how the built-in Deno server `Deno.se
 
 If you want to serve static content containing a Web Component using a Deno-native server, then `Deno.serve` is a good option.
 
-I have created an [example showing how `Deno.serve` can be used to serve a static HTML file containing web components in a Code Sandbox dev container](https://codesandbox.io/p/devbox/deno-wc-server-47vfpc?file=%2Fstatic%2Fstyles.css%3A33%2C16) to illustrate this. It displays two instances of a simple "Hello World" custom element on the app's home page.
+I have created an example app showing how `Deno.serve` can be used to serve static HTMLs file containing web components. I have created an application to illustrate this ([source code](https://github.com/cdoremus/web-component-demos)). Many of the examples code referenced above comes from that app.
 
 You can also use `Deno.serve` to stream an HTML file containing web components [as is shown in this Deno Deploy Playground](https://dash.deno.com/login?redirect=/playground/shadowroot-streams)  (created by [Nathan Knowler](https://sunny.garden/@knowler/111466434753583873)).
 
@@ -853,6 +853,7 @@ The [Deno Fresh](https://fresh.deno.dev) full-stack web framework uses [Preact](
 
 Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
 
+I have created an example app showing how to Fresh can be used to work with Web Components to accompany this article ([source code](https://github.com/cdoremus/fresh-webcomponents)). The application has also been [deployed to Deno Deploy](https://fresh-webcomponents.deno.dev/).
 
 The best way to integrate Web Components with Fresh is to use Fresh for server-side rendering and routing. Here's a simple web component that displays a message:
 ```ts
@@ -880,6 +881,7 @@ export default function CustomElementsPage(props) {
       <hr />
       <div>
         <h3>Greeting Web Component</h3>
+        {/* Display the web component */}
         <hello-wc></hello-wc>
       </div>
       <hr />
@@ -906,32 +908,10 @@ function Foo() {
 
 ### HTML Web Components in Fresh
 
-As stated [previously](#html-web-components), HTML Web Components are components where all the content comes from child elements.
+As stated [previously](#html-web-components), HTML Web Components are components where all the content comes from child elements. You can create and use HTML Web Components in Fresh too. This can be done in two different ways:
 
-```ts
-// CounterWC.ts
-class CounterWC extends HTMLElement {
-  buttons: NodeListOf<HTMLButtonElement>;
-  counterCount: HTMLElement;
-  constructor() {
-    super();
-    this.buttons = this.querySelectorAll("button");
-    this.counterCount = this.querySelector("#counter-count") as HTMLElement;
-  }
-  connectedCallback() {
-    for (const button of this.buttons) {
-      button.addEventListener("click", () => {
-        const countHTML = parseInt(this.counterCount.innerHTML);
-        this.counterCount.innerHTML = (countHTML as number +
-          parseInt(button.innerHTML)).toString();
-      });
-    }
-  }
-}
-customElements.define("counter-wc", CounterWC);
-```
-
-```jsx
+- Combine the custom element and internal HTML markup in a single JSX/TSX  file. Here's a snippet of what that would look like:
+```tsx
   <counter-wc>
     <div class="flex gap-8 py-6">
       <button class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors">
@@ -944,20 +924,60 @@ customElements.define("counter-wc", CounterWC);
     </div>
   </counter-wc>
 ```
-All the functional logic -- button clicks -- are contained in the Web Component, while the child elements were responsible for layout in conjunction with external stylesheets.
+Note in this case that the HTML content explicitly placed inside the custom element.
 
-Note that the `class` values are Tailwind helper selectors (see [Tailwind section below](#using-tailwind-with-fresh)).
+- Create the internal markup in a separate Fresh/Preact component and use it in the JSX/TSX with the custom element. This is what that would look like:
+```tsx
+  <counter-wc>
+    <WCWrappedCounter
+      initialCount={3}
+      attributes={{ title: "Preact-WC Counter button" }}
+    />
+  </counter-wc>
+```
 
-NNNNNNNNNNNNNNNNNNNNNNNNNN
+The `<counter-wc>` custom element that is used in both examples is defined in the `CounterWC` class ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/CounterWC.ts)).
+
+The first use of `CounterWC` explicitly displays its internal HTML. In the second example, the HTML content is wrapped inside a Fresh component implemented as an island. This is what the code looks like ([full source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/islands/WCWrappedCounter.tsx)):
+
+```tsx
+function button(
+  change: string,
+  attributes?: JSX.HTMLAttributes<HTMLButtonElement>,
+) {
+  return (
+    <button
+      class="px-2 py-1 border-gray-500 border-2 rounded bg-white hover:bg-gray-200 transition-colors"
+      {...attributes}
+    >
+      {change}
+    </button>
+  );
+}
+
+{ /* See the source code for the CounterProps interface impl */ }
+
+export default function WCWrappedCounter(props?: CounterProps) {
+  return (
+    <div class="flex gap-8 py-6">
+      {button("-1", props?.attributes)}
+      <p id="counter-count" class="text-3xl">{props?.initialCount ?? 1}</p>
+      {button("+1", props?.attributes)}
+    </div>
+  );
+}
+```
+
+Both of these examples are displayed in the `index.tsx` route of the Fresh Web Component example app ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/index.tsx)).
 
 ### Using TypeScript with Fresh-deployed Custom Elements
 
 Custom Elements can be authored using TypeScript, but it requires that you have a way to transform TypeScript into JavaScript and put the JS file in Fresh's `static` folder or subfolder.
 
-When I did this for the [example app](https://fresh-webcomponents.deno.dev/), I decided to have them compiled into a single file, so that I would only need one script tag in the page head to cover all web components. I used `esbuild` to do this. A `build-wc.ts` file was created with this content:
+When I did this for the [Fresh Web Component example app](https://fresh-webcomponents.deno.dev/), I decided to have them compiled into a single file, so that I would only need one script tag in the page head of the example app to cover all web components. I used [`esbuild`](https://esbuild.github.io/) to do this. A `build-wc.ts` file was created with this content:
 ```ts
-  import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
-  import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.2/mod.ts";
+  import * as esbuild from "npm:esbuild@0.21.3";
+  import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@^0.10.3";
 
   await esbuild.build({
     plugins: [...denoPlugins()],
@@ -970,17 +990,19 @@ When I did this for the [example app](https://fresh-webcomponents.deno.dev/), I 
   });
   esbuild.stop()
 ```
-This build can handle both TypeScript and JavaScript files. The TS files would be transformed into JS files during the build.
+This build can handle both TypeScript and JavaScript files. The TS files would be transformed into JS files during the build all JavaScript moved into the `outfile` folder.
 
-The `mod.ts` file exports all the web component files, both those written in TypeScript and JavaScript. In this case, that's all the files in the `components/wc` folder. The `esbuild` tool cannot handle transforming multiple files into a single bundle file without an entrypoint, so the `mod.ts` file is used as the entry point for all of them.
+The `mod.ts` file exports all the web component files, written in either TypeScript or JavaScript. In this case, that's all the files in the `components/wc` folder. THe JavaScript files are transpiled into JavaScript while the JavaScript files are put into the `outfiles` directory without change. All of the files are bundled together into the `wc.esm.js` file.
+
+The `wc.esm.js` file needs to be committed to git as it is used when the app is deployed to production. In the example app, the `dev` task was created to run the `build-wc.js` file prior to starting the development server. It is important that you run that task every time you change a Web Component file.
+
+The `esbuild` tool cannot handle transforming multiple files into a single bundle file without an entrypoint, so the `mod.ts` file is used as the entry point for all of them.
 
 The `mod.ts` file could be created programmatically from a list of `components/wc` files, but I decided not to do that to simplify the build process.
 
-The final bundle is contained in the `wc.esm.js` file.
+When you use a custom element in a Fresh application, you'll notice that they will throw an error in the vscode (and probably other LSPs too). To remove this error you have to register the TypeScript type of the custom element with the Fresh application.
 
-When you use a custom element in a Fresh application, you'll notice that they will throw an error in the vscode (and probably other LSPs too). In order to remove this error you have to register the TypeScript type of the custom element with the Fresh application.
-
-In order to do that you need to create records in a `types.ts` file that extends `JSX.IntrinsicElements` for custom element tags. In the [Fresh web component demo app](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts) that I created for this blog post.
+In order to do that you need to create interfaces in a TypeScript file that extends `JSX.IntrinsicElements` for each custom element tags. In the [Fresh Web Component example app](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts) that file is `types/types.ts`.
 
 Here's what a simple custom element type definition would look like ([from this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts)):
 ```ts
@@ -990,15 +1012,15 @@ interface HelloWCProps extends JSX.HTMLAttributes<HTMLElement> {
 declare module "preact" {
   namespace JSX {
     interface IntrinsicElements {
-      // Web components registered below
       "hello-wc": HelloWCProps;
+      // ... register other web components here
     }
   }
 }
 ```
 Note how the component's element/tag is added to the `JSX` namespace referencing the interface defining the component and it's attributes and that the interface extends `JSX.HTMLAttributes` with an `HTMLElement` generic type parameter. This allows the use of the custom element's tag inside the Fresh JSX without any IDE errors. Otherwise, you need to add a `@ts-ignore` comment above the tag. This suppresses the LSP error and the custom element will still work in Fresh.
 
-If your custom element does not have any attributes, you can define it within the JSX namespace without the need for an interface:
+If your custom element does not have any attributes, you can define it within the JSX namespace without the need for a separate interface:
 ```ts
 declare module "preact" {
   namespace JSX {
@@ -1021,7 +1043,7 @@ declare module "preact" {
   }
 }
 ```
-As [show in the example code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts), the type definitions can be created for components created with JavaScript or Typescript for use in Fresh TS markup. [As seen below](#lit-and-typescript) this type definition can be used for components created with the [Lit](https://lit.dev/) web component framework.
+As [show in the example code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts), the type definitions can be created for components created with JavaScript or Typescript for use in Fresh TS markup. [As seen below](#lit-and-typescript) this type definition can also be used for components created with the [Lit](https://lit.dev/) web component framework.
 
 ### Using Tailwind with Fresh
 
@@ -1054,17 +1076,17 @@ Another option for using `tailwind` with web components in Fresh is to use JSX a
 
 The element's `class` attribute in the example above is annotated with the names of Tailwind helper selectors. The Tailwind transformation involves including Tailwind's helper selectors (like `text-3xl` or `px-2`) in the app's deployed CSS.
 
-## Creating Web Components with Lit
+### Creating Web Components with Lit
 
-There are a number of third party libraries that extend Web Components. They include [Stencil](https://github.com/ionic-team/stencil), [Lightning Web Components](https://github.com/salesforce/lwc), [WebC](https://github.com/salesforce/lwc) and [Enhance](https://enhance.dev/). But [Lit](https://lit.dev/) (formerly Polymer) is the granddaddy of them all and probably the most used lib, so that's the library I'm going to cover.
+There are a number of third party libraries that extend Web Components. They include [Stencil (soon to be Web Awesome)](https://github.com/ionic-team/stencil), [Lightning Web Components](https://github.com/salesforce/lwc), [WebC](https://github.com/salesforce/lwc) and [Enhance](https://enhance.dev/). But [Lit](https://lit.dev/) (formerly Polymer) is the granddaddy of them all and probably the most used lib, so that's the library I'm going to cover.
 
 Modern Lit uses decorators to define and register a Web Component. By doing this, they remove a lot of the boilerplate required to create a web component. The `customElement`, `property` and `properties` decorators are the most common [Lit decorators](https://lit.dev/docs/components/decorators/) used.
 
 Unfortunately, browsers do not support decorators at this point even though they are at [Stage 3 in the TC-39 standardization process](https://github.com/tc39/proposal-decorators). In order for Lit decorators to work, you need to [transpile the Lit code](https://lit.dev/docs/tools/publishing/#publishing-modern-javascript).
 
-One way to do the transpilation is to [use Vite as is shown in this repo](https://github.com/bluwy/create-vite-extra/tree/master/template-deno-lit-ts). I really didn't want to get into another build process besides that one used by Fresh, so I decided to create a couple of Lit components without decorators.
+One way to do the transpilation is to [use Vite as is shown in this repo](https://github.com/bluwy/create-vite-extra/tree/master/template-deno-lit-ts). I really didn't want to get into another build process besides that one used by Fresh, so I decided to create a few Lit components without decorators.
 
-You create a Lit web component by creating a JavaScript or TypeScript that extends `LitElement`. Here's an example of a Lit counter component that has the same functionality as the counter component of a newly created Deno Fresh application using the :
+You create a Lit web component by creating a JavaScript or TypeScript that extends `LitElement`. Here's an example of a Lit counter component ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/LitCounter.js)) that has the same functionality as the counter component of a newly created Deno Fresh application. Here's what it looks like:
 ```js
 export class LitCounter extends LitElement {
   static #INITIAL_COUNT = 3;
@@ -1108,25 +1130,26 @@ export class LitCounter extends LitElement {
 customElements.define("lit-counter",  LitCounter);
 ```
 
-The static `properties` class variable holds an object with members that are class properties that are bound to component attributes. This are termed _reactive properties_ because any update of their value triggers a component re-render.
+The static `properties` class variable holds an object with members that are class properties that are bound to component attributes by default. They are termed _reactive properties_ because any update of their value triggers a component re-render.
 
-The `properties` object can contain members that are not linked to a component attribute. These are part of what is called [internal reactive state](https://lit.dev/docs/components/properties/#internal-reactive-state). They are also reactive properties. You can use the `{state: true}` property option to declare an internal reactive state property.
+When a `properties` object member is updated internally, a re-render also occurs. Internal property updates should only occur in response to a user interaction. There are a number of [property options](https://lit.dev/docs/components/properties/#property-options) that can also be set on a property.
 
-TODO: Flesh out the diff between reactive, bound and unbound properties: NNNNNNNNNNNNNNNNN
+Properties not linked to an attribute can be part of what is called [internal reactive state](https://lit.dev/docs/components/properties/#internal-reactive-state). They are also reactive properties. You use the `{state: true}` property option to declare an internal reactive state property. They should be declared as private in the component. See the [documentation on internal reactive state](https://lit.dev/docs/components/properties/#internal-reactive-state) for more details.
 
-The `render()` method is where the component's content is rendered. It returns a `TemplateResult` type. with Lit-specific attributes corresponding to standard DOM event handlers (`@click` in the example corresponding to the `onclick` attribute).
 
-The standard Web Component lifecycle methods like the `constructor`, `connectedCallback`, `disconnectedCallback` and `attributeChangedCallback` is available with Lit. But Lit adds other methods. The `render` method is one of those previously described. See the [Lit lifecycle documentation](https://lit.dev/docs/components/lifecycle/) for more details.
+The `render()` method is where the component's content is rendered. It returns a `TemplateResult` type with Lit-specific attributes prefixed with an asterix (@) corresponding to standard DOM event handlers (`@click` in the example corresponding to the `onclick` attribute).
 
-Lit has two useful [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates) `html` and `css` which is used to create HTML and CSS markup.
+The standard Web Component lifecycle methods like the `constructor`, `connectedCallback`, `disconnectedCallback` and `attributeChangedCallback` is available with Lit. But Lit adds other methods. The `render` method is one of those. See the [Lit lifecycle documentation](https://lit.dev/docs/components/lifecycle/) for more details.
+
+Lit has two useful [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates) `html` and `css` which can be used to create HTML and CSS markup.
 
 ### Lit and TypeScript
 
-When working with Deno and Lit using TypeScript in the vscode IDE you will get errors because the Deno LSP does not recognize Lit properties as class-level variables. In order to avoid this error, you need to declare the variable and initialize it like `message` is done in this example ([source code here](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/MyLitMessage.ts)):
+When working with Deno and Lit using TypeScript in the vscode IDE you will get errors in the TypeScript file because the Deno LSP does not recognize Lit properties as class-level variables. In order to avoid this error, you need to declare the variable and initialize it like `message` is done in this example ([source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/MyLitMessage.ts)):
 ```ts
 export class MyLitMessage extends LitElement {
   // Needed for TypeScript since it does not recognize
-  //  TS properties as class-level variables
+  //  static properties as class-level variables
   message = "";
   static get properties() {
     return {
@@ -1137,9 +1160,9 @@ export class MyLitMessage extends LitElement {
 }
 ```
 
-As stated above, Lit decorators do not work in Deno because Deno does not transpile decorators to JS that run in a browser and browsers do not implement decorators as they recently entered [Stage 3 of the TC-39 standardization process](https://github.com/tc39/proposal-decorators).
+As stated previously, Lit decorators do not work in Deno because Deno does not transpile decorators to JS that run in a browser and browsers do not implement decorators as they recently entered [Stage 3 of the TC-39 standardization process](https://github.com/tc39/proposal-decorators).
 
-If you want to make the component usable in a Fresh app's `JSX` and not throw errors in VSCode or another IDE, you'll need to add an interface and reference to the `JSX` namespace in a `types.ts` file. Here's what that looks like for a Lit component ([from this source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts)):
+If you want to make the component usable in a Fresh app's `JSX` and not throw errors in VSCode or another IDE, you'll need to add an interface and reference to the `JSX` namespace in a TypeScript file. Here's what that looks like for a Lit component ([full source code](https://github.com/cdoremus/fresh-webcomponents/blob/main/types/types.ts)):
 
 ```ts
 interface MyLitMessage extends JSX.HTMLAttributes<LitElement> {
@@ -1154,16 +1177,15 @@ declare module "preact" {
   }
 }
 ```
-Note that the interface extends `JSX.HTMLAttributes` with a `LitElement` generic type parameter. This allows the use of the custom Lit element's tag inside the Fresh `JSX` without any IDE errors.
+Note that the interface extends `JSX.HTMLAttributes` with a `LitElement` generic type parameter. This allows the use of the custom Lit element's tag inside Fresh `JSX` ([for an example see `lit.ts` here](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/lit.tsx)).
 
-
-You can use the [esbuild bundling code shown above](#using-typescript-with-fresh-deployed-custom-elements) to build a a Lit component created without decorators in TypeScript or JavaScript. In order to do that make sure the `esbuild` entry point ([`mod.ts` in the example app](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/mod.ts)) contains an export for each Lit component.
+You can use the [esbuild bundling code shown above](#using-typescript-with-fresh-deployed-custom-elements) to build a Lit component created without decorators in TypeScript or JavaScript. In order to do that make sure the `esbuild` entry point ([`mod.ts` in the example app](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/mod.ts)) contains an export for each Lit component.
 
 ## Using Third-party Web Components
 
 I should note up front that most third-party web components are setup to be used exclusively with Node.js. That does not mean you can't use all of those components, you just have to figure out how to do it.
 
-One way is to download the web component's source code and put it in a folder accessible by your web server. Still if there are a lot of CommonJS imports, you have a bit of work to convert them to ESM imports. This can be a big hassle, but using an `npm:` prefix in the import helps.
+One way is to download the web component's source code and put it in a folder accessible by your web server (`static` in Fresh). Still if there are a lot of CommonJS imports, you have a bit of work to convert them to ESM imports. This can be a big hassle, but using an `npm:` prefix in the import helps.
 
 Some of them do offer a URL that can be used in a `<script>` tag to make them available on the page. That would look like this:
 ```html
@@ -1177,7 +1199,15 @@ To use a component like that you need to know the tag name used in the `customEl
 ```html
   <emoji-picker-element></emoji-picker-element>
 ```
-Hopefully, the custom element's attributes would be well documented and any content child content that the element would allow. Also, if the element has any custom properties, that should also be documented as it is a good way for a developer to allow customization of the component, especially its look and feel.
+Hopefully, the custom element's attributes would be well documented and any child content that the element would allow. Also, if the element has any custom properties, that should also be documented as it is a good way for a developer to allow customization of the component, especially its look and feel.
 
 Many third-party web components are deployed to a specific CDN while others can be accessed using [unpkg](https://unpkg.com/) which serves components deployed to npm. Also, web components published on GitHub can be accessed from a URL (use the Raw view to obtain the URL).
 
+There are a couple of examples of the use of third-party components in the [Fresh example app]() I created to accompany this article. [View the third-party page online](https://fresh-webcomponents.deno.dev/third-party) and  and look at the [`third-party.tsx` file](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/third-party.tsx) to see how they are used.
+
+# Conclusions
+Web Components can be a bit complicated to work with. But the ability to use built-in browser APIs and their compatibility with other web frameworks makes them a good choice.
+
+But Web Components are an evolving standard. The Web Incubator Community Group (WICG) works on new Web Component standards. This effort centers around [this GitHub repo](https://github.com/WICG/webcomponents). In that repo, proposals are discussed in the [issues](https://github.com/WICG/webcomponents/issues) section. A draft of the new WC specification grows out of those discussion and taken up by the WICG. The draft goes through multiple iterations based on feedback from the committee and browser vendors. A Proposed Recommendation (PR) is finally drafted for final review followed by a recommendation to the World Wide Web Consortium (W3C) to publish the new spec.
+
+In this blog post I have shown how Web Components are created and used with Deno. I urge you to take a look at the source code in the two repositories that accompany this article ([web-component-demos](https://github.com/cdoremus/web-component-demos) and [fresh-webcomponents](https://github.com/cdoremus/fresh-webcomponents/tree/main)), clone or fork the repos and play around with the code.
