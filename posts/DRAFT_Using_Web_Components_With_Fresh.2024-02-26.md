@@ -1,6 +1,6 @@
 <!-- deno-fmt-ignore-file -->
 #### 2024-02-26
-##### _21 min read_
+##### _28 min read_
 
 # Using Web Components with Deno and Fresh
 
@@ -61,17 +61,17 @@ The first question that comes up in a Web Component discussion is why. Why would
 
 - Web components are lightweight and do not need any extra JavaScript/TypeScript libraries to work since the APIs are built into the browser. Many web frameworks are getting a lot of flack these days because of the amount of JS they send to the client.
 - They are supported by all modern web browsers including ones on mobile phones. This has only happened in the last few years.
-- They can be used with most web frameworks. Web Components are often used as the basis for a [design system](https://www.invisionapp.com/inside-design/guide-to-design-systems/) since they are framework agnostic. This allows then to be used throughout the enterprise.
+- They can be used with most web frameworks. Web Components are often used as the basis for a [design system](https://www.invisionapp.com/inside-design/guide-to-design-systems/) since they are framework agnostic. This allows them to be used throughout the enterprise.
 - Since Web Components are build into the browser, they will always be supported and are backwardly compatible as opposed to components created with a web framework that will probably introduce periodic breaking changes as the framework evolves.
-- They require a good understanding of DOM APIs, something that many JS/TS developers do not know well because they work with web frameworks that abstract them away. Still, knowledge of JavaScript fundamentals are important for every webdev in order to fully understand what's going on under the covers and to have additional ways to work with the UI.
 
-I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on sometimes awkward ways to do things when you use a component created in a web framework.
+I also have to admit that there is something rather liberating about having full control of a component you have created rather than relying on abstractions that can be hard to understand and harder to debug when you use a web framework.
 
 ## Creating a Web Component
 You create a Web Component custom element using a JavaScript class that extends the `HTMLElement` interface. The simplest 'Hello World' example looks like this:
 ```js
 class HelloWC extends HTMLElement {
-  // lifecycle method called  when the component is loaded into the DOM
+  // Lifecycle method called  when the
+  // component is loaded into the DOM.
   connectedCallback() {
     // Get the value of the message attribute
     this.message = this.getAttribute("message") ?? "World";
@@ -179,13 +179,13 @@ See the [source code](https://github.com/cdoremus/web-component-demos/blob/main/
 
 The Web Component standard includes a concept called the Shadow DOM, an isolated DOM tree that encapsulates CSS styles and DOM nodes inside a custom element. Shadow DOM is an optional feature of a Web Component.
 
-When the Shadow DOM is enabled in a Web Component, it means is that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties - [see below](#style-inheritance-and-custom-properties)).
+When the Shadow DOM is enabled in a Web Component, it means that CSS styles outside of the component cannot influence elements inside the component (outside of inherited CSS properties like `color` or `font-size` and CSS custom properties - [see below](#style-inheritance-and-custom-properties)).
 
-Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the custom element, buttons inside will not be part of the `button` collection result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
+Similarly, a Web Component with Shadow DOM enabled isolates the DOM inside the component, so that, for instance, if you call `document.querySelectorAll('button')` outside the custom element, buttons inside will not be part of the `button` array result set. But if you call `this.querySelector("button")` inside the custom element with only one button, then you get a reference to the component's single button element.
 
 The shadow DOM has two modes:
 - **open** - where the Web Component's CSS and DOM is isolated. In open mode, external JavaScript can still access the component's internals.
-- **closed** - where the Web Component's CSS, DOM and external JavaScript is completely isolated.
+- **closed** - where the Web Component's CSS, DOM and JavaScript is completely isolated.
 
 You use the `attachShadow` built-in custom element method to enable shadow DOM. That method's argument is an options object with a required `mode` field whose value is either `open` or `closed`.
 
@@ -205,7 +205,7 @@ class MyShadowDomWC extends HTMLElement {
 }
 customElements.define("my-shadow-dom", MyShadowDomWC);
 ```
-The `attachShadow` method can be also called inside `connectedCallback` to set a local `shadow root` variable reference. When the call is made in the constructor, the `this.shadowRoot` property is set.
+The `attachShadow` method can be also called inside `connectedCallback` to set a local shadow root variable reference. When the call is made in the constructor, the `this.shadowRoot` property is automatically set.
 
 The `append` method is used to add elements to the shadow root.
 
@@ -225,7 +225,7 @@ When this is done, the Developer Tools shadow root notation shows `closed` in th
 
 Shadow DOM Web Components are often used as reusable components in a [Design System](https://www.designsystems.com/), a way to formalize a company's brand presence on the web. Besides allowing a company-standard UI, Web Components provide a way to make sure accessibility standards are met by the Design System development group rather than relying on individual development groups that may be working with different web frameworks.
 
-The example repo accompanying this post contains [source code](https://github.com/cdoremus/web-component-demos/blob/main/shadow-dom.html) of a Web Component using the open and closed ShadowDOM.
+The example repo accompanying this post contains [source code](https://github.com/cdoremus/web-component-demos/blob/main/shadow-dom.html) of Web Components using both the open and closed ShadowDOM (see [shadow-dom.html](https://github.com/cdoremus/web-component-demos/blob/main/shadow-dom.html)).
 
 ### Templates and Slots
 
@@ -360,7 +360,7 @@ Declarative Shadow DOM (DSD) is a new Web Component option that has recently bee
 
 The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` attribute set to "open" or "closed" (the same mode options in the `attachShadow` call). The markup to be rendered server-side would be put in the template. The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element.
 
- Here's an example what the markup would look like ([source code](https://github.com/cdoremus/web-component-demos/blob/main/dsd-js.html)):
+ Here's an example what the markup would look like ([source code](https://github.com/cdoremus/web-component-demos/blob/template.html)):
 
 ```html
 <html>
@@ -370,7 +370,7 @@ The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` att
   <body>
     <header style="font-size:2rem;font-weight:900">Doing SSR with Declarative Shadow DOM</header>
     <dsd-wc>
-    <template id="dsd-js" shadowrootmode="open">
+      <template id="dsd-js" shadowrootmode="open">
         <style>
           div {
             font-size: 1.0rem;
@@ -389,7 +389,7 @@ The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` att
 ```
 To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like what is used by [EJS](https://ejs.co/) (or Deno-native [djs](https://github.com/syumai/dejs)).
 
-A custom element would be created in a JavaScript file that is referenced in the markup. In the example, the `dsd-wc` element looks like this:
+A custom element would be created in a JavaScript file that is referenced in the markup. In the example, the `dsd-wc` element looks like this ([source code](https://github.com/cdoremus/web-component-demos/blob/main/dsd-js.js)):
 ```js
 // dsd-js.js
 class DeclarativeShadowDOMWC extends HTMLElement {
@@ -423,7 +423,7 @@ By using the DSD on the server side, you avoid the unsightly FOUC (Flash Of Unst
 
 ### Light DOM and HTML Web Components
 
-Web Components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom elements has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
+Web Components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom element has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
 
 The most obvious disadvantage is that with the Shadow DOM you do not have access to most global CSS styles ([for details see below](#style-inheritance)).
 
@@ -500,7 +500,7 @@ The most common way to add CSS to a Web Component is to add it to the `innerHTML
     }
   }
 ```
-A non-Shadow DOM component will add the component's markup to the component's `innerHTML`, so the last line in the `connectedCallback` method would be:
+A non-Shadow DOM component will add the component's markup to the component's `innerHTML`, so the last line in the `connectedCallback` method shown above would be:
 ```js
   this.innerHTML = html;
 ```
@@ -512,7 +512,7 @@ Standard CSS pseudo-selectors (pseudo-elements and pseudo-classes) can be used w
 - `:host` a pseudo-class that refers to the web component's custom element. This allows you to create styles that will effect the complete internal markup and content of the custom element.
 You can also use the `:host()` function to focus your CSS styles to a specific custom element content area using a CSS selector as the argument.
 - `::slotted()` is a pseudo-element function used to style the content of  `<slot>` elements. Its argument can be the wildcard (*) or a CSS selector.
-- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element inside the Web Component. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute's string values. Note that a CSS selector is not used here as an argument.
+- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute's string values. Note that a CSS selector is not used here as an argument.
 
 Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [source code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
 
@@ -636,8 +636,8 @@ Make sure you check out the quiz-page example [in the repo](https://github.com/c
 To be used with a custom element, the `CSSStyleSheet` class needs to be instantiated outside of the component.
 
 ```js
+// Create and apply a rule to the stylesheet
 const styleSheet = new CSSStyleSheet();
-// Apply a rule to the sheet
 styleSheet.replaceSync("h4 { color: green }");
 class ConstructableStyleSheetWC extends HTMLElement {
   connectedCallback() {
@@ -655,10 +655,11 @@ As seen in the example above, there are two `CSSStyleSheet` methods that are com
 - [`replaceSync`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replaceSync) replaces stylesheet rules defined on a constructed stylesheet with the one's defined in the method's argument. There is an async version of this method ([`replace`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replace)) that you might want to use for large replacements.
 - [`insertRule`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/insertRule) which adds a new stylesheet rule to the constructed stylesheet.
 
-
 There is also a [`deleteRule`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/deleteRule) method that uses a numeric index, requiring that you need to know the order of rules in the stylesheet. For instance, calling `deleteRule(0)` deletes the first rule in the constructed stylesheet.
 
 Also note in the example code that the shadow DOM has an [`adoptedStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/Document/adoptedStyleSheets) property to associate one or more constructed stylesheets to it.
+
+All of the styling examples shown in previous sections have been used in the [styling.html](https://github.com/cdoremus/web-component-demos/blob/main/styling.html) file in the example app.
 
 ### Style Inheritance and Custom Properties
 
@@ -818,8 +819,9 @@ But before I unveil the links, I'd like to talk a bit about accessibility roles.
 
 Still, a lot of elements have intrinsic roles, which should be checked before you decide to add a `role` attribute to an element. You can ([do that here](https://www.w3.org/TR/html-aria/#document-conformance-requirements-for-use-of-aria-attributes-in-html)).
 
-
 But if you are going to use an element for a function that is normally not used you need to explicitly designate that role. For instance, on a `div` that is used as a button, you should give that element a button role. Check [this list of possible ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) for role options and select the one that is appropriate for each element.
+
+Also, the `ElementInternals` interface that is available to Web Components exposes the [Accessibility Object Model](https://wicg.github.io/aom/spec/). This allows setting the `role` and 40 ARIA attributes inside a Web Component that uses the Shadow DOM ([see the `ElementInternals` documentation](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals)).
 
 OK, back to the list of links. Since, I am not an accessibility expert, I offer these links from people who actually know what they are talking about:
 - [Accessibility for Web Components](https://developer.salesforce.com/blogs/2020/01/accessibility-for-web-components)
@@ -1206,8 +1208,14 @@ Many third-party web components are deployed to a specific CDN while others can 
 There are a couple of examples of the use of third-party components in the [Fresh example app]() I created to accompany this article. [View the third-party page online](https://fresh-webcomponents.deno.dev/third-party) and  and look at the [`third-party.tsx` file](https://github.com/cdoremus/fresh-webcomponents/blob/main/routes/third-party.tsx) to see how they are used.
 
 # Conclusions
-Web Components can be a bit complicated to work with. But the ability to use built-in browser APIs and their compatibility with other web frameworks makes them a good choice.
+Web Components can be a bit complicated to work with. But the ability to use the low-overhead of built-in browser APIs and their compatibility with other web frameworks makes them a good choice in many situations.
 
-But Web Components are an evolving standard. The Web Incubator Community Group (WICG) works on new Web Component standards. This effort centers around [this GitHub repo](https://github.com/WICG/webcomponents). In that repo, proposals are discussed in the [issues](https://github.com/WICG/webcomponents/issues) section. A draft of the new WC specification grows out of those discussion and taken up by the WICG. The draft goes through multiple iterations based on feedback from the committee and browser vendors. A Proposed Recommendation (PR) is finally drafted for final review followed by a recommendation to the World Wide Web Consortium (W3C) to publish the new spec.
+Web Components are an evolving standard. The Web Incubator Community Group (WICG) works on new Web Component standards. This effort centers around [this GitHub repo](https://github.com/WICG/webcomponents). In that repo, proposals are discussed in the [issues](https://github.com/WICG/webcomponents/issues) section. A draft of the new WC specification grows out of those discussion and taken up by the WICG. The draft goes through multiple iterations based on feedback from the committee and browser vendors. A Proposed Recommendation (PR) is finally drafted for final review followed by a recommendation to the World Wide Web Consortium (W3C) to publish the new spec.
 
-In this blog post I have shown how Web Components are created and used with Deno. I urge you to take a look at the source code in the two repositories that accompany this article ([web-component-demos](https://github.com/cdoremus/web-component-demos) and [fresh-webcomponents](https://github.com/cdoremus/fresh-webcomponents/tree/main)), clone or fork the repos and play around with the code.
+In this blog post I have shown how Web Components are created and used with a Deno server and the Denpo Fresh web framework.
+
+I urge you to take a look at the source code in the two repositories that accompany this article ([web-component-demos](https://github.com/cdoremus/web-component-demos) and [fresh-webcomponents](https://github.com/cdoremus/fresh-webcomponents/tree/main)), clone or fork the repos and play around with the code.
+
+You should also create your own components or try out a third-party library and feel free to submit a PR if you come up with something you think would be a good addition to the repo.
+
+Please let me know if there is anything in this article that needs correction or further explanation. You can reach out to me on [Mastodon](https://hachyderm.io/@cdoremus) or the [Deno Discord](https://discord.gg/deno). I look forward to your feedback.
