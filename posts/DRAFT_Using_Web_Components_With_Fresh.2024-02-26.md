@@ -663,11 +663,11 @@ All of the styling examples shown in previous sections have been used in the [st
 
 ### Style Inheritance and Custom Properties
 
-As noted previously, web components created with a Shadow DOM have an isolated CSS scope. There are two exceptions to that rule, Style Inheritance and CSS Custom Properties.
+As noted previously, web components created with Shadow DOM have an isolated CSS scope. There are two exceptions to that rule, Style Inheritance and CSS Custom Properties.
 
-Inherited Styles are CSS properties that are inherited down the DOM tree including the Shadow DOM. It means that a style property value when it is set on a DOM element, child elements automatically express the same style.
+Inherited Styles are CSS properties that are inherited down the DOM tree including the Shadow DOM. It means that when a style property value set on a DOM element, then child elements automatically express the same style.
 
-Inherited style properties include the `color` property, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
+Inherited style properties include`color`, most `font` properties, and `list-style` related properties (see [the full list](https://web.dev/learn/css/inheritance#which_properties_are_inherited_by_default)). You can still override these properties inside your component.
 
 CSS Custom Properties set globally can also be used to override CSS properties set inside the Shadow DOM. This can also be used to update an inherited CSS property. For instance you might have a CSS rule set in a global stylesheet outside the Web Component:
 ```css
@@ -675,7 +675,7 @@ CSS Custom Properties set globally can also be used to override CSS properties s
   ----my-background-color: red;
 }
 ```
-The Web Component sets the custom property value using the CSS function `var()`, whose first argument is the custom property name and optional second argument is the property value if the custom property has not been defined. Here's what that looks like:
+The Web Component sets the custom property value with the CSS function `var()`, whose first argument is the custom property name and optional second argument is the property value if the custom property has not been defined. Here's what that looks like:
 ```js
 const css = `<style>
   .myclass {
@@ -690,17 +690,17 @@ class HelloWorldWC extends HTMLElement {
   }
 }
 ```
-CSS Properties give the Web Component author the ability to allow component users to customize the Web Component CSS.
+CSS Properties give the Web Component author the ability to allow component users to customize the Web Component's CSS.
 
 ## Using the JavaScript Custom Event API
 
-JavaScript events can be used in custom elements. This allows you to for you to create and listen to custom events (the `CustomEvent` class).
+JavaScript events can be used in custom elements. This allows you to create and listen to custom events.
 
-Thee are two functions that can be used with JavaScript events:
+Creating a custom events involves using the `CustomEvent` class. Once created, there are two functions that can be used with JavaScript events:
 
 - **`addEventListener()`** can be attached to any web component. It takes an event name (click, change, submit, etc) and a a callback that gets called when the event is triggered/dispatched.
 
-- **`dispatchEvent()`** can be used to broadcast custom events to be picked up by event listeners listening to that specific event.
+- **`dispatchEvent()`** can be used to broadcast custom events to be picked up by event listeners for that specific event. Its argument is the event to be dispatched.
 
 ```js
   // create event with a detail(data payload)
@@ -716,13 +716,13 @@ Thee are two functions that can be used with JavaScript events:
   })
 ```
 
-By dispatching a custom event in a Web Component you can send information to any element in the DOM tree that subscribes to that event using an event listener. The `CustomEvent` class used to do that has a constructor that takes a `String` -- the event name -- and an object that contains data to be passed onto event listeners in its `detail` property.
+By dispatching a custom event in a Web Component you can send information to any element in the DOM tree that subscribes to that event using an event listener.  Fpr a Web Component that only occurs when the component does not use Shadow DOM. The `CustomEvent` class has a constructor that takes a `String` -- the event name -- and an object that contains data to be passed onto event listeners in its `detail` property.
 
 ## Working with Forms and ElementInternals
 
 Custom elements can contain HTML forms and they will function normally. The [FormWC.ts](https://github.com/cdoremus/fresh-webcomponents/blob/main/components/wc/FormWC.ts) Web Component that is part of the application that accompanies this blog post is an example.
 
-But when one or more form elements are contained in a component to be used with an external form, interactions can be complicated.
+But when one or more form elements are contained in a Web Component to be used with an external form, interactions can be complicated.
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
@@ -730,11 +730,11 @@ But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<texta
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
-A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
+A new Web Component standard DOM interface called [`ElementInternals`](https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals) seamlessly integrates Shadow DOM created form elements into the enclosing external form. All modern browsers support this standard.
 
 This interface requires the custom element to have a static `formAssociated` property with a value of `true`. An additional lifecycle method is then available, `formAssociatedCallback(form)`, which is called when the form elements inside the component are associated with the external form.
 
-For instance, HTML containing an external form and a form-associated custom element might look like this ([full source code](https://github.com/cdoremus/web-component-demos/blob/main/form.html)):
+For instance, HTML containing an external form that encloses a form-associated custom element might look like this ([full source code](https://github.com/cdoremus/web-component-demos/blob/main/form.html)):
 
 ```html
   <form id="name-form">
