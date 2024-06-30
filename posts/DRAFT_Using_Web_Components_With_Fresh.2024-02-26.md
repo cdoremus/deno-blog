@@ -39,7 +39,7 @@ Deno allows you to write simple JavaScript without the need for compilers, bundl
 
 Web Components is a "batteries included" web framework that allows you to write reusable custom elements. In essence, custom elements extend native HTML element functionality. Those elements can be easily associated with an HTML page served by any web server (including a [Deno](https://deno.com) web server).
 
-They can also be used with a web framework like [Deno Fresh](https://fresh.deno.dev).
+They can also be used with a full-stack web framework like [Deno Fresh](https://fresh.deno.dev), but it should be noted that Web Components are a client-side technology.
 
 Before we talk about Deno and Fresh, you need to be familiar with how Web Components work and how to create and use them.
 
@@ -358,11 +358,12 @@ Also not that when a `template` is used with slots, the `ShadowRoot` can dispatc
 
 Declarative Shadow DOM (DSD) is a new Web Component option that has recently been supported by all evergreen browsers. While you can use DSD to create a Web Component without JavaScript, a better way to use it is with Server-Side Routing (SSR).
 
-The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` attribute set to "open" or "closed" (the same mode options in the `attachShadow` call). The markup to be rendered server-side would be put in the template. The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside the custom element.
+The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` attribute set to "open" or "closed" (the same mode options in the `attachShadow` call). The markup to be rendered server-side would be put in the template. The Declarative Shadow DOM has the same level of encapsulation and rules as the regular Shadow DOM created inside a custom element.
 
- Here's an example what the markup would look like ([source code](https://github.com/cdoremus/web-component-demos/blob/template.html)):
+ Here's an example what the DSD markup would look like enclosed by the `<dsd-wc>` Web Component ([source code](https://github.com/cdoremus/web-component-demos/blob/template.html)):
 
 ```html
+// template.html
 <html>
   <head>
     <script src="dsd-js.js"/>
@@ -370,7 +371,7 @@ The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` att
   <body>
     <header style="font-size:2rem;font-weight:900">Doing SSR with Declarative Shadow DOM</header>
     <dsd-wc>
-      <template id="dsd-js" shadowrootmode="open">
+      <template shadowrootmode="open">
         <style>
           div {
             font-size: 1.0rem;
@@ -387,7 +388,7 @@ The Declarative Shadow DOM uses a `template` element with a `shadowrootmode` att
   </body>
 </html>
 ```
-To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like what is used by [EJS](https://ejs.co/) (or Deno-native [djs](https://github.com/syumai/dejs)).
+To accomplish server rendering for SSR, this markup would be placed inside a server-rendered template like what is used by [EJS](https://ejs.co/) (or Deno-native [djs](https://github.com/syumai/dejs)) or Deno Fresh JSX.
 
 A custom element would be created in a JavaScript file that is referenced in the markup. In the example, the `dsd-wc` element looks like this ([source code](https://github.com/cdoremus/web-component-demos/blob/main/dsd-js.js)):
 ```js
@@ -413,19 +414,19 @@ class DeclarativeShadowDOMWC extends HTMLElement {
     });
   }
 }
-
-customElements.define(  "dsd-wc",  DeclarativeShadowDOMWC);
+customElements.define("dsd-wc", DeclarativeShadowDOMWC);
 ```
-As you can see in the example, the custom element is used to wire up events to make the component interactive.
+As you can see in the example, the custom element is used to wire up events to make the component interactive. In this case, the custom element gets access to the internal DSD using the `shadowRoot` property of `ElementInternals`.
 
-By using the DSD on the server side, you avoid the unsightly FOUC (Flash Of Unstyled Content) that occurs when a custom element is displayed on a web page because it takes some time before the JavaScript (and possibly CSS) is downloaded before the custom element can be rendered.
+By using the DSD on the server side, you avoid the abrupt Flash Of Unstyled Content (FOUC) that occurs when a custom element is displayed on a web page because it takes some time before the JavaScript is downloaded and run (to fetch data, for example) before the custom element can be fully rendered.
 
+DSD allows you to display the component's HTML skeleton (a text input and button, in this example) instead of waiting for the JavaScript to render the same HTML.
 
 ### Light DOM and HTML Web Components
 
 Web Components that do not use the Shadow DOM are called "Light DOM" Web Components. The use of this type of custom element has increased recently because using the Shadow DOM brings some [disadvantages](https://www.matuzo.at/blog/2023/pros-and-cons-of-shadow-dom/).
 
-The most obvious disadvantage is that with the Shadow DOM you do not have access to most global CSS styles ([for details see below](#style-inheritance)).
+The most obvious disadvantage is that with the Shadow DOM you do not have access to most global CSS styles ([for details see below](#style-inheritance-and-custom-properties)).
 
 One implementation of the "Light DOM" is what has been called [HTML Web Components](https://adactio.com/journal/20618). HTML Web Components are a new term for a Web Component whose markup and content is wrapped inside the Web Component on the web page where it is used. Here's an example how you do that with Deno Fresh [from the demo app that goes with this blog post](https://github.com/cdoremus/fresh-webcomponents/blob/9acfe492365453abe3cf2bb53e0256679d204e58/routes/index.tsx#L32):
 
@@ -455,17 +456,19 @@ Fresh app is to have the custom element's HTML content encapsulated in a Preact 
   </counter-wc>
 ```
 
-"Light DOM" and HTML Web Components can be used with any web server, not just Deno Fresh.
+The content of HTML Web Components are also server rendered, but the enclosed content cannot be part of the Shadow DOM like custom elements with DSD content.
+
+"Light DOM" and HTML Web Components can both be used with any web server, not just Deno Fresh.
 
 ## Styling Web Components
 
 Styling a Web Component can be done with CSS in two ways
-- external - Uses a stylesheet external to the Web Component. This is not allowed when using the Shadow DOM, but if you are not using the Shadow DOM, you can use an external stylesheet file.
-- internal - CSS styles are encapsulated within a Shadow DOM configured Web Component.
+- **external** - Uses a stylesheet external to the Web Component. With a couple of exceptions that we'll discuss below (CSS custom elements and the `part` pseudo-element) this is not allowed when using the Shadow DOM. If you are not using the Shadow DOM with a custom element, you can use an external stylesheet file.
+- **internal** - CSS styles are encapsulated within a Shadow DOM configured Web Component.
 
 When using the Shadow DOM, class names only need to be unique within the component. So you can use common class names like "container" and not have to worry about external style interference.
 
-In the case of "Light DOM" Web Components, the custom element's styles can be contained within the global stylesheet file, or you can create a custom-element specific stylesheet and link to it inside the custom element like this:
+In the case of "Light DOM" Web Components, the custom element's styles can be contained within the global stylesheet file, or you can create a custom-element specific stylesheet and declare it inside the custom element using the `<link>` tag like this:
 
 ```js
 class LinkedExternalStyleSheetWC extends HTMLElement {
@@ -479,6 +482,7 @@ class LinkedExternalStyleSheetWC extends HTMLElement {
   };
 };
 ```
+
 The most common way to add CSS to a Web Component is to add it to the `innerHTML` using a string literal. This can be done in a component build with or without the Shadow DOM. Here's an example with a Shadow DOM component:
 
   ```js
@@ -512,7 +516,7 @@ Standard CSS pseudo-selectors (pseudo-elements and pseudo-classes) can be used w
 - `:host` a pseudo-class that refers to the web component's custom element. This allows you to create styles that will effect the complete internal markup and content of the custom element.
 You can also use the `:host()` function to focus your CSS styles to a specific custom element content area using a CSS selector as the argument.
 - `::slotted()` is a pseudo-element function used to style the content of  `<slot>` elements. Its argument can be the wildcard (*) or a CSS selector.
-- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute's string values. Note that a CSS selector is not used here as an argument.
+- `::part()` a pseudo-element function that allows the styling of content inside a Shadow DOM from the outside. The part is signified with a `part` attribute on an element inside the custom element. The argument of `::part()` can be the wildcard(*), meaning any markup with a `part` attribute. The value of a part attribute can be a string or multiple strings that are space separated. The `::part()` argument can have a value that is one of the possible `part` attribute's string values. Note that a CSS selector is not used here as an argument.
 
 Let's look at an example that shows how each pseudo-selector is used. This example is of a page that represents a single question in a quiz. Its [source code can be found in this repo](https://github.com/cdoremus/web-component-demos/tree/main).
 
@@ -593,7 +597,7 @@ The CSS rules containing various `slotted` selectors defines styling for generic
 
 The `::part` pseudo-element needs an external stylesheet to define the CSS rules for a `part` defined in the Web Component. Here's what the code looks like for the quiz page example:
 ```css
-/* pseudo-selectors-quiz.css */
+/* External stylesheet pseudo-selectors-quiz.css */
   div.title {
     margin:1rem auto;
     font-size:2.5rem;
@@ -633,7 +637,7 @@ Make sure you check out the quiz-page example [in the repo](https://github.com/c
 
 [Constructable Stylesheets](https://github.com/WICG/construct-stylesheets/blob/main/explainer.md) is a way to create a style sheet programmatically. It uses the standard [`CSSStyleSheet`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet) class supported by all browsers.
 
-To be used with a custom element, the `CSSStyleSheet` class needs to be instantiated outside of the component.
+To be used with a custom element, the `CSSStyleSheet` class needs to be instantiated outside of the component. Check out this example ([source code](https://github.com/cdoremus/web-component-demos/blob/d378c80e45ef6919cd960986993c0e7b6ea5a654/styling.js#L26)):
 
 ```js
 // Create and apply a rule to the stylesheet
@@ -651,7 +655,7 @@ class ConstructableStyleSheetWC extends HTMLElement {
   }
 }
 ```
-As seen in the example above, there are two `CSSStyleSheet` methods that are commonly used with a custom element:
+As seen in this example, there are two `CSSStyleSheet` methods that are commonly used with a custom element:
 - [`replaceSync`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replaceSync) replaces stylesheet rules defined on a constructed stylesheet with the one's defined in the method's argument. There is an async version of this method ([`replace`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/replace)) that you might want to use for large replacements.
 - [`insertRule`](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/insertRule) which adds a new stylesheet rule to the constructed stylesheet.
 
@@ -690,7 +694,7 @@ class HelloWorldWC extends HTMLElement {
   }
 }
 ```
-CSS Properties give the Web Component author the ability to allow component users to customize the Web Component's CSS.
+CSS Properties give the Web Component author the ability to allow component users to customize the Web Component's CSS. An app's design theme CSS can also be transmitted to the Shadow DOM via CSS custom properties.
 
 ## Using the JavaScript Custom Event API
 
@@ -726,7 +730,7 @@ But when one or more form elements are contained in a Web Component to be used w
 
 If the Web Component is in the Light DOM, then form elements in the component will have no problem as an element in an externally-defined form.
 
-But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<textarea>` and `<select>`, they are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
+But a custom element that uses the Shadow DOM to encapsulate a `<text>`, `<textarea>` or `<select>` are not automatically associated with a containing form. Hacks around this limitation included adding hidden elements to the form to push the data into the form or using a `formdata` event listener to update the form's data before the form is submitted.
 
 Shadow DOM form components also do not have access to the standard [Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Constraint_validation) for validating form values.
 
@@ -853,9 +857,9 @@ However, I am going to concentrate on how to use Web Components in a [Deno Fresh
 
 The [Deno Fresh](https://fresh.deno.dev) full-stack web framework uses [Preact](https://preactjs.com/) -- a scaled-down version of [React](https://react.dev/) -- under the covers to serve web sites and applications. While React requires a bit of juggling to use web components (although that is [changing in React 19](https://react.dev/blog/2024/04/25/react-19#support-for-custom-elements)), Preact was built to [fully support web components](https://preactjs.com/guide/v10/web-components/).
 
-Besides supporting rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
+Besides the support of rendering Web Components, Preact allows its functional components to be exposed as a Web Component. We will not cover that behavior, but you can discover it in the [Preact Web Component Documentation](https://preactjs.com/guide/v10/web-components/#creating-a-web-component). Instead, we will focus on how to use Web Components with Preact in Deno Fresh.
 
-I have created an example app showing how to Fresh can be used to work with Web Components to accompany this article ([source code](https://github.com/cdoremus/fresh-webcomponents)). The application has also been [deployed to Deno Deploy](https://fresh-webcomponents.deno.dev/).
+I have created an example app showing how Fresh can be used to work with Web Components that accompany this article ([source code](https://github.com/cdoremus/fresh-webcomponents)). The application has also been [deployed to Deno Deploy](https://fresh-webcomponents.deno.dev/).
 
 The best way to integrate Web Components with Fresh is to use Fresh for server-side rendering and routing. Here's a simple web component that displays a message:
 ```ts
@@ -893,7 +897,7 @@ export default function CustomElementsPage(props) {
 ```
 As you know if you programmed in Fresh before, a page like this located inside the `routes` folder will define a route.
 
-If you need to access the instance of a web component that is part of the markup rendered by a Fresh/Preact component, you need to use a `ref`. Here's an example of how to do that [taken from the Preact documentation](https://preactjs.com/guide/v10/web-components/#accessing-instance-methods):
+If you need to access the instance of a web component that is part of the markup rendered by a Fresh/Preact component, you need to use a `ref` attribute. Here's an example of how to do that [taken from the Preact documentation](https://preactjs.com/guide/v10/web-components/#accessing-instance-methods):
 ```js
 function Foo() {
   const myRef = useRef(null);
@@ -910,7 +914,7 @@ function Foo() {
 
 ### HTML Web Components in Fresh
 
-As stated [previously](#html-web-components), HTML Web Components are components where all the content comes from child elements. You can create and use HTML Web Components in Fresh too. This can be done in two different ways:
+As stated [previously](#light-dom-and-html-web-components), HTML Web Components are components where all the content comes from child elements. You can create and use HTML Web Components in Fresh too. This can be done in two different ways:
 
 - Combine the custom element and internal HTML markup in a single JSX/TSX  file. Here's a snippet of what that would look like:
 ```tsx
