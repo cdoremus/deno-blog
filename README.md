@@ -2,7 +2,7 @@
 
 This is my attempt at creating a blog using the [FRESH](https://fresh.deno.dev)
 framework. The subject of this blog is the [Deno](https://deno.land) JavaScript
-runtime which Fresh runs on.
+runtime which Fresh runs on. This code now runs on Deno 2.0.
 
 ### Usage
 
@@ -40,8 +40,7 @@ date is used to sort the post list in chronological order.
 Any post file whose name is prefixed with 'DRAFT' is ignored in production (Deno
 Deploy), but will be visible when the app is run on a local server.
 
-This app is deployed to the url
-[https://deno-blog.deno.dev](https://deno-blog.deno.dev)
+This app is deployed to the url [https://deno-blog.com](https://deno-blog.com)
 
 ---
 
